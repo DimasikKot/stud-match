@@ -1,0 +1,66 @@
+{
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "frontend/main.tsx": true,
+    "frontend/index.html": true,
+    "frontend/node_modules": true,
+    "frontend/eslint.config.js": true,
+    "frontend/tsconfig.json": true,
+    "frontend/tsconfig.node.json": true,
+    "frontend/vite.config.ts": true,
+    "**/__pycache__": true,
+    "backend/projects": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "prettier.tabWidth": 2,
+    "editor.insertSpaces": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "prettier.tabWidth": 2,
+    "editor.insertSpaces": true
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "prettier.tabWidth": 2,
+    "editor.insertSpaces": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "prettier.tabWidth": 2,
+    "editor.insertSpaces": true
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.tabSize": 4,
+    "prettier.tabWidth": 4,
+    "editor.insertSpaces": true
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "prettier.tabWidth": 2,
+    "editor.insertSpaces": true
+  },
+  "files.eol": "\n",
+  "editor.detectIndentation": true,
+  "editor.mouseWheelZoom": true,
+  "explorerExclude.backup": {},
+  "indentRainbow.colors": [
+    "rgba(255,255,64,0.02)",
+    "rgba(127,255,127,0.02)",
+    "rgba(255,127,255,0.02)",
+    "rgba(79,236,236,0.02)"
+  ],
+  "python.analysis.typeCheckingMode": "basic",
+  "python-envs.defaultEnvManager": "ms-python.python:system"
+}

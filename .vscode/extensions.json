@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "peterschmalfeldt.explorer-exclude",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "ms-python.python",
+    "inferrinizzard.prettier-sql-vscode",
+    "esbenp.prettier-vscode",
+    "pkief.material-icon-theme",
+    "eamodio.gitlens",
+    "oderwat.indent-rainbow",
+    "ms-python.black-formatter",
+    "codeium.codeium"
+  ]
+}
