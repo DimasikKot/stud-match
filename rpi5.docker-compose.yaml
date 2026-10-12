@@ -1,0 +1,160 @@
+# pri5(arm64)
+
+services:
+  my-postgres:
+    image: postgres:16 # фиксированная версия для стабильности
+    container_name: my-postgres
+    environment:
+      POSTGRES_USER: postgres # опционально, по умолчанию postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres # опционально, база по умолчанию
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data # сохраняем данные
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nginx-network
+      - ml-back
+
+  redis:
+    container_name: redis
+    restart: always
+
+    image: redis:7
+
+    ports:
+      - "6379:6379"
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M # Ограничиваем ОЗУ
+
+    networks:
+      - nginx-network
+      - ml-back
+
+  backend:
+    build:
+      context: ./backend # Папка, содержащая файлы контейнера
+      dockerfile: backend.Dockerfile
+    container_name: backend
+    restart: always
+
+    # Создаёт том хранения данных. Необходим для сохранения данных при перезапуске образа
+    volumes:
+      # Пути сохраняемых директорий
+      - ./backend:/app
+
+    # Указываем переменные окружения (имеют высший приоритет, чем переменные из файла .env)
+    # environment:
+    #   - name=value
+
+    # Указываем файл с переменными окружения, которые будут использоваться в контейнере
+    env_file:
+      - ./backend/.env.local
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G # Ограничиваем ОЗУ
+
+    # Это публикует порт на хост, поэтому любой может открыть
+    # ports:
+    #   - "5443:5443"
+    # Это позволяет контейнеру использовать сеть хоста, что может быть полезно для разработки, но не рекомендуется для продакшена
+    # Зато позволяет обращаться к сервису по адресу localhost:5432, и открывать БД напрямую
+    # network_mode: host
+
+    # Это открывает порт только для других контейнеров в той же сети, но не для хоста
+    # expose:
+    #   - "8000"
+
+    # Добавьте в сервис `backend`'а строки ниже если вы запускаете на `Linux` (нельзя коммитить в основную ветку)
+    # extra_hosts:
+    #   - "host.docker.internal:172.17.0.4"
+
+    # Ожидаем загрузки сервиса `redis`
+    # depends_on:
+    #   - redis
+
+    # Указываем сети, к которым будет подключён контейнер. Сети нужно создавать заранее командой `docker network create <network-name>`
+    networks:
+      - nginx-network
+      - ml-back
+
+  frontend:
+    build:
+      context: ./frontend # Папка, содержащая файлы контейнера
+      dockerfile: frontend.Dockerfile
+    container_name: frontend
+    restart: always
+
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+    # ports:
+    #   - "5173:5173"
+
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Нужен для hot-reload
+
+    env_file:
+      - ./frontend/.env.local
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+    # Ожидаем загрузки сервиса `backend`
+    # depends_on:
+    #   - backend
+
+    networks:
+      - nginx-network
+
+  # ml:
+  #   build:
+  #     context: ./ml # Папка, содержащая файлы контейнера
+  #     dockerfile: ml.Dockerfile
+  #   container_name: ml
+  #   restart: always
+
+  #   # ports:
+  #   #   - "8001:8001"
+
+  #   volumes:
+  #     - ./ml:/app
+  #     # - /app/data:/data # Общая папка для датасетов
+
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 4G
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+
+  #   # Ожидаем загрузки сервиса `backend` и `redis`
+  #   depends_on:
+  #     - backend
+  #     - redis
+
+  #   networks:
+  #     - ml-back
+
+networks:
+  ml-back:
+  nginx-network:
+    external: true
+    # external: true # Указываем что не локальная в docker-compose, а общая для всего докера

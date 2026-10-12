@@ -1,0 +1,23 @@
+# gtx1650ti
+
+services:
+  ml:
+    build:
+      context: ./ml # Папка, содержащая файлы контейнера
+      dockerfile: gtx1650ti.ml.Dockerfile
+    container_name: ml
+    restart: always
+
+    volumes:
+      - ./ml:/app
+    # - /app/data:/data # Общая папка для моделей
+
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
