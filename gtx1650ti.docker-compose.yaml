@@ -1,11 +1,11 @@
 # gtx1650ti
 
 services:
-  ml:
+  sm-ml:
+    container_name: ml
     build:
       context: ./ml # Папка, содержащая файлы контейнера
       dockerfile: gtx1650ti.ml.Dockerfile
-    container_name: ml
     restart: always
 
     volumes:

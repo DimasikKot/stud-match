@@ -1,14 +1,16 @@
-# rx5700
+# rx5700 not working
 
 services:
-  ml:
+  sm-ml:
+    container_name: ml
     build:
       context: ./ml
       dockerfile: ml.Dockerfile
-    container_name: ml
     restart: always
+
     volumes:
       - ./ml:/app
+
     devices:
       - /dev/dxg:/dev/dxg
       - /dev/kfd:/dev/kfd
