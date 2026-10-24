@@ -131,7 +131,7 @@ services:
       - nginx-network
     depends_on:
       - backend
-      - redis
+      - frontend
 
   certbot:
     container_name: sm-certbot
