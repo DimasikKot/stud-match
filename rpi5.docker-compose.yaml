@@ -11,7 +11,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider https://localhost/ || exit 1",
+          "wget --no-verbose --tries=1 --spider https://stud-match.mooo.com/ || exit 1",
         ]
       interval: 30s
       timeout: 10s
@@ -44,7 +44,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -f https://localhost/backend/api/v1/healths/health || exit 1",
+          "curl -f https://stud-match.mooo.com/backend/api/v1/healths/health || exit 1",
         ]
       interval: 30s
       timeout: 10s
