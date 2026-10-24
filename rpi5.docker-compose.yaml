@@ -139,10 +139,10 @@ services:
       sleep 12h;
       done"
 
-  deploy:
-    resources:
-      limits:
-        memory: 256M
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     depends_on:
       - nginx
 
