@@ -201,3 +201,21 @@ docker system prune -a
 ```bash
 docker system prune -a --volumes
 ```
+
+### Проверить работает ли SSL соединение к БД
+
+```sql
+SELECT
+  a.datname,
+  a.usename,
+  a.client_addr,
+  s.ssl,
+  s.version,
+  s.cipher
+FROM
+  pg_stat_activity a
+LEFT JOIN
+  pg_stat_ssl s ON a.pid = s.pid
+WHERE
+  a.state = 'active';
+```
