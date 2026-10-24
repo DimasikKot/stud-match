@@ -122,6 +122,7 @@ services:
       - ./nginx/certbot-webroot:/var/www/certbot # Добавляем для верификации
 
     ports:
+      - "80:80" # перенаправляем 80 порт на 443 + подтверждение домена
       - "443:443"
     deploy:
       resources:
