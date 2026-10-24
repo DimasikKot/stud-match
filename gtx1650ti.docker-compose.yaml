@@ -1,15 +1,15 @@
 # gtx1650ti
 
 services:
-  sm-ml:
-    container_name: ml
+  sm-llm-worker:
+    container_name: sm-llm-worker
     build:
-      context: ./ml # Папка, содержащая файлы контейнера
-      dockerfile: gtx1650ti.ml.Dockerfile
+      context: ./llm-worker # Папка, содержащая файлы контейнера
+      dockerfile: gtx1650ti.llm-worker.Dockerfile
     restart: always
 
     volumes:
-      - ./ml:/app
+      - ./llm-worker:/app
     # - /app/data:/data # Общая папка для моделей
 
     deploy:

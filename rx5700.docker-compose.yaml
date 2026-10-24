@@ -1,11 +1,11 @@
 # rx5700 not working
 
 services:
-  sm-ml:
-    container_name: ml
+  sm-llm-worker:
+    container_name: sm-llm-worker
     build:
-      context: ./ml
-      dockerfile: ml.Dockerfile
+      context: ./llm-worker
+      dockerfile: llm-worker.Dockerfile
     restart: always
 
     volumes:
