@@ -79,13 +79,12 @@ services:
       - ./postgres_init:/docker-entrypoint-initdb.d # Папка со скриптами инициализации
 
     environment:
-      POSTGRES_DB: stud-match # опционально, база по умолчанию
-      POSTGRES_USER: sm_admin # опционально, по умолчанию postgres
+      POSTGRES_DB: sm-db # опционально, по умолчанию postgres
+      POSTGRES_USER: sm-admin # опционально, по умолчанию postgres
       POSTGRES_PASSWORD: password_superPuper
-      POSTGRES_PORT: 4500
 
     ports:
-      - "4500:4500"
+      - "4500:5432"
     deploy:
       resources:
         limits:
@@ -154,14 +153,24 @@ services:
     image: redis:8
     restart: always
 
+    volumes:
+      - ./redis:/var/lib/redis/data
+
     environment:
       - REDIS_PASSWORD=password_superPuper
-      - REDIS_PORT=6060
+    command:
+      - /bin/sh
+      - -c
+      # - Double dollars, so that the variable is not expanded by Docker Compose
+      # - Surround by quotes, so that the shell does not split the password
+      # - The ${variable:?message} syntax causes shell to exit with a non-zero
+      #   code and print a message, when the variable is not set or empty
+      - redis-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
 
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1G
     networks:
       - nginx-network
 

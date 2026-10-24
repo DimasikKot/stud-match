@@ -5,12 +5,13 @@ from functools import lru_cache
 class _Settings(BaseSettings):
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = "password"
 
-    DB_HOST: str = "sm-postgres"
+    DB_HOST: str = "localhost"
     DB_PORT: int = 5432
-    DB_USERNAME: str = "sm_admin"
-    DB_PASSWORD: str = "password_superPuper"
-    DB_NAME: str = "stud-match"
+    DB_USERNAME: str = "name user"
+    DB_PASSWORD: str = "password"
+    DB_NAME: str = "name db"
 
     USER_JWT_ACCESS_TOKEN_SECRET: str = "w3NWlz4BSf6j6TwwEEXK0pT5yPY4AJzt"
     USER_JWT_ACCESS_TOKEN_EXPIRATION_HOURS: int = 1

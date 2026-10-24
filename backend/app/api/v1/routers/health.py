@@ -1,14 +1,104 @@
-from fastapi import APIRouter
+import time
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.core.database import get_db
 
 router: APIRouter = APIRouter()
 
 
-class GetHealthResponse(BaseModel):
-    detail: str
+class HealthResponse(BaseModel):
     success: bool
+    detail: str
+    metrics: dict | None = None
 
 
-@router.get("/health", response_model=GetHealthResponse)
-async def get_backend():
-    return GetHealthResponse(detail="Backend контейнер исправно работает", success=True)
+@router.get("/health", response_model=HealthResponse)
+async def get_backend_health():
+    return HealthResponse(
+        success=True, detail="Backend is healthy", metrics={"status": "running"}
+    )
+
+
+@router.get("/postgres", response_model=HealthResponse)
+def check_postgres_health(db: Session = Depends(get_db)):
+    start_time = time.perf_counter()
+
+    try:
+        # 1. Базовый пинг (в SQLAlchemy 2.x raw-строки оборачиваются в text())
+        db.execute(text("SELECT 1"))
+
+        # 2. Сбор метрик
+        version_raw = db.execute(text("SELECT version()")).scalar()
+        # Парсим версию (например, из "PostgreSQL 14.5 ..." берем "14.5")
+        version = version_raw.split()[1] if version_raw else "Unknown"
+
+        db_size_bytes = db.execute(
+            text("SELECT pg_database_size(:db_name)"), {"db_name": settings.DB_NAME}
+        ).scalar()
+
+        latency_ms = (time.perf_counter() - start_time) * 1000
+
+        return HealthResponse(
+            success=True,
+            detail="PostgreSQL is healthy",
+            metrics={
+                "latency_ms": round(latency_ms, 2),
+                "version": version,
+                "db_size_mb": (
+                    round(db_size_bytes / (1024 * 1024), 2) if db_size_bytes else 0
+                ),
+            },
+        )
+
+    except Exception as e:
+        # Возвращаем 503 Service Unavailable для оркестраторов (Docker/K8s)
+        raise HTTPException(
+            status_code=503, detail=f"PostgreSQL connection failed: {str(e)}"
+        )
+
+
+@router.get("/redis", response_model=HealthResponse)
+async def check_redis_health():
+    import redis.asyncio as aioredis
+
+    start_time = time.perf_counter()
+
+    redis_client = aioredis.Redis(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+        decode_responses=True,
+        socket_timeout=5.0,
+    )
+
+    try:
+        await redis_client.ping()
+
+        info = await redis_client.info(section="memory")
+        clients_info = await redis_client.info(section="clients")
+
+        latency_ms = (time.perf_counter() - start_time) * 1000
+
+        return HealthResponse(
+            success=True,
+            detail="Redis is healthy",
+            metrics={
+                "latency_ms": round(latency_ms, 2),
+                "used_memory_human": info.get("used_memory_human", "N/A"),
+                "used_memory_peak_human": info.get("used_memory_peak_human", "N/A"),
+                "connected_clients": clients_info.get("connected_clients", 0),
+                "keyspace_hits": info.get("keyspace_hits", 0),
+                "keyspace_misses": info.get("keyspace_misses", 0),
+            },
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=503, detail=f"Redis connection failed: {str(e)}"
+        )
+    finally:
+        await redis_client.aclose()
