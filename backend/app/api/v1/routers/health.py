@@ -28,17 +28,31 @@ def check_postgres_health(db: Session = Depends(get_db)):
     start_time = time.perf_counter()
 
     try:
-        # 1. Базовый пинг (в SQLAlchemy 2.x raw-строки оборачиваются в text())
+        # 1. Базовый пинг
         db.execute(text("SELECT 1"))
 
-        # 2. Сбор метрик
+        # 2. Версия
         version_raw = db.execute(text("SELECT version()")).scalar()
-        # Парсим версию (например, из "PostgreSQL 14.5 ..." берем "14.5")
         version = version_raw.split()[1] if version_raw else "Unknown"
 
+        # 3. Размер БД
         db_size_bytes = db.execute(
             text("SELECT pg_database_size(:db_name)"), {"db_name": settings.DB_NAME}
         ).scalar()
+
+        # 4. Проверка SSL текущего соединения
+        ssl_row = db.execute(text("""
+                SELECT s.ssl, s.version, s.cipher
+                FROM pg_stat_ssl s
+                WHERE s.pid = pg_backend_pid()
+                """)).first()
+
+        ssl_enabled = bool(ssl_row and ssl_row.ssl)
+        ssl_info = {
+            "enabled": ssl_enabled,
+            "version": ssl_row.version if ssl_row else None,
+            "cipher": ssl_row.cipher if ssl_row else None,
+        }
 
         latency_ms = (time.perf_counter() - start_time) * 1000
 
@@ -51,11 +65,11 @@ def check_postgres_health(db: Session = Depends(get_db)):
                 "db_size_mb": (
                     round(db_size_bytes / (1024 * 1024), 2) if db_size_bytes else 0
                 ),
+                "ssl": ssl_info,
             },
         )
 
     except Exception as e:
-        # Возвращаем 503 Service Unavailable для оркестраторов (Docker/K8s)
         raise HTTPException(
             status_code=503, detail=f"PostgreSQL connection failed: {str(e)}"
         )

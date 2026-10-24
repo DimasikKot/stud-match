@@ -69,17 +69,31 @@ services:
     image: postgres:18 # фиксированная версия для стабильности
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sm_admin -d stud-match"]
+      test: ["CMD-SHELL", "pg_isready -U sm-admin -d sm-db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
     volumes:
-      - ./postgres/data:/var/lib/postgresql/18/docker # сохраняем данные
-      - ./postgres/init:/docker-entrypoint-initdb.d # Папка со скриптами инициализации
+      - ./postgres/data:/var/lib/postgresql/18/docker # Сохраняем данные
+      - ./postgres/pg_hba.conf:/var/lib/postgresql/18/docker/pg_hba.conf # Настройки доступа
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro # Папка со скриптами инициализации
+      - ./postgres/ssl/server.crt:/var/lib/postgresql/server.crt:ro
+      - ./postgres/ssl/server.key:/var/lib/postgresql/server.key:ro
 
     env_file:
       - ./postgres/.env.local
+    command: >
+      sh -c "
+      cp /var/lib/postgresql/server.crt /tmp/server.crt &&
+      cp /var/lib/postgresql/server.key /tmp/server.key &&
+      chown 999:999 /tmp/server.crt /tmp/server.key &&
+      chmod 600 /tmp/server.key &&
+      exec docker-entrypoint.sh postgres
+      -c ssl=on
+      -c ssl_cert_file=/tmp/server.crt
+      -c ssl_key_file=/tmp/server.key
+      "
 
     ports:
       - "4500:5432"
