@@ -105,7 +105,7 @@ services:
 
     volumes:
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/letsencrypt:/etc/letsencrypt
       - ./nginx/certbot-webroot:/var/www/certbot # Добавляем для верификации
 
@@ -120,33 +120,6 @@ services:
     depends_on:
       - backend
       - redis
-
-  # certbot:
-  #   container_name: sm-certbot
-  #   image: certbot/certbot
-  #   restart: unless-stopped
-
-  #   volumes:
-  #     - ./nginx/letsencrypt:/etc/letsencrypt
-  #     - ./nginx/certbot-webroot:/var/www/certbot
-
-  #   entrypoint: /bin/sh -c "
-  #     certbot certonly --webroot -w /var/www/certbot \
-  #     --email kozhuharew.dima@gmail.com \
-  #     -d stud-match.mooo.com \
-  #     --non-interactive --agree-tos \
-  #     --keep-until-expiring;
-  #     while true; do
-  #     certbot renew --webroot -w /var/www/certbot --quiet;
-  #     sleep 12h;
-  #     done"
-
-  # deploy:
-  #   resources:
-  #     limits:
-  #       memory: 256M
-  #   depends_on:
-  #     - nginx
 
   redis:
     container_name: sm-redis
