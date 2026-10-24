@@ -82,9 +82,10 @@ services:
       POSTGRES_DB: stud-match # опционально, база по умолчанию
       POSTGRES_USER: sm_admin # опционально, по умолчанию postgres
       POSTGRES_PASSWORD: password_superPuper
+      POSTGRES_PORT: 4500
 
     ports:
-      - "5432:5432"
+      - "4500:4500"
     deploy:
       resources:
         limits:
@@ -152,6 +153,10 @@ services:
     container_name: sm-redis
     image: redis:8
     restart: always
+
+    environment:
+      - REDIS_PASSWORD=password_superPuper
+      - REDIS_PORT=6060
 
     deploy:
       resources:

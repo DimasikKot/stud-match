@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     host: true, // Важно для Docker
-    port: 5173,
+    port: 5100,
     allowedHosts: ["stud-match.mooo.com", "localhost"],
     open: true,
     watch: { usePolling: true }, // Для корректного отслеживания изменений в контейнере
