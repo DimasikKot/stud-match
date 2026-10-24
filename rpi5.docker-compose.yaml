@@ -44,7 +44,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -f https://localhost/backend/api/v1/echos/health || exit 1",
+          "curl -f https://localhost/backend/api/v1/healths/health || exit 1",
         ]
       interval: 30s
       timeout: 10s
