@@ -20,16 +20,16 @@ export function Home() {
             icon="rocket_launch"
             iconClassName="bg-emerald-100 text-emerald-600"
             title="Наши плюсы"
-            description="Современные инструменты разметки, высокая точность и удобный интерфейс для каждого пользователя."
+            description="-"
           />
 
           {/* Центральная */}
           <InfoCardBig
             icon="auto_awesome"
-            title="Создать новый проект"
-            description="Начните работать с данными уже сегодня!"
-            buttonText="Перейти к проектам"
-            onClick={() => navigate("/projects")}
+            title="-"
+            description="-"
+            buttonText="Перейти к -"
+            onClick={() => navigate("/-")}
           />
 
           {/* Правая карточка */}
@@ -37,14 +37,14 @@ export function Home() {
             icon="bolt"
             iconClassName="bg-blue-100 text-blue-600"
             title="Мы предлагаем"
-            description="Удобную платформу для разметки и работы с данными."
+            description="-"
           />
         </div>
       </div>
 
       {/* Футер */}
       <div className="text-center py-6">
-        <TextUI variant="desc">Лаборатория разметки © 2026</TextUI>
+        <TextUI variant="desc">СтудПодбор © 2026</TextUI>
       </div>
     </div>
   );

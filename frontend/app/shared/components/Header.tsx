@@ -5,7 +5,12 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import logo from "@/shared/images/logo.svg";
 import { StatusIndicator } from "@/shared/components/StatusIndicator";
 import { ButtonUI } from "@/shared/components/ButtonUI";
-import { fetchBackendHealth } from "@/shared/api/health";
+import {
+  fetchBackendHealth,
+  fetchPostgresHealth,
+  fetchRedisHealth,
+  type GetHealthResponse,
+} from "@/shared/api/health";
 import { TextUI } from "@/shared/components/TextUI";
 
 const Logo = ({ onClick }: { onClick?: () => void }) => (
@@ -40,14 +45,41 @@ export function Header({
 }) {
   const navigate = useNavigate();
 
-  const [backendStatus, setBackendStatus] = useState(false);
+  const [backendStatus, setBackendStatus] = useState({} as GetHealthResponse);
+  const [postgresStatus, setPostgresStatus] = useState({} as GetHealthResponse);
+  const [redisStatus, setRedisStatus] = useState({} as GetHealthResponse);
   const username = localStorage.getItem("username");
+
+  const formatValue = (v: unknown): string => {
+    if (v === null) return "null";
+    if (v === undefined) return "—";
+    if (typeof v === "object") return JSON.stringify(v);
+    return String(v);
+  };
+
+  const formatMetrics = (metrics?: Record<string, unknown> | null): string => {
+    if (!metrics || typeof metrics !== "object") return "";
+    return Object.entries(metrics)
+      .map(([k, v]) => `${k}: ${formatValue(v)}`)
+      .join("\n");
+  };
 
   useEffect(() => {
     const load = async () => {
       const dataBackend = await fetchBackendHealth();
-      if (dataBackend === undefined) return;
-      setBackendStatus(dataBackend.success);
+      if (dataBackend !== undefined) {
+        setBackendStatus(dataBackend);
+      }
+
+      const dataPostgres = await fetchPostgresHealth();
+      if (dataPostgres !== undefined) {
+        setPostgresStatus(dataPostgres);
+      }
+
+      const dataRedis = await fetchRedisHealth();
+      if (dataRedis !== undefined) {
+        setRedisStatus(dataRedis);
+      }
     };
 
     load();
@@ -76,9 +108,31 @@ export function Header({
         {/* Индикаторы состояния контейнеров */}
         <div className="flex gap-4">
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <StatusIndicator status={backendStatus} />
-            <TextUI variant="desc" isSpan>
+            <StatusIndicator status={backendStatus.success} />
+            <TextUI
+              variant="desc"
+              isSpan
+              hoverText={formatMetrics(backendStatus.metrics)}
+            >
               Backend
+            </TextUI>
+
+            <StatusIndicator status={postgresStatus.success} />
+            <TextUI
+              variant="desc"
+              isSpan
+              hoverText={formatMetrics(postgresStatus.metrics)}
+            >
+              Postgres
+            </TextUI>
+
+            <StatusIndicator status={redisStatus.success} />
+            <TextUI
+              variant="desc"
+              isSpan
+              hoverText={formatMetrics(redisStatus.metrics)}
+            >
+              Redis
             </TextUI>
           </div>
         </div>

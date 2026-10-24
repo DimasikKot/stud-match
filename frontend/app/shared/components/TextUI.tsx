@@ -4,6 +4,7 @@ export const TextUI = ({
   maxLines = 3,
   isSelectable = false,
   isSpan = false,
+  hoverText,
   children,
 }: {
   variant?:
@@ -20,10 +21,12 @@ export const TextUI = ({
   maxLines?: number;
   isSelectable?: boolean;
   isSpan?: boolean;
+  hoverText?: string;
   children: React.ReactNode;
 }) =>
   isSpan ? (
     <span
+      title={hoverText}
       className={`leading-relaxed
         ${isSelectable ? "select-text" : "select-none"}
         ${
@@ -45,6 +48,7 @@ export const TextUI = ({
     </span>
   ) : (
     <p
+      title={hoverText}
       className={`leading-relaxed
         ${isSelectable ? "select-text" : "select-none"}
         ${

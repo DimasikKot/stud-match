@@ -16,7 +16,7 @@ class HealthResponse(BaseModel):
     metrics: dict | None = None
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get("/backend", response_model=HealthResponse)
 async def get_backend_health():
     return HealthResponse(
         success=True, detail="Backend is healthy", metrics={"status": "running"}
@@ -24,7 +24,7 @@ async def get_backend_health():
 
 
 @router.get("/postgres", response_model=HealthResponse)
-def check_postgres_health(db: Session = Depends(get_db)):
+def get_postgres_health(db: Session = Depends(get_db)):
     start_time = time.perf_counter()
 
     try:
@@ -76,7 +76,7 @@ def check_postgres_health(db: Session = Depends(get_db)):
 
 
 @router.get("/redis", response_model=HealthResponse)
-async def check_redis_health():
+async def get_redis_health():
     import redis.asyncio as aioredis
 
     start_time = time.perf_counter()
