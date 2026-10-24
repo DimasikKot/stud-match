@@ -132,32 +132,32 @@ services:
       - backend
       - redis
 
-  # certbot:
-  #   container_name: sm-certbot
-  #   image: certbot/certbot
-  #   restart: unless-stopped
+  certbot:
+    container_name: sm-certbot
+    image: certbot/certbot
+    restart: unless-stopped
 
-  #   volumes:
-  #     - ./nginx/letsencrypt:/etc/letsencrypt
-  #     - ./nginx/certbot-webroot:/var/www/certbot
+    volumes:
+      - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/certbot-webroot:/var/www/certbot
 
-  #   entrypoint: /bin/sh -c "
-  #     certbot certonly --webroot -w /var/www/certbot \
-  #     --email kozhuharew.dima@gmail.com \
-  #     -d stud-match.mooo.com \
-  #     --non-interactive --agree-tos \
-  #     --keep-until-expiring;
-  #     while true; do
-  #     certbot renew --webroot -w /var/www/certbot --quiet;
-  #     sleep 12h;
-  #     done"
+    entrypoint: /bin/sh -c "
+      certbot certonly --webroot -w /var/www/certbot \
+      --email kozhuharew.dima@gmail.com \
+      -d stud-match.mooo.com \
+      --non-interactive --agree-tos \
+      --keep-until-expiring;
+      while true; do
+      certbot renew --webroot -w /var/www/certbot --quiet;
+      sleep 12h;
+      done"
 
-  # deploy:
-  #   resources:
-  #     limits:
-  #       memory: 256M
-  #   depends_on:
-  #     - sm-nginx
+  deploy:
+    resources:
+      limits:
+        memory: 256M
+    depends_on:
+      - nginx
 
 networks:
   nginx-network:

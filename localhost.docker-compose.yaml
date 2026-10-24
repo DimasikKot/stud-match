@@ -1,0 +1,164 @@
+# win11
+
+services:
+  frontend:
+    container_name: sm-frontend
+    build:
+      context: ./frontend
+      dockerfile: frontend.Dockerfile
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider https://localhost/ || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+    env_file:
+      - ./frontend/.env.local
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Нужен для hot-reload
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - nginx-network
+
+  backend:
+    container_name: sm-backend
+    build:
+      context: ./backend # Папка, содержащая файлы контейнера
+      dockerfile: backend.Dockerfile
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f https://localhost/backend/api/v1/echos/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    volumes:
+      - ./backend:/app
+
+    env_file:
+      - ./backend/.env.local
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks:
+      - nginx-network
+
+  postgres:
+    container_name: sm-postgres
+    image: postgres:18 # фиксированная версия для стабильности
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sm_admin -d stud-match"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    volumes:
+      - ./postgres:/var/lib/postgresql/18/docker # сохраняем данные
+
+    environment:
+      POSTGRES_USER: sm_admin # опционально, по умолчанию postgres
+      POSTGRES_PASSWORD: password_superPuper
+      POSTGRES_DB: stud-match # опционально, база по умолчанию
+
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks:
+      - nginx-network
+
+  redis:
+    container_name: sm-redis
+    image: redis:8
+    restart: always
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - nginx-network
+
+  nginx:
+    container_name: sm-nginx
+    image: nginx:alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fk https://localhost:443/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/certbot-webroot:/var/www/certbot # Добавляем для верификации
+
+    ports:
+      - "443:443"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - nginx-network
+    depends_on:
+      - backend
+      - redis
+
+  # certbot:
+  #   container_name: sm-certbot
+  #   image: certbot/certbot
+  #   restart: unless-stopped
+
+  #   volumes:
+  #     - ./nginx/letsencrypt:/etc/letsencrypt
+  #     - ./nginx/certbot-webroot:/var/www/certbot
+
+  #   entrypoint: /bin/sh -c "
+  #     certbot certonly --webroot -w /var/www/certbot \
+  #     --email kozhuharew.dima@gmail.com \
+  #     -d stud-match.mooo.com \
+  #     --non-interactive --agree-tos \
+  #     --keep-until-expiring;
+  #     while true; do
+  #     certbot renew --webroot -w /var/www/certbot --quiet;
+  #     sleep 12h;
+  #     done"
+
+  # deploy:
+  #   resources:
+  #     limits:
+  #       memory: 256M
+  #   depends_on:
+  #     - nginx
+
+networks:
+  nginx-network:
+    external: true # Указываем что не локальная в docker-compose, а общая для всего докера
