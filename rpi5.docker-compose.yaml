@@ -1,7 +1,7 @@
 # pri5(arm64)
 
 services:
-  frontend:
+  sm-frontend:
     container_name: sm-frontend
     build:
       context: ./frontend
@@ -34,7 +34,7 @@ services:
     networks:
       - nginx-network
 
-  backend:
+  sm-backend:
     container_name: sm-backend
     build:
       context: ./backend # Папка, содержащая файлы контейнера
@@ -64,7 +64,7 @@ services:
     networks:
       - nginx-network
 
-  postgres:
+  sm-postgres:
     container_name: sm-postgres
     image: postgres:18 # фиксированная версия для стабильности
     restart: unless-stopped
@@ -104,6 +104,32 @@ services:
     networks:
       - nginx-network
 
+  sm-redis:
+    container_name: sm-redis
+    image: redis:8
+    restart: always
+
+    volumes:
+      - ./redis/data:/var/lib/redis/data
+
+    env_file:
+      - ./backend/.env.local
+    command:
+      - /bin/sh
+      - -c
+      # - Double dollars, so that the variable is not expanded by Docker Compose
+      # - Surround by quotes, so that the shell does not split the password
+      # - The ${variable:?message} syntax causes shell to exit with a non-zero
+      #   code and print a message, when the variable is not set or empty
+      - redis-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks:
+      - nginx-network
+
   nginx:
     container_name: sm-nginx
     image: nginx:alpine
@@ -127,12 +153,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
     networks:
       - nginx-network
     depends_on:
-      - backend
-      - frontend
+      - sm-backend
+      - sm-frontend
 
   certbot:
     container_name: sm-certbot
@@ -160,32 +186,6 @@ services:
           memory: 256M
     depends_on:
       - nginx
-
-  redis:
-    container_name: sm-redis
-    image: redis:8
-    restart: always
-
-    volumes:
-      - ./redis/data:/var/lib/redis/data
-
-    env_file:
-      - ./backend/.env.local
-    command:
-      - /bin/sh
-      - -c
-      # - Double dollars, so that the variable is not expanded by Docker Compose
-      # - Surround by quotes, so that the shell does not split the password
-      # - The ${variable:?message} syntax causes shell to exit with a non-zero
-      #   code and print a message, when the variable is not set or empty
-      - redis-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
-
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-    networks:
-      - nginx-network
 
 networks:
   nginx-network:

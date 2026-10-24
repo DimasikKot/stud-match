@@ -1,7 +1,7 @@
 # win11
 
 services:
-  frontend:
+  sm-frontend:
     container_name: sm-frontend
     build:
       context: ./frontend
@@ -34,7 +34,7 @@ services:
     networks:
       - nginx-network
 
-  backend:
+  sm-backend:
     container_name: sm-backend
     build:
       context: ./backend # Папка, содержащая файлы контейнера
@@ -64,7 +64,7 @@ services:
     networks:
       - nginx-network
 
-  postgres:
+  sm-postgres:
     container_name: sm-postgres
     image: postgres:18 # фиксированная версия для стабильности
     restart: unless-stopped
@@ -104,37 +104,7 @@ services:
     networks:
       - nginx-network
 
-  nginx:
-    container_name: sm-nginx
-    image: nginx:alpine
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fk https://localhost:443/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-    volumes:
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/letsencrypt:/etc/letsencrypt
-      - ./nginx/certbot-webroot:/var/www/certbot # Добавляем для верификации
-
-    ports:
-      - "80:80" # перенаправляем 80 порт на 443 + подтверждение домена
-      - "443:443"
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-    networks:
-      - nginx-network
-    depends_on:
-      - backend
-      - frontend
-
-  redis:
+  sm-redis:
     container_name: sm-redis
     image: redis:8
     restart: always
@@ -159,6 +129,36 @@ services:
           memory: 1G
     networks:
       - nginx-network
+
+  nginx:
+    container_name: sm-nginx
+    image: nginx:alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fk https://localhost:443/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/certbot-webroot:/var/www/certbot # Добавляем для верификации
+
+    ports:
+      - "80:80" # перенаправляем 80 порт на 443 + подтверждение домена
+      - "443:443"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - nginx-network
+    depends_on:
+      - sm-backend
+      - sm-frontend
 
 networks:
   nginx-network:
