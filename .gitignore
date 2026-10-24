@@ -27,7 +27,8 @@ dist-ssr
 *.venv/
 *venv/
 *__pycache__/
+frontend/package-lock.json
 backend/files/
 files/
-postgres_data/
-frontend/package-lock.json
+postgres/data/
+redis/data/

@@ -75,13 +75,11 @@ services:
       retries: 5
 
     volumes:
-      - ./postgres_data:/var/lib/postgresql/18/docker # сохраняем данные
-      - ./postgres_init:/docker-entrypoint-initdb.d # Папка со скриптами инициализации
+      - ./postgres/data:/var/lib/postgresql/18/docker # сохраняем данные
+      - ./postgres/init:/docker-entrypoint-initdb.d # Папка со скриптами инициализации
 
-    environment:
-      POSTGRES_DB: sm-db # опционально, по умолчанию postgres
-      POSTGRES_USER: sm-admin # опционально, по умолчанию postgres
-      POSTGRES_PASSWORD: password_superPuper
+    env_file:
+      - ./postgres/.env.local
 
     ports:
       - "4500:5432"
@@ -154,10 +152,10 @@ services:
     restart: always
 
     volumes:
-      - ./redis:/var/lib/redis/data
+      - ./redis/data:/var/lib/redis/data
 
-    environment:
-      - REDIS_PASSWORD=password_superPuper
+    env_file:
+      - ./backend/.env.local
     command:
       - /bin/sh
       - -c
