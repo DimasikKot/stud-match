@@ -1,0 +1,19 @@
+<svg width="48" height="48" viewBox="0 0 103 103" xmlns="http://www.w3.org/2000/svg">
+  <!-- Белый фон -->
+  <rect width="100%" height="100%" fill="white" rx="20" />
+
+  <!-- Логотип -->
+  <g transform="translate(-8.5 -8.5)" stroke="black" stroke-linecap="round">
+    <rect x="20" y="20" width="80" height="80" rx="14" fill="none" stroke="black" stroke-width="6" />
+
+    <line x1="50" y1="50" x2="40" y2="20" stroke-width="3" />
+    <line x1="45" y1="60" x2="20" y2="45" stroke-width="3.5" />
+    <line x1="50" y1="70" x2="20" y2="75" stroke-width="4" />
+    <line x1="60" y1="75" x2="45" y2="100" stroke-width="4.5" />
+    <line x1="70" y1="70" x2="75" y2="100" stroke-width="3" />
+    <line x1="75" y1="60" x2="100" y2="75" stroke-width="3.5" />
+    <line x1="70" y1="50" x2="100" y2="45" stroke-width="4" />
+    <line x1="60" y1="45" x2="75" y2="20" stroke-width="4.5" />
+    <circle cx="60" cy="60" r="8" fill="none" stroke="black" stroke-width="6" />
+  </g>
+</svg>

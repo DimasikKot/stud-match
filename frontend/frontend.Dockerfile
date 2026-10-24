@@ -1,5 +1,5 @@
 # Используем Node.js
-FROM node:22-slim
+FROM node:24-slim
 
 # Устанавливаем рабочую директорию
 WORKDIR /app

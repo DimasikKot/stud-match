@@ -30,3 +30,4 @@ dist-ssr
 backend/files/
 files/
 postgres/
+frontend/package-lock.json
