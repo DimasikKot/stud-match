@@ -75,12 +75,13 @@ services:
       retries: 5
 
     volumes:
-      - ./postgres:/var/lib/postgresql/18/docker # сохраняем данные
+      - ./postgres_data:/var/lib/postgresql/18/docker # сохраняем данные
+      - ./postgres_init:/docker-entrypoint-initdb.d # Папка со скриптами инициализации
 
     environment:
+      POSTGRES_DB: stud-match # опционально, база по умолчанию
       POSTGRES_USER: sm_admin # опционально, по умолчанию postgres
       POSTGRES_PASSWORD: password_superPuper
-      POSTGRES_DB: stud-match # опционально, база по умолчанию
 
     ports:
       - "5432:5432"
@@ -88,18 +89,6 @@ services:
       resources:
         limits:
           memory: 1G
-    networks:
-      - nginx-network
-
-  redis:
-    container_name: sm-redis
-    image: redis:8
-    restart: always
-
-    deploy:
-      resources:
-        limits:
-          memory: 512M
     networks:
       - nginx-network
 
@@ -158,6 +147,18 @@ services:
         memory: 256M
     depends_on:
       - nginx
+
+  redis:
+    container_name: sm-redis
+    image: redis:8
+    restart: always
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - nginx-network
 
 networks:
   nginx-network:

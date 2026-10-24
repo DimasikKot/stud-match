@@ -29,5 +29,5 @@ dist-ssr
 *__pycache__/
 backend/files/
 files/
-postgres/
+postgres_data/
 frontend/package-lock.json
