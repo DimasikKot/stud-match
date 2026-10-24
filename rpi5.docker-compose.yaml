@@ -1,28 +1,28 @@
 # pri5(arm64)
 
 services:
-  # frontend:
-  #   container_name: sm-frontend
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: frontend.Dockerfile
-  #   restart: always
+  frontend:
+    container_name: sm-frontend
+    build:
+      context: ./frontend
+      dockerfile: frontend.Dockerfile
+    restart: always
 
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
-  #   env_file:
-  #     - ./frontend/.env.local
-  #   environment:
-  #     - CHOKIDAR_USEPOLLING=true # Нужен для hot-reload
+    env_file:
+      - ./frontend/.env.local
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Нужен для hot-reload
 
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 512M
-  #   networks:
-  #     - nginx-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - nginx-network
 
   backend:
     container_name: sm-backend
@@ -80,6 +80,46 @@ services:
           memory: 512M
     networks:
       - nginx-network
+
+  nginx:
+    container_name: sm-nginx
+    image: nginx:alpine
+    restart: unless-stopped
+
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/certbot-webroot:/var/www/certbot # Добавляем для верификации
+
+    ports:
+      - "443:443"
+
+    networks:
+      - nginx-network
+
+  # certbot:
+  #   container_name: sm-certbot
+  #   image: certbot/certbot
+  #   restart: unless-stopped
+
+  #   volumes:
+  #     - ./nginx/letsencrypt:/etc/letsencrypt
+  #     - ./nginx/certbot-webroot:/var/www/certbot
+
+  #   entrypoint: /bin/sh -c "
+  #     certbot certonly --webroot -w /var/www/certbot \
+  #     --email kozhuharew.dima@gmail.com \
+  #     -d stud-match.mooo.com \
+  #     --non-interactive --agree-tos \
+  #     --keep-until-expiring;
+  #     while true; do
+  #     certbot renew --webroot -w /var/www/certbot --quiet;
+  #     sleep 12h;
+  #     done"
+
+  #   depends_on:
+  #     - sm-nginx
 
 networks:
   nginx-network:
