@@ -219,3 +219,9 @@ LEFT JOIN
 WHERE
   a.state = 'active';
 ```
+
+### Запуск определённого docker-compose файла
+
+```bash
+docker compose -f localhost.docker-compose.yaml up -d
+```
