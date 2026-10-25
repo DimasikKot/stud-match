@@ -225,3 +225,11 @@ WHERE
 ```bash
 docker compose -f localhost.docker-compose.yaml up -d
 ```
+
+### Правильное использование async функций во фронтенде
+
+```ts
+fetchBackendHealth().then((v) => v !== undefined && setBackendStatus(v));
+fetchPostgresHealth().then((v) => v !== undefined && setPostgresStatus(v));
+fetchRedisHealth().then((v) => v !== undefined && setRedisStatus(v));
+```

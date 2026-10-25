@@ -66,20 +66,11 @@ export function Header({
 
   useEffect(() => {
     const load = async () => {
-      const dataBackend = await fetchBackendHealth();
-      if (dataBackend !== undefined) {
-        setBackendStatus(dataBackend);
-      }
-
-      const dataPostgres = await fetchPostgresHealth();
-      if (dataPostgres !== undefined) {
-        setPostgresStatus(dataPostgres);
-      }
-
-      const dataRedis = await fetchRedisHealth();
-      if (dataRedis !== undefined) {
-        setRedisStatus(dataRedis);
-      }
+      fetchBackendHealth().then((v) => v !== undefined && setBackendStatus(v));
+      fetchPostgresHealth().then(
+        (v) => v !== undefined && setPostgresStatus(v),
+      );
+      fetchRedisHealth().then((v) => v !== undefined && setRedisStatus(v));
     };
 
     load();
