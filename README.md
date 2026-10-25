@@ -55,9 +55,7 @@ docker network create nginx-network
 
 ### Задание своих переменных среды
 
-1. Создайте `.env.local` файлы в папках сервисов `backend` и `frontend`
-
-2. Заполните `.env.local` по примерам `.env.example`
+1. Заполните `.env` по примеру `.env.example`
 
 ## Запуск проекта
 
