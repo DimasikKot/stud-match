@@ -37,7 +37,7 @@ def get_postgres_health(db: Session = Depends(get_db)):
 
         # 3. Размер БД
         db_size_bytes = db.execute(
-            text("SELECT pg_database_size(:db_name)"), {"db_name": settings.DB_NAME}
+            text("SELECT pg_database_size(:db_name)"), {"db_name": settings.POSTGRES_DB}
         ).scalar()
 
         # 4. Проверка SSL текущего соединения

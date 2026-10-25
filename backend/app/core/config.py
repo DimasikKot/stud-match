@@ -9,9 +9,9 @@ class _Settings(BaseSettings):
 
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
-    DB_USERNAME: str = "name user"
-    DB_PASSWORD: str = "password"
-    DB_NAME: str = "name db"
+    POSTGRES_DB: str = "name db"
+    POSTGRES_USER: str = "name user"
+    POSTGRES_PASSWORD: str = "password"
     DB_SSLMODE: str = "disable"
 
     USER_JWT_ACCESS_TOKEN_SECRET: str = "w3NWlz4BSf6j6TwwEEXK0pT5yPY4AJzt"
@@ -25,7 +25,7 @@ class _Settings(BaseSettings):
 
     @property
     def DATABASE_URL(self) -> str:
-        return f"postgresql://{self.DB_USERNAME}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?sslmode={self.DB_SSLMODE}"
+        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.POSTGRES_DB}?sslmode={self.DB_SSLMODE}"
 
     class Config:
         env_file = ".env.local"
