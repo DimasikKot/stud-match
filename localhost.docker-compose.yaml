@@ -131,7 +131,7 @@ services:
       - nginx-network
 
   nginx:
-    container_name: sm-nginx
+    container_name: nginx
     image: nginx:alpine
     restart: unless-stopped
     healthcheck:

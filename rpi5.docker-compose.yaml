@@ -131,7 +131,7 @@ services:
       - nginx-network
 
   nginx:
-    container_name: sm-nginx
+    container_name: nginx
     image: nginx:alpine
     restart: unless-stopped
     healthcheck:
@@ -160,7 +160,7 @@ services:
       - sm-backend
       - sm-frontend
 
-  certbot:
+  sm-certbot:
     container_name: sm-certbot
     image: certbot/certbot
     restart: unless-stopped

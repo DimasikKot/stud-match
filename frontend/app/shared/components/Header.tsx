@@ -18,7 +18,7 @@ const Logo = ({ onClick }: { onClick?: () => void }) => (
     <div className="flex items-center hover:bg-gray-400/30 transition duration-200 gap-2 w-max cursor-pointer p-1 rounded-xl">
       <img src={logo} alt="React logo" className="select-none" />
       <TextUI variant="logo" className="mb-1">
-        Лаборатория разметки
+        СтудПодбор
       </TextUI>
     </div>
   </div>
