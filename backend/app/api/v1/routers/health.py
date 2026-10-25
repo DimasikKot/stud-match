@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 
-router: APIRouter = APIRouter()
+router: APIRouter = APIRouter(prefix="/healths", tags=["Healths"])
 
 
 class HealthResponse(BaseModel):
