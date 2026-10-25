@@ -10,8 +10,10 @@ services:
     healthcheck:
       test:
         [
-          "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider https://stud-match.mooo.com/ || exit 1",
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:5100/').then(r => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))",
         ]
       interval: 30s
       timeout: 10s
@@ -44,7 +46,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -f https://stud-match.mooo.com/backend/api/v1/healths/health || exit 1",
+          "curl -f http://localhost:8060/backend/api/v1/healths/backend || exit 1",
         ]
       interval: 30s
       timeout: 10s
@@ -77,7 +79,7 @@ services:
     volumes:
       - ./postgres/data:/var/lib/postgresql/18/docker # Сохраняем данные
       - ./postgres/pg_hba.conf:/var/lib/postgresql/18/docker/pg_hba.conf # Настройки доступа
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro # Папка со скриптами инициализации
+      - ./postgres/init:/docker-entrypoint-initdb.d # Папка со скриптами инициализации
       - ./postgres/ssl/server.crt:/var/lib/postgresql/server.crt:ro
       - ./postgres/ssl/server.key:/var/lib/postgresql/server.key:ro
 
