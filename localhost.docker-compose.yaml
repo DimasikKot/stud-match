@@ -25,7 +25,7 @@ services:
       - /app/node_modules
 
     env_file:
-      - ./frontend/.env.local
+      - .env.local
     environment:
       - CHOKIDAR_USEPOLLING=true # Нужен для hot-reload
 
@@ -57,7 +57,7 @@ services:
       - ./backend:/app
 
     env_file:
-      - ./backend/.env.local
+      - .env.local
 
     deploy:
       resources:
@@ -77,24 +77,27 @@ services:
       retries: 5
 
     volumes:
-      - ./postgres/data:/var/lib/postgresql/18/docker # Сохраняем данные
-      - ./postgres/pg_hba.conf:/var/lib/postgresql/18/docker/pg_hba.conf # Настройки доступа
+      - ./postgres/data:/var/lib/postgresql # Сохраняем данные
       - ./postgres/init:/docker-entrypoint-initdb.d # Папка со скриптами инициализации
       - ./postgres/ssl/server.crt:/var/lib/postgresql/server.crt:ro
       - ./postgres/ssl/server.key:/var/lib/postgresql/server.key:ro
+      - ./postgres/pg_hba.conf:/var/lib/postgresql/pg_hba.conf:ro # Настройки доступа
 
     env_file:
-      - ./postgres/.env.local
+      - .env.local
     command: >
       sh -c "
       cp /var/lib/postgresql/server.crt /tmp/server.crt &&
       cp /var/lib/postgresql/server.key /tmp/server.key &&
-      chown 999:999 /tmp/server.crt /tmp/server.key &&
+      cp /var/lib/postgresql/pg_hba.conf /tmp/pg_hba.conf &&
+      chown 999:999 /tmp/server.crt /tmp/server.key /tmp/pg_hba.conf &&
       chmod 600 /tmp/server.key &&
+      chmod 644 /tmp/pg_hba.conf &&
       exec docker-entrypoint.sh postgres
       -c ssl=on
       -c ssl_cert_file=/tmp/server.crt
       -c ssl_key_file=/tmp/server.key
+      -c hba_file=/tmp/pg_hba.conf
       "
 
     ports:
@@ -115,7 +118,7 @@ services:
       - ./redis/data:/var/lib/redis/data
 
     env_file:
-      - ./backend/.env.local
+      - .env.local
     command:
       - /bin/sh
       - -c
