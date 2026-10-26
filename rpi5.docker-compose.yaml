@@ -166,7 +166,7 @@ services:
 
     volumes:
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/rpi5.nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/letsencrypt:/etc/letsencrypt
       - ./nginx/certbot-webroot:/var/www/certbot # Добавляем для верификации
 

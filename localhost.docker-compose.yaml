@@ -166,7 +166,7 @@ services:
 
     volumes:
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/localhost.nginx.conf:/etc/nginx/nginx.conf:ro
 
     ports:
       - "443:443"
