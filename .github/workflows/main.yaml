@@ -5,6 +5,50 @@ on:
     branches: ["main"]
 
 jobs:
+  # --- Задание для Frontend ---
+  test-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: "./frontend/package-lock.json"
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ./frontend
+
+      - name: Run frontend tests
+        run: npm test
+        working-directory: ./frontend
+
+  # --- Задание для Backend ---
+  test-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        working-directory: ./backend
+
+      - name: Run backend tests
+        run: pytest -v
+        working-directory: ./backend
+
   # --- ЗАДАЧА 2: ДЕПЛОЙ ---
   deploy:
     needs: [test-frontend, test-backend] # Эта задача запустится ТОЛЬКО если test прошёл успешно
