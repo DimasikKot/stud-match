@@ -49,7 +49,7 @@ jobs:
         run: pytest -v
         working-directory: ./backend
 
-  # --- ЗАДАЧА 2: ДЕПЛОЙ ---
+  # --- Деплой ---
   deploy:
     needs: [test-frontend, test-backend] # Эта задача запустится ТОЛЬКО если test прошёл успешно
     runs-on: ubuntu-latest
