@@ -26,7 +26,7 @@ export function Home() {
           {/* Центральная */}
           <InfoCardBig
             icon="auto_awesome"
-            title="-"
+            title="Распределения"
             description="-"
             buttonText="Перейти к -"
             onClick={() => navigate("/-")}
