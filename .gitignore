@@ -31,3 +31,6 @@ backend/files/
 files/
 postgres/data/
 redis/data/
+nginx/certbot-webroot/
+nginx/letsencrypt/
+nginx/nginx.conf

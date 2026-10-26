@@ -76,7 +76,7 @@ jobs:
 
             # Пересоберите и перезапустите сервисы
             # Флаг --build важен, если Dockerfile'ы изменились
-            docker compose -f localhost.docker-compose.yaml up -d --build
+            docker compose -f rpi5.docker-compose.yaml up -d --build
 
             # (Опционально) Очистите старые образы
             docker image prune -f
