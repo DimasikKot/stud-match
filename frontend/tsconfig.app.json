@@ -29,5 +29,5 @@
       "@/*": ["./app/*"]
     }
   },
-  "include": ["app", "index.css", "main.tsx"]
+  "include": ["app", "index.css", "main.tsx", "tests"]
 }

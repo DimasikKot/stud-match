@@ -1,0 +1,38 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  # --- ЗАДАЧА 2: ДЕПЛОЙ ---
+  deploy:
+    needs: [test-frontend, test-backend] # Эта задача запустится ТОЛЬКО если test прошёл успешно
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' # Дополнительная проверка на ветку
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+            # Перейдите в директорию с вашим docker-compose файлом на сервере
+            cd ${{ secrets.PROJECT_PATH }}
+
+            # Обновите код из репозитория
+            git pull origin main
+
+            # Пересоберите и перезапустите сервисы
+            # Флаг --build важен, если Dockerfile'ы изменились
+            docker compose -f localhost.docker-compose.yaml up -d --build
+
+            # (Опционально) Очистите старые образы
+            docker image prune -f
