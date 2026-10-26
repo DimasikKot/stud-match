@@ -12,6 +12,11 @@
     "frontend/tsconfig.json": true,
     "frontend/tsconfig.node.json": true,
     "frontend/vite.config.ts": true,
+    ".github/": true,
+    ".vscode/": true,
+    "nginx/": true,
+    "redis/": true,
+    "postgres/": true,
     "**/__pycache__": true
   },
   "[json]": {
