@@ -29,7 +29,7 @@ export function Home() {
             title="Распределения"
             description="-"
             buttonText="Перейти к -"
-            onClick={() => navigate("/-")}
+            onClick={() => navigate("/distribution")}
           />
 
           {/* Правая карточка */}
