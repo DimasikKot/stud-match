@@ -156,7 +156,7 @@ jobs:
             if [ "$POSTGRES_REINIT" = "true" ]; then
               echo "=== [postgres] Reinitialize (drop data) ==="
               $COMPOSE rm -sf sm-postgres || true
-              rm -rf ./postgres/data
+              sudo rm -rf ./postgres/data
               $COMPOSE up -d sm-postgres
             fi
 
