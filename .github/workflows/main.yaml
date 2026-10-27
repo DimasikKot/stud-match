@@ -180,7 +180,7 @@ jobs:
     needs: build_deploy
     runs-on: ubuntu-latest
     if: |
-      ${{ needs.build_deploy.result == 'success' }}
+      always() && ${{ needs.build_deploy.result == 'success' }}
     steps:
       - name: Check backend + dependencies health (via nginx)
         run: |
