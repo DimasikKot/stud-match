@@ -11,11 +11,6 @@
     "postgres/ssl": true,
     "postgres/pg_hba.conf": true,
     "frontend/main.tsx": true,
-
-
-
-
-    
     "frontend/index.html": true,
     "frontend/node_modules": true,
     "frontend/eslint.config.js": true,
