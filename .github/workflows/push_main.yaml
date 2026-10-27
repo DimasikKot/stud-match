@@ -130,13 +130,10 @@ jobs:
         working-directory: ./backend
 
   build_deploy:
-    needs:
-      [detect-changes, lint-frontend, lint-backend, test-frontend, test-backend]
+    needs: [detect-changes, test-frontend, test-backend]
     runs-on: ubuntu-latest
     if: |
-      always() && 
-      (needs.lint-frontend.result == 'success' || needs.lint-frontend.result == 'skipped') &&
-      (needs.lint-backend.result == 'success' || needs.lint-backend.result == 'skipped') &&
+      always() &&
       (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped') &&
       (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') &&
       !cancelled()

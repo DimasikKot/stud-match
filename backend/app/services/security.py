@@ -6,11 +6,14 @@ from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
 
 def create_access_token(subject: str | int) -> str:
     expire = datetime.now(timezone.utc) + timedelta(
@@ -23,6 +26,7 @@ def create_access_token(subject: str | int) -> str:
         algorithm="HS256",
     )
 
+
 def create_refresh_token(subject: str | int, jti: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(
         hours=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS
@@ -33,6 +37,7 @@ def create_refresh_token(subject: str | int, jti: str) -> str:
         settings.USER_JWT_REFRESH_TOKEN_SECRET,
         algorithm="HS256",
     )
+
 
 def decode_access_token(token: str) -> Optional[dict]:
     try:
@@ -46,6 +51,7 @@ def decode_access_token(token: str) -> Optional[dict]:
         return payload
     except JWTError:
         return None
+
 
 def decode_refresh_token(token: str) -> Optional[dict]:
     try:

@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint:check": "prettier --check ."
+    "lint:check": "prettier --check .",
+    "lint:fix": "prettier --write ."
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
@@ -38,6 +39,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "prettier": "3.9.10",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
     "vite": "^7.3.1",

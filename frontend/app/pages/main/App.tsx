@@ -23,8 +23,7 @@ export function App() {
           <Route path="/register" element={<Register />} /> */}
 
           {/* Защищенные маршруты, пересылает на страницу `/login` */}
-          <Route element={<PrivateRoute />}>
-          </Route>
+          <Route element={<PrivateRoute />}></Route>
         </Routes>
       </div>
     </Router>
