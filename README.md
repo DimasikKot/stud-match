@@ -28,6 +28,14 @@ git clone https://github.com/DimasikKot/stud-match.git
 
 ```
 
+7. Установите хук:
+
+```bash
+pip install pre-commit
+pre-commit install
+
+```
+
 ### Настройте `Docker`
 
 1. Установите `docker`

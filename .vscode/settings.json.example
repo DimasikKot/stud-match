@@ -3,9 +3,19 @@
     "**/.git": true,
     "**/.svn": true,
     "**/.hg": true,
+    "**/.jj": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
+    ".vscode/": true,
+    "postgres/data": true,
+    "postgres/ssl": true,
+    "postgres/pg_hba.conf": true,
     "frontend/main.tsx": true,
+
+
+
+
+    
     "frontend/index.html": true,
     "frontend/node_modules": true,
     "frontend/eslint.config.js": true,
@@ -13,10 +23,12 @@
     "frontend/tsconfig.node.json": true,
     "frontend/vite.config.ts": true,
     ".github/": true,
-    ".vscode/": true,
     "nginx/": true,
     "redis/": true,
-    "postgres/": true,
+    ".pre-commit-config.yaml": true,
+    "rpi5.docker-compose.yaml": true,
+    ".gitattributes": true,
+    ".dockerignore": true,
     "**/__pycache__": true
   },
   "[json]": {
