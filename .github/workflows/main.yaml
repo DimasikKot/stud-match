@@ -101,9 +101,15 @@ jobs:
       (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped') &&
       (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') &&
       !cancelled()
+    outputs:
+      prev_sha: ${{ steps.prev_sha_step.outputs.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      - name: Get previous SHA (before pull)
+        id: prev_sha_step
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -116,7 +122,6 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.PROJECT_PATH }}
-            echo "PREV_SHA=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
             git pull origin main
 
             COMPOSE="docker compose -f rpi5.docker-compose.yaml"
@@ -174,17 +179,21 @@ jobs:
     needs: build_deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Check backend health (via nginx)
+      - name: Check backend + dependencies health (via nginx)
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk \
-            https://stud-match.mooo.com/backend/api/v1/healths/backend || echo "000")
-          echo "Backend status: $response"
-          if [ "$response" -ne 200 ]; then
-            echo "::error::Backend health check failed with status $response"
-            exit 1
-          fi
+          BASE="https://stud-match.mooo.com/backend/api/v1/healths"
+          failed=0
+          for ep in backend postgres redis; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk "$BASE/$ep" || echo "000")
+            echo "$ep status: $code"
+            if [ "$code" -ne 200 ]; then
+              echo "::error::$ep health check failed with status $code"
+              failed=1
+            fi
+          done
+          exit $failed
 
-      - name: Check frontend availability
+      - name: Check frontend availability (via nginx)
         run: |
           response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk \
             https://stud-match.mooo.com/ || echo "000")
@@ -197,7 +206,9 @@ jobs:
   rollback:
     needs: [detect-changes, build_deploy, smoke-test]
     runs-on: ubuntu-latest
-    if: needs.smoke-test.result == 'failure'
+    if: |
+      always() &&
+      (needs.build_deploy.result == 'failure' || needs.smoke-test.result == 'failure')
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -209,14 +220,14 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
-          envs: FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,ALL_BUILD
+          envs: PREV_SHA,FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,ALL_BUILD
           script: |
             set -e
             cd ${{ secrets.PROJECT_PATH }}
 
-            echo "=== ROLLBACK START (HEAD: $(git rev-parse --short HEAD)) ==="
-            git reset --hard ${{ needs.build_deploy.outputs.prev_sha }}
-            echo "=== Rolled back to: $(git rev-parse --short HEAD) ==="
+            echo "=== ROLLBACK to: $PREV_SHA ==="
+            git reset --hard "$PREV_SHA"
+            echo "=== Now at: $(git rev-parse --short HEAD) ===
 
             COMPOSE="docker compose -f rpi5.docker-compose.yaml"
 
@@ -263,6 +274,7 @@ jobs:
             docker system prune -a --volumes --force
             echo "=== ROLLBACK DONE ==="
         env:
+          PREV_SHA: ${{ needs.build_deploy.outputs.prev_sha }}
           FRONTEND_BUILD: ${{ needs.detect-changes.outputs.frontend_build }}
           BACKEND_BUILD: ${{ needs.detect-changes.outputs.backend_build }}
           NGINX_BUILD: ${{ needs.detect-changes.outputs.nginx_build }}
