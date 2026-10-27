@@ -124,7 +124,7 @@ jobs:
             if [ "$ALL_BUILD" = "true" ]; then
               echo "=== [all_build] Full rebuild & restart ==="
               $COMPOSE up -d --build --force-recreate
-              docker system prune -a --volumes
+              docker system prune -a --volumes --force
               exit 0
             fi
 
@@ -160,7 +160,7 @@ jobs:
               $COMPOSE up -d sm-postgres
             fi
 
-            docker system prune -a --volumes
+            docker system prune -a --volumes --force
         env:
           FRONTEND_BUILD: ${{ needs.detect-changes.outputs.frontend_build }}
           BACKEND_BUILD: ${{ needs.detect-changes.outputs.backend_build }}
