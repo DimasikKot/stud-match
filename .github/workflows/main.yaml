@@ -116,6 +116,7 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.PROJECT_PATH }}
+            echo "PREV_SHA=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
             git pull origin main
 
             COMPOSE="docker compose -f rpi5.docker-compose.yaml"
@@ -161,6 +162,106 @@ jobs:
             fi
 
             docker system prune -a --volumes --force
+        env:
+          FRONTEND_BUILD: ${{ needs.detect-changes.outputs.frontend_build }}
+          BACKEND_BUILD: ${{ needs.detect-changes.outputs.backend_build }}
+          NGINX_BUILD: ${{ needs.detect-changes.outputs.nginx_build }}
+          POSTGRES_BUILD: ${{ needs.detect-changes.outputs.postgres_build }}
+          POSTGRES_REINIT: ${{ needs.detect-changes.outputs.postgres_reinit }}
+          ALL_BUILD: ${{ needs.detect-changes.outputs.all_build }}
+
+  smoke-test:
+    needs: build_deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check backend health (via nginx)
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk \
+            https://stud-match.mooo.com/backend/api/v1/healths/backend || echo "000")
+          echo "Backend status: $response"
+          if [ "$response" -ne 200 ]; then
+            echo "::error::Backend health check failed with status $response"
+            exit 1
+          fi
+
+      - name: Check frontend availability
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk \
+            https://stud-match.mooo.com/ || echo "000")
+          echo "Frontend status: $response"
+          if [ "$response" -ne 200 ]; then
+            echo "::error::Frontend health check failed with status $response"
+            exit 1
+          fi
+
+  rollback:
+    needs: [detect-changes, build_deploy, smoke-test]
+    runs-on: ubuntu-latest
+    if: needs.smoke-test.result == 'failure'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Rollback on Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          envs: FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,ALL_BUILD
+          script: |
+            set -e
+            cd ${{ secrets.PROJECT_PATH }}
+
+            echo "=== ROLLBACK START (HEAD: $(git rev-parse --short HEAD)) ==="
+            git reset --hard ${{ needs.build_deploy.outputs.prev_sha }}
+            echo "=== Rolled back to: $(git rev-parse --short HEAD) ==="
+
+            COMPOSE="docker compose -f rpi5.docker-compose.yaml"
+
+            # ---------- all_build — полный пересбор ----------
+            if [ "$ALL_BUILD" = "true" ]; then
+              echo "=== [rollback:all_build] ==="
+              $COMPOSE up -d --build --force-recreate
+              docker system prune -a --volumes --force
+              exit 0
+            fi
+
+            # ---------- frontend / backend — пересборка образов ----------
+            BUILD_SERVICES=""
+            [ "$FRONTEND_BUILD" = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-frontend"
+            [ "$BACKEND_BUILD"  = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-backend"
+
+            if [ -n "$BUILD_SERVICES" ]; then
+              echo "=== [rollback:build] $BUILD_SERVICES ==="
+              $COMPOSE build $BUILD_SERVICES
+              $COMPOSE up -d --no-deps --force-recreate $BUILD_SERVICES
+            fi
+
+            # ---------- nginx — пересоздать контейнер ----------
+            if [ "$NGINX_BUILD" = "true" ]; then
+              echo "=== [rollback:nginx] ==="
+              $COMPOSE up -d --no-deps --force-recreate nginx
+            fi
+
+            # ---------- postgres — перезапуск (pg_hba.conf) ----------
+            if [ "$POSTGRES_BUILD" = "true" ] && [ "$POSTGRES_REINIT" != "true" ]; then
+              echo "=== [rollback:postgres] ==="
+              $COMPOSE up -d --no-deps --force-recreate sm-postgres
+            fi
+
+            # ---------- postgres_reinit — ОТКАТИТЬ НЕЛЬЗЯ ----------
+            if [ "$POSTGRES_REINIT" = "true" ]; then
+              echo "::warning::postgres data was reinitialized — ROLLBACK IMPOSSIBLE for DB data"
+              echo "=== [postgres] Reinitialize (rollback) ==="
+              $COMPOSE rm -sf sm-postgres || true
+              sudo rm -rf ./postgres/data
+              $COMPOSE up -d sm-postgres
+            fi
+
+            docker system prune -a --volumes --force
+            echo "=== ROLLBACK DONE ==="
         env:
           FRONTEND_BUILD: ${{ needs.detect-changes.outputs.frontend_build }}
           BACKEND_BUILD: ${{ needs.detect-changes.outputs.backend_build }}
