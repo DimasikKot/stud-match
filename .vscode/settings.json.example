@@ -24,6 +24,7 @@
     "rpi5.docker-compose.yaml": true,
     ".gitattributes": true,
     ".dockerignore": true,
+    "backend/requirements.dev.txt": true,
     "**/__pycache__": true
   },
   "[json]": {
