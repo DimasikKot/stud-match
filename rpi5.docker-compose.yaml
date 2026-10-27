@@ -192,6 +192,7 @@ services:
     entrypoint: /bin/sh -c "
       certbot certonly --webroot -w /var/www/certbot \
       --email kozhuharew.dima@gmail.com \
+      -d fundata.mooo.com \
       -d stud-match.mooo.com \
       --non-interactive --agree-tos \
       --keep-until-expiring;
