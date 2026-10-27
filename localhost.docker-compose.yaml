@@ -25,7 +25,7 @@ services:
       - /app/node_modules
 
     environment:
-      - VITE_BACKEND_URL=${BACKEND_URL}
+      - VITE_BACKEND_URL=${VITE_BACKEND_URL}
       - CHOKIDAR_USEPOLLING=true # Нужен для hot-reload
 
     deploy:
@@ -59,14 +59,14 @@ services:
       # Redis
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}
+      - REDIS_PASSWORD=${R_PASSWORD:?R_PASSWORD variable is not set}
       # DB
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_SSLMODE=${DB_SSLMODE}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD variable is not set}
+      - POSTGRES_DB=${PG_DB}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD:?PG_PASSWORD variable is not set}
       # JWT
       - USER_JWT_ACCESS_TOKEN_SECRET=${USER_JWT_ACCESS_TOKEN_SECRET:?USER_JWT_ACCESS_TOKEN_SECRET is not set}
       - USER_JWT_ACCESS_TOKEN_EXPIRATION_HOURS=${USER_JWT_ACCESS_TOKEN_EXPIRATION_HOURS}
@@ -176,9 +176,6 @@ services:
           memory: 512M
     networks:
       - nginx-network
-    depends_on:
-      - sm-backend
-      - sm-frontend
 
 networks:
   nginx-network:
