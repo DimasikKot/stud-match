@@ -8,23 +8,49 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      backend: ${{ steps.filter.outputs.backend }}
+      frontend_pull: ${{ steps.filter.outputs.frontend_pull }}
+      backend_pull: ${{ steps.filter.outputs.backend_pull }}
+      frontend_build: ${{ steps.filter.outputs.frontend_build }}
+      backend_build: ${{ steps.filter.outputs.backend_build }}
+      nginx_build: ${{ steps.filter.outputs.nginx_build }}
+      postgres_build: ${{ steps.filter.outputs.postgres_build }}
+      postgres_reinit: ${{ steps.filter.outputs.postgres_reinit }}
+      all_build: ${{ steps.filter.outputs.all_build }}
     steps:
       - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
-            frontend:
+            frontend_pull:
               - 'frontend/**'
-            backend:
+            backend_pull:
               - 'backend/**'
+            frontend_build:
+              - 'frontend/frontend.Dockerfile'
+              - 'frontend/package.json'
+              - 'frontend/package-lock.json'
+              - 'frontend/tsconfig.json'
+              - 'frontend/tsconfig.app.json'
+              - 'frontend/tsconfig.node.json'
+              - 'frontend/vite.config.ts'
+            backend_build:
+              - 'backend/backend.Dockerfile'
+              - 'backend/requirements.txt'
+            nginx_build:
+              - 'nginx/rpi5.nginx.conf'
+            postgres_build:
+              - 'postgres/pg_hba.conf'
+            postgres_reinit:
+              - 'postgres/init/**'
+            all_build:
+              - '.env.example'
+              - 'rpi5.docker-compose.yaml'
 
   test-frontend:
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true'
+    if: needs.detect-changes.outputs.frontend_pull == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -47,7 +73,7 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true'
+    if: needs.detect-changes.outputs.backend_pull == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -68,14 +94,13 @@ jobs:
         working-directory: ./backend
 
   build_deploy:
-    needs: [test-frontend, test-backend]
+    needs: [detect-changes, test-frontend, test-backend]
     runs-on: ubuntu-latest
     if: |
       always() && 
       (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped') &&
       (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') &&
       !cancelled()
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -87,17 +112,59 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
+          envs: FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,ALL_BUILD
           script: |
             set -e
-            # Перейдите в директорию с вашим docker-compose файлом на сервере
             cd ${{ secrets.PROJECT_PATH }}
-
-            # Обновите код из репозитория
             git pull origin main
 
-            # Пересоберите и перезапустите сервисы
-            # Флаг --build важен, если Dockerfile'ы изменились
-            docker compose -f rpi5.docker-compose.yaml up -d --build
+            COMPOSE="docker compose -f rpi5.docker-compose.yaml"
 
-            # (Опционально) Очистите старые образы
-            docker image prune -f
+            # ---------- ALL BUILD (полный пересбор) ----------
+            if [ "$ALL_BUILD" = "true" ]; then
+              echo "=== [all_build] Full rebuild & restart ==="
+              $COMPOSE up -d --build --force-recreate
+              docker system prune -a --volumes
+              exit 0
+            fi
+
+            # ---------- Точечные сборки frontend / backend ----------
+            BUILD_SERVICES=""
+            [ "$FRONTEND_BUILD" = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-frontend"
+            [ "$BACKEND_BUILD"  = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-backend"
+
+            if [ -n "$BUILD_SERVICES" ]; then
+              echo "=== [build] $BUILD_SERVICES ==="
+              $COMPOSE build $BUILD_SERVICES
+              $COMPOSE up -d --no-deps --force-recreate $BUILD_SERVICES
+            fi
+
+            # ---------- Nginx: конфиг меняется на хосте, пересоздаём контейнер ----------
+            if [ "$NGINX_BUILD" = "true" ]; then
+              echo "=== [nginx] Reload rpi5.nginx.conf ==="
+              $COMPOSE up -d --no-deps --force-recreate nginx
+            fi
+
+            # ---------- Postgres: только pg_hba.conf (перезапуск) ----------
+            # Если сработал reinit — этот блок пропускаем (reinit всё равно пересоздаст)
+            if [ "$POSTGRES_BUILD" = "true" ] && [ "$POSTGRES_REINIT" != "true" ]; then
+              echo "=== [postgres] Reload pg_hba.conf ==="
+              $COMPOSE up -d --no-deps --force-recreate sm-postgres
+            fi
+
+            # ---------- Postgres: полная реинициализация ----------
+            if [ "$POSTGRES_REINIT" = "true" ]; then
+              echo "=== [postgres] Reinitialize (drop data) ==="
+              $COMPOSE rm -sf sm-postgres || true
+              rm -rf ./postgres/data
+              $COMPOSE up -d sm-postgres
+            fi
+
+            docker system prune -a --volumes
+        env:
+          FRONTEND_BUILD: ${{ needs.detect-changes.outputs.frontend_build }}
+          BACKEND_BUILD: ${{ needs.detect-changes.outputs.backend_build }}
+          NGINX_BUILD: ${{ needs.detect-changes.outputs.nginx_build }}
+          POSTGRES_BUILD: ${{ needs.detect-changes.outputs.postgres_build }}
+          POSTGRES_REINIT: ${{ needs.detect-changes.outputs.postgres_reinit }}
+          ALL_BUILD: ${{ needs.detect-changes.outputs.all_build }}
