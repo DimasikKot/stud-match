@@ -179,7 +179,8 @@ jobs:
   smoke-test:
     needs: build_deploy
     runs-on: ubuntu-latest
-    if: always() && ${{ needs.build_deploy.result == 'success' }}
+    if: |
+      ${{ needs.build_deploy.result == 'success' }}
     steps:
       - name: Check backend + dependencies health (via nginx)
         run: |
