@@ -167,6 +167,7 @@ jobs:
             fi
 
             docker system prune -a --volumes --force
+            echo "=== DEPLOY DONE ==="
         env:
           FRONTEND_BUILD: ${{ needs.detect-changes.outputs.frontend_build }}
           BACKEND_BUILD: ${{ needs.detect-changes.outputs.backend_build }}
@@ -178,7 +179,7 @@ jobs:
   smoke-test:
     needs: build_deploy
     runs-on: ubuntu-latest
-    if: ${{ needs.build_deploy.result == 'success' }}
+    if: always() && ${{ needs.build_deploy.result == 'success' }}
     steps:
       - name: Check backend + dependencies health (via nginx)
         run: |
