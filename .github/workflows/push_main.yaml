@@ -77,11 +77,11 @@ jobs:
       - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements.dev.txt
         working-directory: ./backend
       - name: Run Black check
         run: black --check .
-        working-directory: ./backend
+        working-directory: .
 
   test-frontend:
     runs-on: ubuntu-latest
