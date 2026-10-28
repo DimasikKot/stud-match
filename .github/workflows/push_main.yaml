@@ -23,9 +23,11 @@ jobs:
         with:
           filters: |
             frontend_pull:
-              - 'frontend/**'
+              - 'frontend/app/**'
+              - 'frontend/tests/**'
             backend_pull:
-              - 'backend/**'
+              - 'backend/app/**'
+              - 'backend/tests/**'
             frontend_build:
               - 'frontend/frontend.Dockerfile'
               - 'frontend/package.json'
