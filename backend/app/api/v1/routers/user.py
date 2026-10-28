@@ -73,6 +73,11 @@ def _set_auth_cookies(response: Response, access: str, refresh: str) -> None:
         max_age=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS * 3600,
         **COOKIE_OPTIONS,  # type: ignore
     )
+    response.set_cookie(
+        "my",
+        "123123",
+        **COOKIE_OPTIONS,  # type: ignore
+    )
 
 
 def _clear_auth_cookies(response: Response) -> None:
