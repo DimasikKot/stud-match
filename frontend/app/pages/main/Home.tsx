@@ -20,7 +20,7 @@ export function Home() {
             icon="rocket_launch"
             iconClassName="bg-emerald-100 text-emerald-600"
             title="Наши плюсы"
-            description="-"
+            description="+ + +"
           />
 
           {/* Центральная */}
