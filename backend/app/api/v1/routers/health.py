@@ -1,7 +1,6 @@
 import time
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from redis import Redis
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
