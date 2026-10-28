@@ -23,6 +23,11 @@ async def get_backend_health():
         detail="Backend is healthy",
         metrics={
             "server": settings.VITE_BACKEND_URL,
+            "cookie_settings": {
+                "httpOnly": settings.COOKIE_HTTPONLY,
+                "secure": settings.COOKIE_SECURE,
+                "sameSite": settings.COOKIE_SAMESITE,
+            },
         },
     )
 

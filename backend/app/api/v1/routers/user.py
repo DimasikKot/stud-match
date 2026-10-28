@@ -13,21 +13,21 @@ from fastapi import (
 from redis import Redis
 from sqlalchemy.orm import Session
 
-from core.database import get_db
-from services.security_deps import (
+from app.core.database import get_db
+from app.services.security_deps import (
     get_current_user,
     get_redis,
     refresh_cookie_scheme,
 )
-from models.db import User
-from services.security import (
+from app.models.db import User
+from app.services.security import (
     hash_password,
     verify_password,
     create_access_token,
     create_refresh_token,
     decode_refresh_token,
 )
-from core.config import settings
+from app.core.config import settings
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
