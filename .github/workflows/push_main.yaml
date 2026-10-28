@@ -245,10 +245,13 @@ jobs:
           BASE="https://stud-match.mooo.com/backend/api/v1/healths"
           failed=0
           for ep in backend postgres redis; do
+            body=$(curl -s --max-time 15 -fk "$BASE/$ep" || echo "")
             code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk "$BASE/$ep" || echo "000")
-            echo "$ep status: $code"
-            if [ "$code" -ne 200 ]; then
-              echo "::error::$ep health check failed with status $code"
+            success=$(echo "$body" | jq -r '.success // false')
+            echo "$ep status: $code, success: $success"
+
+            if [ "$code" -ne 200 ] || [ "$success" != "true" ]; then
+              echo "::error::$ep health check failed (status=$code, success=$success)"
               failed=1
             fi
           done
