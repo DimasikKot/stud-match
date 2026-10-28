@@ -10,7 +10,7 @@ repos:
     hooks:
       - id: prettier
         types_or: [javascript, jsx, ts, tsx, json, css, markdown, sql]
-        additional_dependencies: [prettier@3.2.5]
+        additional_dependencies: [prettier@3.9.10]
   - repo: https://github.com/psf/black
     rev: 26.10.1
     hooks:
