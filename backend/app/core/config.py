@@ -3,6 +3,8 @@ from functools import lru_cache
 
 
 class _Settings(BaseSettings):
+    VITE_BACKEND_URL: str = "backend host"
+
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = "password"

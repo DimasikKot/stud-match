@@ -58,6 +58,7 @@ services:
       - ./backend:/app
 
     environment:
+      - VITE_BACKEND_URL=${VITE_BACKEND_URL}
       # Redis
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}

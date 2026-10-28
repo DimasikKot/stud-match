@@ -21,7 +21,9 @@ async def get_backend_health():
     return HealthResponse(
         success=True,
         detail="Backend is healthy",
-        metrics={},
+        metrics={
+            "server": settings.VITE_BACKEND_URL,
+        },
     )
 
 
