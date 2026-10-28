@@ -9,12 +9,40 @@ from app.core.config import settings
 
 
 def get_redis() -> Redis:
-    return Redis(
-        host=settings.REDIS_HOST,
-        port=settings.REDIS_PORT,
-        password=settings.REDIS_PASSWORD,
-        decode_responses=True,
-    )
+    use_tls = settings.REDIS_PORT == 6150
+
+    redis_kwargs = {
+        "host": settings.REDIS_HOST,
+        "port": settings.REDIS_PORT,
+        "password": settings.REDIS_PASSWORD,
+        "decode_responses": True,
+        "socket_timeout": 5.0,
+    }
+
+    if use_tls:
+        redis_kwargs.update({"ssl": True, "ssl_cert_reqs": "none"})
+
+    return Redis(**redis_kwargs)
+
+
+import redis.asyncio as aioredis
+
+
+def get_async_redis() -> aioredis.Redis:
+    use_tls = settings.REDIS_PORT == 6150
+
+    redis_kwargs = {
+        "host": settings.REDIS_HOST,
+        "port": settings.REDIS_PORT,
+        "password": settings.REDIS_PASSWORD,
+        "decode_responses": True,
+        "socket_timeout": 5.0,
+    }
+
+    if use_tls:
+        redis_kwargs.update({"ssl": True, "ssl_cert_reqs": "none"})
+
+    return aioredis.Redis(**redis_kwargs)
 
 
 access_cookie_scheme = APIKeyCookie(

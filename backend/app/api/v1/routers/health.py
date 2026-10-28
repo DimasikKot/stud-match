@@ -1,11 +1,13 @@
 import time
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from redis import Redis
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.services.security_deps import get_async_redis
 
 router: APIRouter = APIRouter(prefix="/healths", tags=["Healths"])
 
@@ -114,25 +116,20 @@ def get_postgres_health(db: Session = Depends(get_db)):
         )
 
 
+import redis.asyncio as aioredis
+
+
 @router.get("/redis", response_model=HealthResponse)
-async def get_redis_health():
-    import redis.asyncio as aioredis
+async def get_redis_health(redis: aioredis.Redis = Depends(get_async_redis)):
+    use_tls = settings.REDIS_PORT == 6150
 
     start_time = time.perf_counter()
 
-    redis_client = aioredis.Redis(
-        host=settings.REDIS_HOST,
-        port=settings.REDIS_PORT,
-        password=settings.REDIS_PASSWORD,
-        decode_responses=True,
-        socket_timeout=5.0,
-    )
-
     try:
-        await redis_client.ping()
+        await redis.ping()
 
-        info = await redis_client.info(section="memory")
-        clients_info = await redis_client.info(section="clients")
+        info = await redis.info(section="memory")
+        clients_info = await redis.info(section="clients")
 
         latency_ms = (time.perf_counter() - start_time) * 1000
 
@@ -142,7 +139,7 @@ async def get_redis_health():
             metrics={
                 "server": f"{settings.REDIS_HOST}:{settings.REDIS_PORT}",
                 "ssl": {
-                    "enabled": not settings.REDIS_PORT == 6350,
+                    "enabled": use_tls,
                 },
                 "latency_ms": round(latency_ms, 2),
                 "used_memory_human": info.get("used_memory_human", "N/A"),
@@ -163,4 +160,4 @@ async def get_redis_health():
             },
         )
     finally:
-        await redis_client.aclose()
+        await redis.aclose()

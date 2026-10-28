@@ -63,6 +63,8 @@
     "prettier.tabWidth": 2,
     "editor.insertSpaces": true
   },
+  "python.analysis.extraPaths": ["./backend"],
+  "python.autoComplete.extraPaths": ["./backend"],
   "files.eol": "\n",
   "editor.detectIndentation": true,
   "editor.mouseWheelZoom": true,

@@ -6,11 +6,11 @@ class _Settings(BaseSettings):
     VITE_BACKEND_URL: str = "backend host"
 
     REDIS_HOST: str = "redis"
-    REDIS_PORT: int = 6379
+    REDIS_PORT: int = 6300
     REDIS_PASSWORD: str = "password"
 
     DB_HOST: str = "localhost"
-    DB_PORT: int = 5430
+    DB_PORT: int = 5400
     POSTGRES_DB: str = "name db"
     POSTGRES_USER: str = "name user"
     POSTGRES_PASSWORD: str = "password"
