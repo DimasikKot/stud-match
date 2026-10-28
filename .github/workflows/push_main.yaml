@@ -30,10 +30,8 @@ jobs:
           filters: |
             frontend_pull:
               - 'frontend/app/**'
-              - 'frontend/tests/**'
             backend_pull:
               - 'backend/app/**'
-              - 'backend/tests/**'
             frontend_build:
               - 'frontend/frontend.Dockerfile'
               - 'frontend/package.json'
@@ -134,7 +132,7 @@ jobs:
         working-directory: ./backend
 
       - name: Run backend tests
-        run: pytest -v
+        run: python -m pytest -v
         working-directory: ./backend
 
   build_deploy:
