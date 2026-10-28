@@ -50,30 +50,38 @@ export function Header({
   const [redisStatus, setRedisStatus] = useState({} as GetHealthResponse);
   const username = localStorage.getItem("username");
 
-  const formatValue = (v: unknown): string => {
+  const formatPrimitive = (v: unknown): string => {
     if (v === null) return "null";
     if (v === undefined) return "—";
-    if (typeof v === "object") return JSON.stringify(v);
+    if (Array.isArray(v)) return JSON.stringify(v);
     return String(v);
   };
 
   const formatMetrics = (metrics?: Record<string, unknown> | null): string => {
     if (!metrics || typeof metrics !== "object") return "";
-    return Object.entries(metrics)
-      .map(([k, v]) => `${k}: ${formatValue(v)}`)
-      .join("\n");
+
+    const lines: string[] = [];
+
+    const walk = (obj: Record<string, unknown>, depth: number) => {
+      for (const [k, v] of Object.entries(obj)) {
+        const pad = "  ".repeat(depth);
+        if (v && typeof v === "object" && !Array.isArray(v)) {
+          lines.push(`${pad}${k}:`);
+          walk(v as Record<string, unknown>, depth + 1);
+        } else {
+          lines.push(`${pad}${k}: ${formatPrimitive(v)}`);
+        }
+      }
+    };
+
+    walk(metrics, 0);
+    return lines.join("\n");
   };
 
   useEffect(() => {
-    const load = async () => {
-      fetchBackendHealth().then((v) => v !== undefined && setBackendStatus(v));
-      fetchPostgresHealth().then(
-        (v) => v !== undefined && setPostgresStatus(v),
-      );
-      fetchRedisHealth().then((v) => v !== undefined && setRedisStatus(v));
-    };
-
-    load();
+    fetchBackendHealth().then((v) => v !== undefined && setBackendStatus(v));
+    fetchPostgresHealth().then((v) => v !== undefined && setPostgresStatus(v));
+    fetchRedisHealth().then((v) => v !== undefined && setRedisStatus(v));
   }, []);
 
   return (

@@ -1,5 +1,5 @@
 import time
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -19,7 +19,9 @@ class HealthResponse(BaseModel):
 @router.get("/backend", response_model=HealthResponse)
 async def get_backend_health():
     return HealthResponse(
-        success=True, detail="Backend is healthy", metrics={"status": "running"}
+        success=True,
+        detail="Backend is healthy",
+        metrics={},
     )
 
 
@@ -54,24 +56,54 @@ def get_postgres_health(db: Session = Depends(get_db)):
             "cipher": ssl_row.cipher if ssl_row else None,
         }
 
+        rows = db.execute(text("""
+            SELECT table_schema, table_name, column_name,
+                data_type, character_maximum_length
+            FROM information_schema.columns
+            WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+            ORDER BY table_schema, table_name, ordinal_position
+        """)).mappings().all()
+
+        tables: dict[str, dict[str, str]] = {}
+        for r in rows:
+            key = (
+                r["table_name"]
+                if r["table_schema"] == "public"
+                else f'{r["table_schema"]}.{r["table_name"]}'
+            )
+            col_type = r["data_type"]
+            if r["character_maximum_length"]:
+                col_type += f'({r["character_maximum_length"]})'
+            tables.setdefault(key, {})[r["column_name"]] = col_type
+
         latency_ms = (time.perf_counter() - start_time) * 1000
 
         return HealthResponse(
             success=True,
-            detail="PostgreSQL is healthy",
+            detail=f"PostgreSQL is healthy",
             metrics={
+                "server": f"{settings.DB_HOST}:{settings.DB_PORT}",
+                "auth": f"{settings.POSTGRES_USER}@{settings.POSTGRES_DB}",
+                "ssl": ssl_info,
+                "version": f"{version}",
                 "latency_ms": round(latency_ms, 2),
-                "version": version,
                 "db_size_mb": (
                     round(db_size_bytes / (1024 * 1024), 2) if db_size_bytes else 0
                 ),
-                "ssl": ssl_info,
+                "table_count": len(tables),
+                "tables": tables,
             },
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=503, detail=f"PostgreSQL connection failed: {str(e)}"
+        return HealthResponse(
+            success=False,
+            detail="PostgreSQL is not healthy",
+            metrics={
+                "server": f"{settings.DB_HOST}:{settings.DB_PORT}",
+                "auth": f"{settings.POSTGRES_USER} in {settings.POSTGRES_DB}",
+                "error": str(e),
+            },
         )
 
 
@@ -101,6 +133,7 @@ async def get_redis_health():
             success=True,
             detail="Redis is healthy",
             metrics={
+                "server": f"{settings.REDIS_HOST}:{settings.REDIS_PORT}",
                 "latency_ms": round(latency_ms, 2),
                 "used_memory_human": info.get("used_memory_human", "N/A"),
                 "used_memory_peak_human": info.get("used_memory_peak_human", "N/A"),
@@ -111,8 +144,13 @@ async def get_redis_health():
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=503, detail=f"Redis connection failed: {str(e)}"
+        return HealthResponse(
+            success=False,
+            detail="Redis is not healthy",
+            metrics={
+                "server": f"{settings.REDIS_HOST}:{settings.REDIS_PORT}",
+                "error": str(e),
+            },
         )
     finally:
         await redis_client.aclose()

@@ -12,7 +12,7 @@ repos:
         types_or: [javascript, jsx, ts, tsx, json, css, markdown, sql]
         additional_dependencies: [prettier@3.2.5]
   - repo: https://github.com/psf/black
-    rev: 24.4.2
+    rev: 26.10.1
     hooks:
       - id: black
         language_version: python3.12
