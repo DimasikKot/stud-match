@@ -6,6 +6,7 @@ services:
     build:
       context: ./frontend
       dockerfile: frontend.Dockerfile
+    pull_policy: never
     restart: unless-stopped
     healthcheck:
       test:
@@ -40,6 +41,7 @@ services:
     build:
       context: ./backend # Папка, содержащая файлы контейнера
       dockerfile: backend.Dockerfile
+    pull_policy: never
     restart: unless-stopped
     healthcheck:
       test:
