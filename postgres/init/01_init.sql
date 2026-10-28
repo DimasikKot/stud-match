@@ -15,7 +15,7 @@ CREATE TABLE
   entitys (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    type VARCHAR(255) NOT NULL DEFAULT 'student' CHECK (type IN ('student', 'professor', 'project')),
+    type VARCHAR(255) NOT NULL DEFAULT 'student' CHECK (type IN ('student', 'professor', 'project', 'teacher', 'course', 'group')),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );

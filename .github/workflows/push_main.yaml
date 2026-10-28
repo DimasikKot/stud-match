@@ -170,6 +170,27 @@ jobs:
               exit 0
             fi
 
+            # ---------- Postgres: полная реинициализация (с бэкапом) ----------
+            if [ "$POSTGRES_REINIT" = "true" ]; then
+              echo "=== [postgres] Reinitialize (backup + drop data) ==="
+              $COMPOSE rm -sf sm-postgres || true
+
+              # Делаем бэкап старой БД перед удалением
+              if [ -d ./postgres/data ]; then
+                if [ -d ./postgres/data_old ]; then
+                  echo "::warning::./postgres/data_old already exists, overwriting"
+                  sudo rm -rf ./postgres/data_old
+                fi
+                sudo cp -a ./postgres/data ./postgres/data_old
+                echo "Backup created: ./postgres/data_old"
+              else
+                echo "No ./postgres/data to backup (fresh install?)"
+              fi
+
+              sudo rm -rf ./postgres/data
+              $COMPOSE up -d sm-postgres
+            fi
+
             # ---------- Точечные сборки frontend / backend ----------
             BUILD_SERVICES=""
             [ "$FRONTEND_BUILD" = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-frontend"
@@ -192,27 +213,6 @@ jobs:
             if [ "$POSTGRES_BUILD" = "true" ] && [ "$POSTGRES_REINIT" != "true" ]; then
               echo "=== [postgres] Reload pg_hba.conf ==="
               $COMPOSE up -d --no-deps --force-recreate sm-postgres
-            fi
-
-            # ---------- Postgres: полная реинициализация (с бэкапом) ----------
-            if [ "$POSTGRES_REINIT" = "true" ]; then
-              echo "=== [postgres] Reinitialize (backup + drop data) ==="
-              $COMPOSE rm -sf sm-postgres || true
-
-              # Делаем бэкап старой БД перед удалением
-              if [ -d ./postgres/data ]; then
-                if [ -d ./postgres/data_old ]; then
-                  echo "::warning::./postgres/data_old already exists, overwriting"
-                  sudo rm -rf ./postgres/data_old
-                fi
-                sudo cp -a ./postgres/data ./postgres/data_old
-                echo "Backup created: ./postgres/data_old"
-              else
-                echo "No ./postgres/data to backup (fresh install?)"
-              fi
-
-              sudo rm -rf ./postgres/data
-              $COMPOSE up -d sm-postgres
             fi
 
             docker system prune --volumes --force
@@ -292,6 +292,20 @@ jobs:
               exit 0
             fi
 
+            # ---------- postgres_reinit — восстановление из бэкапа ----------
+            if [ "$POSTGRES_REINIT" = "true" ]; then
+              if [ -d ./postgres/data_old ]; then
+                echo "=== [rollback:postgres] Restore from backup ==="
+                $COMPOSE rm -sf sm-postgres || true
+                sudo rm -rf ./postgres/data
+                sudo mv ./postgres/data_old ./postgres/data
+                $COMPOSE up -d sm-postgres
+                echo "=== [rollback:postgres] Data restored from ./postgres/data_old ==="
+              else
+                echo "::warning::./postgres/data_old not found — reinit never ran or backup was already consumed, DB data left intact"
+              fi
+            fi
+
             # ---------- frontend / backend — пересборка образов ----------
             BUILD_SERVICES=""
             [ "$FRONTEND_BUILD" = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-frontend"
@@ -313,20 +327,6 @@ jobs:
             if [ "$POSTGRES_BUILD" = "true" ] && [ "$POSTGRES_REINIT" != "true" ]; then
               echo "=== [rollback:postgres] ==="
               $COMPOSE up -d --no-deps --force-recreate sm-postgres
-            fi
-
-            # ---------- postgres_reinit — восстановление из бэкапа ----------
-            if [ "$POSTGRES_REINIT" = "true" ]; then
-              if [ -d ./postgres/data_old ]; then
-                echo "=== [rollback:postgres] Restore from backup ==="
-                $COMPOSE rm -sf sm-postgres || true
-                sudo rm -rf ./postgres/data
-                sudo mv ./postgres/data_old ./postgres/data
-                $COMPOSE up -d sm-postgres
-                echo "=== [rollback:postgres] Data restored from ./postgres/data_old ==="
-              else
-                echo "::warning::./postgres/data_old not found — reinit never ran or backup was already consumed, DB data left intact"
-              fi
             fi
 
             docker system prune --volumes --force
