@@ -165,7 +165,7 @@ jobs:
             # ---------- ALL BUILD (полный пересбор) ----------
             if [ "$ALL_BUILD" = "true" ]; then
               echo "=== [all_build] Full rebuild & restart ==="
-              $COMPOSE up -d --build --force-recreate
+              $COMPOSE up -d --build
               docker system prune --volumes --force
               exit 0
             fi
@@ -178,7 +178,7 @@ jobs:
             if [ -n "$BUILD_SERVICES" ]; then
               echo "=== [build] $BUILD_SERVICES ==="
               $COMPOSE build $BUILD_SERVICES
-              $COMPOSE up -d --no-deps --force-recreate $BUILD_SERVICES
+              $COMPOSE up -d --no-deps $BUILD_SERVICES
             fi
 
             # ---------- Nginx: конфиг меняется на хосте, пересоздаём контейнер ----------
@@ -194,10 +194,23 @@ jobs:
               $COMPOSE up -d --no-deps --force-recreate sm-postgres
             fi
 
-            # ---------- Postgres: полная реинициализация ----------
+            # ---------- Postgres: полная реинициализация (с бэкапом) ----------
             if [ "$POSTGRES_REINIT" = "true" ]; then
-              echo "=== [postgres] Reinitialize (drop data) ==="
+              echo "=== [postgres] Reinitialize (backup + drop data) ==="
               $COMPOSE rm -sf sm-postgres || true
+
+              # Делаем бэкап старой БД перед удалением
+              if [ -d ./postgres/data ]; then
+                if [ -d ./postgres/data_old ]; then
+                  echo "::warning::./postgres/data_old already exists, overwriting"
+                  sudo rm -rf ./postgres/data_old
+                fi
+                sudo cp -a ./postgres/data ./postgres/data_old
+                echo "Backup created: ./postgres/data_old"
+              else
+                echo "No ./postgres/data to backup (fresh install?)"
+              fi
+
               sudo rm -rf ./postgres/data
               $COMPOSE up -d sm-postgres
             fi
@@ -274,7 +287,7 @@ jobs:
             # ---------- all_build — полный пересбор ----------
             if [ "$ALL_BUILD" = "true" ]; then
               echo "=== [rollback:all_build] ==="
-              $COMPOSE up -d --build --force-recreate
+              $COMPOSE up -d --build
               docker system prune --volumes --force
               exit 0
             fi
@@ -287,7 +300,7 @@ jobs:
             if [ -n "$BUILD_SERVICES" ]; then
               echo "=== [rollback:build] $BUILD_SERVICES ==="
               $COMPOSE build $BUILD_SERVICES
-              $COMPOSE up -d --no-deps --force-recreate $BUILD_SERVICES
+              $COMPOSE up -d --no-deps $BUILD_SERVICES
             fi
 
             # ---------- nginx — пересоздать контейнер ----------
@@ -302,13 +315,18 @@ jobs:
               $COMPOSE up -d --no-deps --force-recreate sm-postgres
             fi
 
-            # ---------- postgres_reinit — ОТКАТИТЬ НЕЛЬЗЯ ----------
+            # ---------- postgres_reinit — восстановление из бэкапа ----------
             if [ "$POSTGRES_REINIT" = "true" ]; then
-              echo "::warning::postgres data was reinitialized — ROLLBACK IMPOSSIBLE for DB data"
-              echo "=== [postgres] Reinitialize (rollback) ==="
-              $COMPOSE rm -sf sm-postgres || true
-              sudo rm -rf ./postgres/data
-              $COMPOSE up -d sm-postgres
+              if [ -d ./postgres/data_old ]; then
+                echo "=== [rollback:postgres] Restore from backup ==="
+                $COMPOSE rm -sf sm-postgres || true
+                sudo rm -rf ./postgres/data
+                sudo mv ./postgres/data_old ./postgres/data
+                $COMPOSE up -d sm-postgres
+                echo "=== [rollback:postgres] Data restored from ./postgres/data_old ==="
+              else
+                echo "::warning::./postgres/data_old not found — reinit never ran or backup was already consumed, DB data left intact"
+              fi
             fi
 
             docker system prune --volumes --force
