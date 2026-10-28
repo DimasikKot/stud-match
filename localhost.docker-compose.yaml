@@ -45,7 +45,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -f http://localhost:8060/backend/api/v1/healths/backend || exit 1",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8060/backend/api/v1/healths/backend'', timeout=5)" || exit 1',
         ]
       interval: 30s
       timeout: 10s
