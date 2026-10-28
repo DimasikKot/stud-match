@@ -15,7 +15,7 @@ from app.api.v1.routers.user import router as users_router  # подправь �
 @pytest.fixture()
 def engine():
     engine = create_engine(
-        "postgres://",
+        "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
