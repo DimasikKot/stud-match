@@ -2,6 +2,12 @@ name: Tests
 
 on: pull_request
 
+# ---- Очередь деплоев: запуски не отменяют друг друга, а ждут ----
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+  queue: max
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
