@@ -9,7 +9,7 @@ services:
     restart: always
 
     volumes:
-      - ./ml:/app
+      - ./llm-worker:/app
 
     devices:
       - /dev/dxg:/dev/dxg
