@@ -10,11 +10,11 @@ class _Settings(BaseSettings):
     REDIS_PASSWORD: str = "password"
 
     DB_HOST: str = "localhost"
-    DB_PORT: int = 5432
+    DB_PORT: int = 5430
     POSTGRES_DB: str = "name db"
     POSTGRES_USER: str = "name user"
     POSTGRES_PASSWORD: str = "password"
-    DB_SSLMODE: str = "disable"
+    DB_SSLMODE: str = "allow"
 
     USER_JWT_ACCESS_TOKEN_SECRET: str = "w3NWlz4BSf6j6TwwEEXK0pT5yPY4AJzt"
     USER_JWT_ACCESS_TOKEN_EXPIRATION_HOURS: int = 1
@@ -22,7 +22,7 @@ class _Settings(BaseSettings):
     USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS: int = 720
 
     COOKIE_HTTPONLY: bool = True
-    COOKIE_SECURE: bool = False
+    COOKIE_SECURE: bool = True
     COOKIE_SAMESITE: str = "lax"
 
     TRAIN_JWT_ACCESS_TOKEN_SECRET: str = "r1yGRupzNCNGwEstj5fL0c5NFfjtON2B"

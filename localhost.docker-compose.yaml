@@ -142,18 +142,26 @@ services:
 
     volumes:
       - ./redis/data:/var/lib/redis/data
+      - ./redis/ssl:/etc/redis/ssl:ro
 
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}
     command:
       - /bin/sh
       - -c
-      # - Double dollars, so that the variable is not expanded by Docker Compose
-      # - Surround by quotes, so that the shell does not split the password
-      # - The ${variable:?message} syntax causes shell to exit with a non-zero
-      #   code and print a message, when the variable is not set or empty
-      - redis-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
+      - >
+        redis-server 
+        --port 6350 
+        --tls-port 6150 
+        --tls-cert-file /etc/redis/ssl/server.crt 
+        --tls-key-file /etc/redis/ssl/server.key 
+        --tls-ca-cert-file /etc/redis/ssl/server.crt 
+        --tls-auth-clients no 
+        --tls-protocols "TLSv1.2 TLSv1.3" 
+        --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
 
+    ports:
+      - "6150:6150"
     deploy:
       resources:
         limits:
@@ -177,6 +185,7 @@ services:
       - ./nginx/localhost.nginx.conf:/etc/nginx/nginx.conf:ro
 
     ports:
+      - "80:80"
       - "443:443"
     deploy:
       resources:

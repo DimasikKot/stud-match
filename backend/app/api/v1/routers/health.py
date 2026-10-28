@@ -141,6 +141,9 @@ async def get_redis_health():
             detail="Redis is healthy",
             metrics={
                 "server": f"{settings.REDIS_HOST}:{settings.REDIS_PORT}",
+                "ssl": {
+                    "enabled": not settings.REDIS_PORT == 6350,
+                },
                 "latency_ms": round(latency_ms, 2),
                 "used_memory_human": info.get("used_memory_human", "N/A"),
                 "used_memory_peak_human": info.get("used_memory_peak_human", "N/A"),
