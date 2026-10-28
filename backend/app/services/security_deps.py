@@ -8,7 +8,6 @@ from app.services.security import decode_access_token
 from app.core.config import settings
 
 
-# ---------- Redis ----------
 def get_redis() -> Redis:
     return Redis(
         host=settings.REDIS_HOST,
@@ -18,7 +17,6 @@ def get_redis() -> Redis:
     )
 
 
-# ---------- Текущий пользователь из access-куки ----------
 access_cookie_scheme = APIKeyCookie(
     name="access_token",
     scheme_name="AccessTokenCookie",
@@ -57,4 +55,5 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+
     return user

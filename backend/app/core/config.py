@@ -21,6 +21,10 @@ class _Settings(BaseSettings):
     USER_JWT_REFRESH_TOKEN_SECRET: str = "v4m9mCNqrIjiNdYiarb4SwUBH5mxCe4O"
     USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS: int = 720
 
+    COOKIE_HTTPONLY: bool = True
+    COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: str = "lax"
+
     TRAIN_JWT_ACCESS_TOKEN_SECRET: str = "r1yGRupzNCNGwEstj5fL0c5NFfjtON2B"
 
     STORAGE_PATH: str = "./files"

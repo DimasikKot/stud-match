@@ -3,7 +3,7 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE
   users (
     id SERIAL PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
+    fullname VARCHAR(255) NOT NULL UNIQUE,
     hashed_password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -15,9 +15,7 @@ CREATE TABLE
   entitys (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    type VARCHAR(255) NOT NULL DEFAULT 'student' CHECK (
-      type IN ('student', 'professor', 'project', 'teacher')
-    ),
+    type VARCHAR(255) NOT NULL DEFAULT 'student',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );

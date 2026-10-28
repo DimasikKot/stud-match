@@ -4,7 +4,6 @@ from datetime import timedelta
 
 from fastapi import (
     APIRouter,
-    Cookie,
     Depends,
     HTTPException,
     Response,
@@ -14,34 +13,33 @@ from fastapi import (
 from redis import Redis
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
-from app.services.security_deps import (
+from core.database import get_db
+from services.security_deps import (
     get_current_user,
     get_redis,
     refresh_cookie_scheme,
 )
-from app.models.db import User
-from app.services.security import (
+from models.db import User
+from services.security import (
     hash_password,
     verify_password,
     create_access_token,
     create_refresh_token,
     decode_refresh_token,
 )
-from app.core.config import settings
+from core.config import settings
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-class UserCreate(BaseModel):
-    username: str
+class UserRequest(BaseModel):
     email: str
     password: str
 
 
-class UserOut(BaseModel):
+class UserResponse(BaseModel):
     id: int
-    username: str
+    email: str
 
     class Config:
         from_attributes = True
@@ -55,10 +53,10 @@ class TokenResponse(BaseModel):
 ACCESS_COOKIE = "access_token"
 REFRESH_COOKIE = "refresh_token"
 
-COOKIE_OPTS = dict(
-    httponly=True,
-    secure=False,  # True в production (HTTPS)
-    samesite="lax",  # или "strict"
+COOKIE_OPTIONS = dict(
+    httponly=settings.COOKIE_HTTPONLY,
+    secure=settings.COOKIE_SECURE,
+    samesite=settings.COOKIE_SAMESITE,
 )
 
 
@@ -67,38 +65,39 @@ def _set_auth_cookies(response: Response, access: str, refresh: str) -> None:
         ACCESS_COOKIE,
         access,
         max_age=settings.USER_JWT_ACCESS_TOKEN_EXPIRATION_HOURS * 3600,
-        **COOKIE_OPTS,  # type: ignore
+        **COOKIE_OPTIONS,  # type: ignore
     )
     response.set_cookie(
         REFRESH_COOKIE,
         refresh,
         max_age=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS * 3600,
-        **COOKIE_OPTS,  # type: ignore
+        **COOKIE_OPTIONS,  # type: ignore
     )
 
 
 def _clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(
         ACCESS_COOKIE,
-        **COOKIE_OPTS,  # type: ignore
+        **COOKIE_OPTIONS,  # type: ignore
     )
     response.delete_cookie(
         REFRESH_COOKIE,
-        **COOKIE_OPTS,  # type: ignore
+        **COOKIE_OPTIONS,  # type: ignore
     )
 
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.username == user_in.username).first()
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
+def register(user_in: UserRequest, db: Session = Depends(get_db)):
+    existing = db.query(User).filter(User.email == user_in.email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered",
+            detail="Email already registered",
         )
 
     user = User(
-        username=user_in.username,
         email=user_in.email,
         hashed_password=hash_password(user_in.password),
     )
@@ -111,15 +110,15 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 def login(
     response: Response,
-    user_in: UserCreate,
+    user_in: UserRequest,
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ):
-    user = db.query(User).filter(User.username == user_in.username).first()
+    user = db.query(User).filter(User.email == user_in.email).first()
     if not user or not verify_password(user_in.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
         )
 
     # Создаём access-токен
@@ -223,6 +222,6 @@ def logout(
     return {"message": "Logged out"}
 
 
-@router.get("/me", response_model=UserOut)
+@router.get("/me", response_model=UserResponse)
 def read_me(current_user: User = Depends(get_current_user)):
     return current_user
