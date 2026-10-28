@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import uuid
 from datetime import timedelta
 
@@ -38,11 +38,10 @@ class UserRequest(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     email: str
-
-    class Config:
-        from_attributes = True
 
 
 class TokenResponse(BaseModel):
@@ -71,11 +70,6 @@ def _set_auth_cookies(response: Response, access: str, refresh: str) -> None:
         REFRESH_COOKIE,
         refresh,
         max_age=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS * 3600,
-        **COOKIE_OPTIONS,  # type: ignore
-    )
-    response.set_cookie(
-        "my",
-        "123123",
         **COOKIE_OPTIONS,  # type: ignore
     )
 
@@ -134,10 +128,10 @@ def login(
     refresh_token = create_refresh_token(user.id, jti)
 
     # Сохраняем jti в Redis (с TTL, равным времени жизни refresh-токена)
-    redis.setex(
+    redis.set(
         f"refresh:{jti}",
-        timedelta(hours=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS),
         str(user.id),
+        ex=timedelta(hours=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS),
     )
 
     # Устанавливаем куки
@@ -198,10 +192,10 @@ def refresh_tokens(
     new_jti = str(uuid.uuid4())
     new_refresh_token = create_refresh_token(user.id, new_jti)
 
-    redis.setex(
+    redis.set(
         f"refresh:{new_jti}",
-        timedelta(hours=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS),
         str(user.id),
+        ex=timedelta(hours=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS),
     )
 
     # Устанавливаем новые куки

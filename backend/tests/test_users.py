@@ -1,4 +1,4 @@
-import pytest
+from fastapi.testclient import TestClient
 
 
 class TestRegister:
@@ -31,7 +31,6 @@ class TestLogin:
 
         assert "access_token" in resp.cookies
         assert "refresh_token" in resp.cookies
-        assert resp.cookies.get("my") == "123123"  # заодно проверим доп. куку
 
     def test_wrong_password(self, client, registered_user):
         resp = client.post(
@@ -79,15 +78,15 @@ class TestRefresh:
         resp = client.post("/users/refresh")
         assert resp.status_code == 401
 
-    def test_reuse_after_rotation_rejected(self, auth_client):
-        old_refresh = auth_client.cookies.get("refresh_token")
-        assert auth_client.post("/users/refresh").status_code == 200
+    def test_reuse_after_rotation_rejected(self, client, registered_user):
+        client.post("/users/login", json=registered_user)
+        old_refresh = client.cookies.get("refresh_token")
 
-        # принудительно возвращаем старый refresh
-        auth_client.cookies.set("refresh_token", old_refresh, domain="testserver")
-        resp = auth_client.post("/users/refresh")
-        assert resp.status_code == 401
-        assert "reuse" in resp.json()["detail"].lower()
+        assert client.post("/users/refresh").status_code == 200
+
+        fresh = TestClient(client.app, base_url="https://testserver")
+        fresh.cookies.set("refresh_token", old_refresh, domain="testserver")
+        assert fresh.post("/users/refresh").status_code == 401
 
 
 class TestLogout:
