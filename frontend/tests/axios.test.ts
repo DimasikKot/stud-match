@@ -236,7 +236,7 @@ describe("axios interceptor: refresh flow", () => {
     // refresh упал → retry НЕ выполняется
     expect(
       mock.history.post.filter((r) => r.url === "/protected/resource"),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     // refresh только один, без повторов
     expect(
       mock.history.post.filter((r) => r.url === "/users/refresh"),
