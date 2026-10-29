@@ -27,11 +27,12 @@ jobs:
       - uses: dorny/paths-filter@v4
         id: filter
         with:
+          base: ${{ steps.get-tag.outputs.tag || github.event.before }}
           filters: |
             frontend_pull:
-              - 'frontend/app/**'
+              - 'frontend/**'
             backend_pull:
-              - 'backend/app/**'
+              - 'backend/**'
             frontend_build:
               - 'frontend/frontend.Dockerfile'
               - 'frontend/package.json'
@@ -230,6 +231,12 @@ jobs:
           POSTGRES_BUILD: ${{ needs.detect-changes.outputs.postgres_build }}
           POSTGRES_REINIT: ${{ needs.detect-changes.outputs.postgres_reinit }}
           ALL_BUILD: ${{ needs.detect-changes.outputs.all_build }}
+
+      - name: Update frontend deploy tag
+        if: needs.detect-changes.outputs.frontend_build == 'true'
+        run: |
+          git tag -f deployed/frontend ${{ github.sha }}
+          git push origin deployed/frontend --force
 
   smoke-test:
     needs: build_deploy
