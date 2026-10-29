@@ -184,15 +184,15 @@ describe("getCurrentUser", () => {
 describe("axios interceptor: refresh flow", () => {
   test("401 на защищённом эндпоинте → 1 refresh + retry → 200", async () => {
     mock
-      .onPost("/projects/create")
+      .onPost("/protected/resource")
       .replyOnce(401)
-      .onPost("/projects/create")
+      .onPost("/protected/resource")
       .reply(201, { id: 42 });
     mock
       .onPost("/users/refresh")
       .replyOnce(200, { access_token: "new", token_type: "bearer" });
 
-    const res = await api.post("/projects/create", { name: "P" });
+    const res = await api.post("/protected/resource", { name: "P" });
 
     expect(res.status).toBe(201);
     expect(res.data).toEqual({ id: 42 });
@@ -200,36 +200,43 @@ describe("axios interceptor: refresh flow", () => {
       mock.history.post.filter((r) => r.url === "/users/refresh"),
     ).toHaveLength(1);
     expect(
-      mock.history.post.filter((r) => r.url === "/projects/create"),
+      mock.history.post.filter((r) => r.url === "/protected/resource"),
     ).toHaveLength(2);
   });
 
   test("тело запроса сохраняется при retry", async () => {
     const body = { name: "P", description: "d" };
     mock
-      .onPost("/projects/create")
+      .onPost("/protected/resource")
       .replyOnce(401)
-      .onPost("/projects/create")
+      .onPost("/protected/resource")
       .reply(201, { id: 1 });
     mock.onPost("/users/refresh").replyOnce(200, { access_token: "new" });
 
-    await api.post("/projects/create", body);
+    await api.post("/protected/resource", body);
 
-    const calls = mock.history.post.filter((r) => r.url === "/projects/create");
+    const calls = mock.history.post.filter(
+      (r) => r.url === "/protected/resource",
+    );
     expect(JSON.parse(calls[0].data)).toEqual(body);
     expect(JSON.parse(calls[1].data)).toEqual(body);
   });
 
   test("если refresh упал — ошибка пробрасывается, цикла нет", async () => {
-    mock.onPost("/projects/create").reply(401);
+    // replyOnce(200) — tripwire: если баг вернёт retry, счётчик станет 2 и тест упадёт
+    mock
+      .onPost("/protected/resource")
+      .replyOnce(401)
+      .onPost("/protected/resource")
+      .replyOnce(200);
     mock.onPost("/users/refresh").reply(401);
 
-    await expect(api.post("/projects/create")).rejects.toBeTruthy();
+    await expect(api.post("/protected/resource")).rejects.toBeTruthy();
 
-    // create вызван: первый раз + один retry, больше — нет
+    // refresh упал → retry НЕ выполняется, /protected/resource вызван ровно 1 раз
     expect(
-      mock.history.post.filter((r) => r.url === "/projects/create"),
-    ).toHaveLength(2);
+      mock.history.post.filter((r) => r.url === "/protected/resource"),
+    ).toHaveLength(1);
     // refresh только один, без повторов
     expect(
       mock.history.post.filter((r) => r.url === "/users/refresh"),
@@ -237,17 +244,17 @@ describe("axios interceptor: refresh flow", () => {
   });
 
   test("если после успешного refresh retry снова 401 — не рефрешим второй раз", async () => {
-    mock.onPost("/projects/create").reply(401); // всегда 401
+    mock.onPost("/protected/resource").reply(401); // всегда 401
     mock.onPost("/users/refresh").reply(200, { access_token: "new" });
 
-    await expect(api.post("/projects/create")).rejects.toBeTruthy();
+    await expect(api.post("/protected/resource")).rejects.toBeTruthy();
 
     // _retry защищает от второй попытки refresh
     expect(
       mock.history.post.filter((r) => r.url === "/users/refresh"),
     ).toHaveLength(1);
     expect(
-      mock.history.post.filter((r) => r.url === "/projects/create"),
+      mock.history.post.filter((r) => r.url === "/protected/resource"),
     ).toHaveLength(2); // original + 1 retry
   });
 
@@ -269,13 +276,13 @@ describe("axios interceptor: refresh flow", () => {
       return [200, { access_token: "new", token_type: "bearer" }];
     });
 
-    mock.onPost("/projects/create").reply(() => {
+    mock.onPost("/protected/resource").reply(() => {
       if (!refreshed) return [401];
       return [201, { ok: true }];
     });
 
     const requests = Array.from({ length: 5 }, () =>
-      api.post("/projects/create", { name: "P" }),
+      api.post("/protected/resource", { name: "P" }),
     );
     const results = await Promise.all(requests);
 
@@ -287,16 +294,16 @@ describe("axios interceptor: refresh flow", () => {
     ).toHaveLength(1);
     // 5 исходных + 5 retry
     expect(
-      mock.history.post.filter((r) => r.url === "/projects/create"),
+      mock.history.post.filter((r) => r.url === "/protected/resource"),
     ).toHaveLength(10);
   });
 
   test("не трогает не-401 ошибки (403, 422, 500)", async () => {
-    mock.onPost("/projects/create").reply(422, { detail: "bad" });
-    mock.onPost("/projects/create").reply(500);
+    mock.onPost("/protected/resource").reply(422, { detail: "bad" });
+    mock.onPost("/protected/resource").reply(500);
 
-    await expect(api.post("/projects/create")).rejects.toBeTruthy();
-    await expect(api.post("/projects/create")).rejects.toBeTruthy();
+    await expect(api.post("/protected/resource")).rejects.toBeTruthy();
+    await expect(api.post("/protected/resource")).rejects.toBeTruthy();
 
     expect(
       mock.history.post.filter((r) => r.url === "/users/refresh"),
@@ -305,13 +312,13 @@ describe("axios interceptor: refresh flow", () => {
 
   test("GET-запросы тоже рефрешатся", async () => {
     mock
-      .onGet("/projects")
+      .onGet("/protected")
       .replyOnce(401)
-      .onGet("/projects")
+      .onGet("/protected")
       .reply(200, [{ id: 1 }]);
     mock.onPost("/users/refresh").replyOnce(200, { access_token: "new" });
 
-    const res = await api.get("/projects");
+    const res = await api.get("/protected");
 
     expect(res.data).toEqual([{ id: 1 }]);
     expect(
