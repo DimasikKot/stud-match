@@ -38,7 +38,7 @@ afterEach(() => {
 
 describe("registerUser", () => {
   test("успешная регистрация возвращает { id, email }", async () => {
-    mock.onPost("/users/register").reply(201, { id: 1, email: "a@a.a" });
+    mock.onPost("/users/register").reply(202, { id: 1, email: "a@a.a" });
 
     const user = await registerUser({ email: "a@a.a", password: "123456" });
 
