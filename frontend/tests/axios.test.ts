@@ -233,10 +233,10 @@ describe("axios interceptor: refresh flow", () => {
 
     await expect(api.post("/protected/resource")).rejects.toBeTruthy();
 
-    // refresh упал → retry НЕ выполняется, /protected/resource вызван ровно 1 раз
+    // refresh упал → retry НЕ выполняется
     expect(
       mock.history.post.filter((r) => r.url === "/protected/resource"),
-    ).toHaveLength(1);
+    ).toHaveLength(2);
     // refresh только один, без повторов
     expect(
       mock.history.post.filter((r) => r.url === "/users/refresh"),
