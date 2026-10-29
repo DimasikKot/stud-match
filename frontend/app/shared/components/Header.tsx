@@ -10,7 +10,7 @@ import {
   fetchPostgresHealth,
   fetchRedisHealth,
   type GetHealthResponse,
-} from "@/shared/api/health";
+} from "@/shared/api/healths";
 import { TextUI } from "@/shared/components/TextUI";
 
 const Logo = ({ onClick }: { onClick?: () => void }) => (
