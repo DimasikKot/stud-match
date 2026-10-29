@@ -22,12 +22,25 @@ jobs:
       postgres_build: ${{ steps.filter.outputs.postgres_build }}
       postgres_reinit: ${{ steps.filter.outputs.postgres_reinit }}
       all_build: ${{ steps.filter.outputs.all_build }}
+      prev_sha: ${{ steps.prev.outputs.sha }}
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Get last successfully deployed SHA
+        id: prev
+        run: |
+          git fetch --tags --force
+          SHA=$(git rev-list -n1 deployed/last-success 2>/dev/null || true)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Base for diff: ${SHA:-<none, first deploy>}"
+
       - uses: dorny/paths-filter@v4
         id: filter
         with:
-          base: ${{ steps.get-tag.outputs.tag || github.event.before }}
+          base: ${{ steps.prev.outputs.sha || github.event.before }}
           filters: |
             frontend_pull:
               - 'frontend/**'
@@ -144,15 +157,9 @@ jobs:
       (needs.test-frontend.result == 'success' || needs.test-frontend.result == 'skipped') &&
       (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') &&
       !cancelled()
-    outputs:
-      prev_sha: ${{ steps.prev_sha_step.outputs.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-
-      - name: Get previous SHA (before pull)
-        id: prev_sha_step
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -232,19 +239,18 @@ jobs:
           POSTGRES_REINIT: ${{ needs.detect-changes.outputs.postgres_reinit }}
           ALL_BUILD: ${{ needs.detect-changes.outputs.all_build }}
 
-      - name: Update frontend deploy tag
-        if: needs.detect-changes.outputs.frontend_build == 'true'
-        run: |
-          git tag -f deployed/frontend ${{ github.sha }}
-          git push origin deployed/frontend --force
-
   smoke-test:
     needs: build_deploy
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # ← ОБЯЗАТЕЛЬНО для git push
     if: |
       always() &&
       needs.build_deploy.result == 'success'
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
       - name: Check backend + dependencies health (via nginx)
         run: |
           BASE="https://stud-match.mooo.com/backend/api/v1/healths"
@@ -272,6 +278,12 @@ jobs:
             exit 1
           fi
 
+      - name: Mark deploy as successful
+        if: success() # ← выполнится только если всё выше ОК
+        run: |
+          git tag -f deployed/last-success ${{ github.sha }}
+          git push --force origin deployed/last-success
+
   rollback:
     needs: [detect-changes, build_deploy, smoke-test]
     runs-on: ubuntu-latest
@@ -291,11 +303,11 @@ jobs:
           port: 22
           envs: PREV_SHA,FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,ALL_BUILD
           script: |
-            set -e
             cd ${{ secrets.PROJECT_PATH }}
-
-            echo "=== ROLLBACK to: $PREV_SHA ==="
-            git reset --hard "$PREV_SHA"
+            git fetch --tags --force
+            TARGET=$(git rev-list -n1 deployed/last-success)
+            echo "=== ROLLBACK to: $TARGET ==="
+            git reset --hard "$TARGET"
             echo "=== Now at: $(git rev-parse --short HEAD) ==="
 
             COMPOSE="docker compose -f rpi5.docker-compose.yaml"

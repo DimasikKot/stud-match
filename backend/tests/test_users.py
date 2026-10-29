@@ -7,7 +7,7 @@ class TestRegister:
             "/users/register",
             json={"email": "a@b.com", "password": "pw"},
         )
-        assert resp.status_code == 202
+        assert resp.status_code == 201
         body = resp.json()
         assert body["email"] == "a@b.com"
         assert isinstance(body["id"], int)
