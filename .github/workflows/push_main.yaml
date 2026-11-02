@@ -271,7 +271,7 @@ jobs:
             fi
           done
           exit $failed
-          
+
       - name: Check frontend availability (via nginx)
         run: |
           response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk \
