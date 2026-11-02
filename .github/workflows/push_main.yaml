@@ -262,12 +262,16 @@ jobs:
             echo "$ep status: $code, success: $success"
 
             if [ "$code" -ne 200 ] || [ "$success" != "true" ]; then
-              echo "::error::$ep health check failed (status=$code, success=$success)"
+              # Достаём текст ошибки: сначала metrics.error, потом error, потом message
+              err=$(echo "$body" | jq -r '.metrics.error // .error // .message // "no error details"' 2>/dev/null)
+              echo "::error::$ep health check failed (status=$code, success=$success, error=$err)"
+              # Дополнительно печатаем полный ответ для диагностики
+              echo "$ep response: $body"
               failed=1
             fi
           done
           exit $failed
-
+          
       - name: Check frontend availability (via nginx)
         run: |
           response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk \
