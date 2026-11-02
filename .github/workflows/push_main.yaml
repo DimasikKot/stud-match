@@ -251,26 +251,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      # - name: Check backend + dependencies health (via nginx)
-      #   run: |
-      #     BASE="https://stud-match.mooo.com/backend/api/v1/healths"
-      #     failed=0
-      #     for ep in backend postgres redis; do
-      #       body=$(curl -s --max-time 15 -fk "$BASE/$ep" || echo "")
-      #       code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk "$BASE/$ep" || echo "000")
-      #       success=$(echo "$body" | jq -r '.success // false')
-      #       echo "$ep status: $code, success: $success"
+      - name: Check backend + dependencies health (via nginx)
+        run: |
+          BASE="https://stud-match.mooo.com/backend/api/v1/healths"
+          MAX_ATTEMPTS=15      # ~2.5 минуты с паузой 10с
+          DELAY=10
+          failed=0
 
-      #       if [ "$code" -ne 200 ] || [ "$success" != "true" ]; then
-      #         # Достаём текст ошибки: сначала metrics.error, потом error, потом message
-      #         err=$(echo "$body" | jq -r '.metrics.error // .error // .message // "no error details"' 2>/dev/null)
-      #         echo "::error::$ep health check failed (status=$code, success=$success, error=$err)"
-      #         # Дополнительно печатаем полный ответ для диагностики
-      #         echo "$ep response: $body"
-      #         failed=1
-      #       fi
-      #     done
-      #     exit $failed
+          for ep in backend postgres redis; do
+            ep_ok=0
+            code="000"
+            body=""
+            success="false"
+
+            for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+              # Один запрос — сразу и тело, и http-код
+              resp=$(curl -s -w $'\n%{http_code}' --max-time 15 -fk "$BASE/$ep" || printf '\n000')
+              code=$(printf '%s' "$resp" | tail -n1)
+              body=$(printf '%s' "$resp" | sed '$d')
+              success=$(printf '%s' "$body" | jq -r '.success // false' 2>/dev/null || echo "false")
+
+              echo "$ep attempt $attempt/$MAX_ATTEMPTS: status=$code, success=$success"
+
+              if [ "$code" = "200" ] && [ "$success" = "true" ]; then
+                ep_ok=1
+                break
+              fi
+              sleep "$DELAY"
+            done
+
+            if [ "$ep_ok" -ne 1 ]; then
+              err=$(printf '%s' "$body" | jq -r '.metrics.error // .error // .message // "no error details"' 2>/dev/null || echo "no error details")
+              echo "::error::$ep health check failed after $MAX_ATTEMPTS attempts (status=$code, success=$success, error=$err)"
+              echo "$ep last response: $body"
+              failed=1
+            fi
+          done
+
+          exit $failed
 
       - name: Check frontend availability (via nginx)
         run: |
