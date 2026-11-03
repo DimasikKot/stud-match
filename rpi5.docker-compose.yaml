@@ -224,9 +224,9 @@ services:
     depends_on:
       - nginx
 
-  rustfs:
+  sm-rustfs:
     image: rustfs/rustfs:1.0.4-glibc
-    container_name: rustfs-server
+    container_name: sm-rustfs
     depends_on:
       volume-permission-helper:
         condition: service_completed_successfully
