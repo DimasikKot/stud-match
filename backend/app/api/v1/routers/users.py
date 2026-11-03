@@ -19,7 +19,7 @@ from app.services.security_deps import (
     get_redis,
     refresh_cookie_scheme,
 )
-from app.models.db import User
+from app.models.db import UserDB
 from app.services.security import (
     hash_password,
     verify_password,
@@ -89,14 +89,14 @@ def _clear_auth_cookies(response: Response) -> None:
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
 def register(user_in: UserRequest, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == user_in.email).first()
+    existing = db.query(UserDB).filter(UserDB.email == user_in.email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
 
-    user = User(
+    user = UserDB(
         email=user_in.email,
         hashed_password=hash_password(user_in.password),
     )
@@ -113,7 +113,7 @@ def login(
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ):
-    user = db.query(User).filter(User.email == user_in.email).first()
+    user = db.query(UserDB).filter(UserDB.email == user_in.email).first()
     if not user or not verify_password(user_in.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -177,7 +177,7 @@ def refresh_tokens(
         )
 
     # Проверяем, что пользователь существует
-    user = db.query(User).filter(User.id == int(user_id)).first()
+    user = db.query(UserDB).filter(UserDB.id == int(user_id)).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -222,5 +222,5 @@ def logout(
 
 
 @router.get("/me", response_model=UserResponse)
-def read_me(current_user: User = Depends(get_current_user)):
+def read_me(current_user: UserDB = Depends(get_current_user)):
     return current_user

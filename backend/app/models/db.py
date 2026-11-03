@@ -15,7 +15,7 @@ from sqlalchemy import (
 from app.core.database import Base
 
 
-class User(Base):
+class UserDB(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(
@@ -45,7 +45,7 @@ class User(Base):
     )
 
 
-class File(Base):
+class FileDB(Base):
     __tablename__ = "files"
 
     id: Mapped[int] = mapped_column(
@@ -73,7 +73,7 @@ class File(Base):
     )
 
 
-class Project(Base):
+class ProjectDB(Base):
     __tablename__ = "projects"
 
     id: Mapped[int] = mapped_column(
@@ -94,7 +94,7 @@ class Project(Base):
         String(255),
         nullable=False,
     )
-    skills_vector: Mapped[Any] = mapped_column(
+    skills_vector: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
     )
@@ -110,7 +110,7 @@ class Project(Base):
     )
 
 
-class Student(Base):
+class StudentDB(Base):
     __tablename__ = "students"
 
     id: Mapped[int] = mapped_column(
@@ -131,7 +131,7 @@ class Student(Base):
         String(255),
         nullable=False,
     )
-    skills_vector: Mapped[Any] = mapped_column(
+    skills_vector: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
     )
@@ -147,7 +147,7 @@ class Student(Base):
     )
 
 
-class Teacher(Base):
+class TeacherDB(Base):
     __tablename__ = "teachers"
 
     id: Mapped[int] = mapped_column(
@@ -163,7 +163,7 @@ class Teacher(Base):
         String(255),
         nullable=False,
     )
-    skills_vector: Mapped[Any] = mapped_column(
+    skills_vector: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
     )

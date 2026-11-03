@@ -13,14 +13,18 @@ from fastapi import (
 )
 from redis import Redis
 from sqlalchemy.orm import Session
-
+from app.services.project import (
+    create_project,
+    is_owner_of_project,
+    update_project_by_id,
+)
 from app.core.database import get_db
 from app.services.security_deps import (
     get_current_user,
     get_redis,
     refresh_cookie_scheme,
 )
-from app.models.db import Project, User
+from app.models.db import ProjectDB, UserDB
 from app.services.security import (
     hash_password,
     verify_password,
@@ -39,31 +43,56 @@ class ProjectRequest(BaseModel):
     skills_vector: dict[str, Any]
 
 
-class ProjectResponse(ProjectRequest):
+class ProjectResponse(BaseModel):
+    name: str
+    description: str
+    skills_vector: dict[str, Any]
+
+
+class PatchProjectRequest(BaseModel):
+    id: int
+    name: str
+    description: str
+    skills_vector: dict[str, Any]
+
+
+class PatchProjectResponse(BaseModel):
     name: str
     description: str
     skills_vector: dict[str, Any]
 
 
 @router.post("/", response_model=ProjectResponse)
-async def create_project(
+async def post_create_project(
     projectrequest: ProjectRequest,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: UserDB = Depends(get_current_user),
 ):
-    user = db.query(User).filter(User.id == user.id).first()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-    project = Project(
+    project = create_project(
         user_id=user.id,
+        db=db,
         name=projectrequest.name,
         description=projectrequest.description,
         skills_vector=projectrequest.skills_vector,
     )
-    db.add(project)
-    db.commit()
-    db.refresh(project)
+    return project
+
+
+@router.post("/patch", response_model=PatchProjectResponse)
+async def patch_update_project(
+    projectrequest: PatchProjectRequest,
+    db: Session = Depends(get_db),
+    user: UserDB = Depends(get_current_user),
+):
+    is_owner_of_project(project_id=projectrequest.id, user_id=user.id, db=db)
+
+    project = update_project_by_id(
+        project_id=projectrequest.id,
+        user_id=user.id,
+        db=db,
+        new_name=projectrequest.name,
+        new_description=projectrequest.description,
+        new_skills_vector=projectrequest.skills_vector,
+    )
+
     return project

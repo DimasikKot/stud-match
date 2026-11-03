@@ -3,7 +3,7 @@ from fastapi.security import APIKeyCookie
 from sqlalchemy.orm import Session
 from redis import Redis
 from app.core.database import get_db
-from app.models.db import User
+from app.models.db import UserDB
 from app.services.security import decode_access_token
 from app.core.config import settings
 
@@ -63,7 +63,7 @@ refresh_cookie_scheme = APIKeyCookie(
 def get_current_user(
     access_token: str | None = Security(access_cookie_scheme),
     db: Session = Depends(get_db),
-) -> User:
+) -> UserDB:
     if not access_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,7 +77,7 @@ def get_current_user(
             detail="Invalid or expired access token",
         )
 
-    user = db.query(User).filter(User.id == int(payload["sub"])).first()
+    user = db.query(UserDB).filter(UserDB.id == int(payload["sub"])).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

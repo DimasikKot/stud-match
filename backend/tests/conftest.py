@@ -7,7 +7,7 @@ from sqlalchemy.pool import StaticPool
 import fakeredis
 
 from app.core.database import Base, get_db
-from app.models.db import User  # noqa: F401 — регистрирует модель на Base
+from app.models.db import UserDB  # noqa: F401 — регистрирует модель на Base
 from app.services.security_deps import get_redis
 from app.api.v1.routers.users import router as users_router  # подправь путь
 
