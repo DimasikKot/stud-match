@@ -235,12 +235,12 @@ services:
 
     environment:
       - RUSTFS_VOLUMES=/data
-      - RUSTFS_ADDRESS=0.0.0.0:9000
-      - RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9001
+      - RUSTFS_ADDRESS=0.0.0.0:9050
+      - RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9150
       - RUSTFS_CONSOLE_ENABLE=true
       - RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS=*
-      - RUSTFS_ACCESS_KEY=rustfsadmin432 # CHANGEME
-      - RUSTFS_SECRET_KEY=rustfsadmin432 # CHANGEME
+      - RUSTFS_ACCESS_KEY=ruad432
+      - RUSTFS_SECRET_KEY=ruadmin432
       - RUSTFS_OBS_LOGGER_LEVEL=info
       - RUSTFS_OBS_LOG_DIRECTORY=/app/logs
       # Optional TLS:
@@ -274,22 +274,19 @@ services:
           if [ -z \"$${ca_path}\" ] && [ -f /opt/tls/ca.crt ]; then ca_path=/opt/tls/ca.crt; fi; \
           case \"$${host}\" in 127.0.0.1|localhost) strict_host=false ;; *) strict_host=true ;; esac; \
           if [ \"$${strict_host}\" = true ] && [ -n \"$${ca_path}\" ]; then \
-          set -- \"$${@}\" --cacert \"$${ca_path}\" --resolve \"$${host}:9000:127.0.0.1\" --resolve \"$${host}:9001:127.0.0.1\"; \
+          set -- \"$${@}\" --cacert \"$${ca_path}\" --resolve \"$${host}:9050:127.0.0.1\" --resolve \"$${host}:9150:127.0.0.1\"; \
           else \
           set -- \"$${@}\" -k; \
           fi; \
           fi; \
-          curl \"$${@}\" \"$${scheme}://$${host}:9000/health\" && \
-          curl \"$${@}\" \"$${scheme}://$${host}:9001/rustfs/console/health\"",
+          curl \"$${@}\" \"$${scheme}://$${host}:9050/health\" && \
+          curl \"$${@}\" \"$${scheme}://$${host}:9150/rustfs/console/health\"",
         ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-    ports:
-      - "9000:9000" # S3 API port
-      - "9001:9001" # Console port
     deploy:
       resources:
         limits:
