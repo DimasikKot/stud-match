@@ -1,12 +1,13 @@
 from typing import Any
 from pydantic import BaseModel, ConfigDict
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Query,
     Response,
     Security,
     status,
@@ -18,6 +19,8 @@ from app.services.project import (
     is_owner_of_project,
     update_project_by_id,
     fetch_project_db_by_id,
+    SortType,
+    fetch_projects_by_user_id,
 )
 from app.core.database import get_db
 from app.services.security_deps import (
@@ -38,13 +41,13 @@ from app.core.config import settings
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
 
-class ProjectRequest(BaseModel):
+class CreateProjectRequest(BaseModel):
     name: str
     description: str
     skills_vector: dict[str, Any]
 
 
-class ProjectResponse(BaseModel):
+class CreateProjectResponse(BaseModel):
     name: str
     description: str
     skills_vector: dict[str, Any]
@@ -67,20 +70,23 @@ class GetProjectResponse(BaseModel):
     name: str
     description: str
     skills_vector: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
 
 
-# class GetProjectsRequest(BaseModel):
-#     id: int
-
-# class GetProjectsResponse(BaseModel):
-#     name: str
-#     description: str
-#     skills_vector: dict[str, Any]
+class GetListProjectResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
 
 
-@router.post("/", response_model=ProjectResponse)
+class GetListProjectsResponse(BaseModel):
+    data: list[GetListProjectResponse]
+
+
+@router.post("/", response_model=CreateProjectResponse)
 async def post_create_project(
-    projectrequest: ProjectRequest,
+    projectrequest: CreateProjectRequest,
     db: Session = Depends(get_db),
     user: UserDB = Depends(get_current_user),
 ):
@@ -122,3 +128,24 @@ async def get_project(
 ):
     project = fetch_project_db_by_id(project_id=project_id, user_id=user.id, db=db)
     return project
+
+
+@router.get("/", response_model=GetListProjectsResponse)
+async def get_list_projects(
+    sort: SortType | None = Query(
+        "created_at_desc",
+        description="Сортировка: name_asc, name_desc, created_at_asc, created_at_desc, updated_at_asc, updated_at_desc",
+    ),
+    search: str | None = Query(
+        None,
+        description="Поиск по названию проекта",
+    ),
+    db: Session = Depends(get_db),
+    user: UserDB = Depends(get_current_user),
+):
+    projects = fetch_projects_by_user_id(
+        user_id=user.id, db=db, sort=sort, search=search
+    )
+    return GetListProjectsResponse(
+        data=[GetListProjectResponse.model_validate(project) for project in projects]
+    )
