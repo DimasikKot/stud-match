@@ -17,6 +17,7 @@ from app.services.project import (
     create_project,
     is_owner_of_project,
     update_project_by_id,
+    fetch_project_db_by_id,
 )
 from app.core.database import get_db
 from app.services.security_deps import (
@@ -62,6 +63,21 @@ class PatchProjectResponse(BaseModel):
     skills_vector: dict[str, Any]
 
 
+class GetProjectResponse(BaseModel):
+    name: str
+    description: str
+    skills_vector: dict[str, Any]
+
+
+# class GetProjectsRequest(BaseModel):
+#     id: int
+
+# class GetProjectsResponse(BaseModel):
+#     name: str
+#     description: str
+#     skills_vector: dict[str, Any]
+
+
 @router.post("/", response_model=ProjectResponse)
 async def post_create_project(
     projectrequest: ProjectRequest,
@@ -78,7 +94,7 @@ async def post_create_project(
     return project
 
 
-@router.post("/patch", response_model=PatchProjectResponse)
+@router.patch("/{project_id}", response_model=PatchProjectResponse)
 async def patch_update_project(
     projectrequest: PatchProjectRequest,
     db: Session = Depends(get_db),
@@ -95,4 +111,14 @@ async def patch_update_project(
         new_skills_vector=projectrequest.skills_vector,
     )
 
+    return project
+
+
+@router.get("/{project_id}", response_model=GetProjectResponse)
+async def get_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    user: UserDB = Depends(get_current_user),
+):
+    project = fetch_project_db_by_id(project_id=project_id, user_id=user.id, db=db)
     return project
