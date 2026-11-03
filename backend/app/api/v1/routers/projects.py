@@ -1,5 +1,5 @@
 from typing import Any
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 import uuid
 from datetime import timedelta, datetime
 from fastapi import (
@@ -46,6 +46,33 @@ class CreateProjectRequest(BaseModel):
     description: str
     skills_vector: dict[str, Any]
 
+    @field_validator("name")
+    def validate_name(cls, value):
+        if len(value) > 255:
+            raise HTTPException(
+                status_code=400,
+                detail="Название проекта не должно превышать 255 символов",
+            )
+        return value
+
+    @field_validator("description")
+    def validate_description(cls, value):
+        if len(value) > 1024:
+            raise HTTPException(
+                status_code=400,
+                detail="Описание проекта не должно превышать 1024 символов",
+            )
+        return value
+
+    @field_validator("skills_vector")
+    def validate_skills_vector(cls, value):
+        if len(value) > 1024:
+            raise HTTPException(
+                status_code=400,
+                detail="Вектор навыков не должен превышать 1024 символов",
+            )
+        return value
+
 
 class CreateProjectResponse(BaseModel):
     name: str
@@ -58,6 +85,33 @@ class PatchProjectRequest(BaseModel):
     name: str
     description: str
     skills_vector: dict[str, Any]
+
+    @field_validator("name")
+    def validate_name(cls, value):
+        if len(value) > 255:
+            raise HTTPException(
+                status_code=400,
+                detail="Название проекта не должно превышать 255 символов",
+            )
+        return value
+
+    @field_validator("description")
+    def validate_description(cls, value):
+        if len(value) > 1024:
+            raise HTTPException(
+                status_code=400,
+                detail="Описание проекта не должно превышать 1024 символов",
+            )
+        return value
+
+    @field_validator("skills_vector")
+    def validate_skills_vector(cls, value):
+        if len(value) > 1024:
+            raise HTTPException(
+                status_code=400,
+                detail="Вектор навыков не должен превышать 1024 символов",
+            )
+        return value
 
 
 class PatchProjectResponse(BaseModel):
@@ -112,7 +166,6 @@ async def patch_update_project(
     user: UserDB = Depends(get_current_user),
 ):
     is_owner_of_project(project_id=projectrequest.id, user_id=user.id, db=db)
-
     project = update_project_by_id(
         project_id=projectrequest.id,
         user_id=user.id,

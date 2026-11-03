@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 from typing import Literal
 from fastapi import HTTPException
+from pydantic import field_validator
 from sqlalchemy.orm import Session
 from typing import Any
 from app.core.config import settings
