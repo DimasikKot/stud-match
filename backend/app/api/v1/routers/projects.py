@@ -2,7 +2,6 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 import uuid
 from datetime import timedelta, datetime
-
 from fastapi import (
     APIRouter,
     Depends,
@@ -21,6 +20,7 @@ from app.services.project import (
     fetch_project_db_by_id,
     SortType,
     fetch_projects_by_user_id,
+    delete_project_by_id,
 )
 from app.core.database import get_db
 from app.services.security_deps import (
@@ -82,6 +82,11 @@ class GetListProjectResponse(BaseModel):
 
 class GetListProjectsResponse(BaseModel):
     data: list[GetListProjectResponse]
+
+
+class GetEchoResponse(BaseModel):
+    detail: str
+    success: bool
 
 
 @router.post("/", response_model=CreateProjectResponse)
@@ -149,3 +154,13 @@ async def get_list_projects(
     return GetListProjectsResponse(
         data=[GetListProjectResponse.model_validate(project) for project in projects]
     )
+
+
+@router.delete("/{project_id}", response_model=GetEchoResponse)
+async def delete_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    user: UserDB = Depends(get_current_user),
+):
+    delete_project_by_id(project_id=project_id, user_id=user.id, db=db)
+    return GetEchoResponse(detail="Проект успешно удален!", success=True)
