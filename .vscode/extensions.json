@@ -1,6 +1,5 @@
 {
   "recommendations": [
-    "peterschmalfeldt.explorer-exclude",
     "dbaeumer.vscode-eslint",
     "bradlc.vscode-tailwindcss",
     "ms-python.python",
@@ -10,6 +9,14 @@
     "eamodio.gitlens",
     "oderwat.indent-rainbow",
     "ms-python.black-formatter",
-    "codeium.codeium"
+    "codeium.codeium",
+    "madcatpx.explorer-exclude-manager",
+    "ms-vsliveshare.vsliveshare",
+    "ahmadalli.vscode-nginx-conf",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy",
+    "ms-python.vscode-python-envs",
+    "ms-ceintl.vscode-language-pack-ru",
+    "tomoki1207.pdf"
   ]
 }
