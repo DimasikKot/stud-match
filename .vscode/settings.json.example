@@ -6,10 +6,7 @@
     "**/.jj": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    ".vscode": true,
-    "postgres/data": true,
     "postgres/ssl": true,
-    "postgres/pg_hba.conf": true,
     "frontend/main.tsx": true,
     "frontend/index.html": true,
     "frontend/node_modules": true,
@@ -32,37 +29,74 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
     "prettier.tabWidth": 2,
+    "editor.formatOnSave": true,
     "editor.insertSpaces": true
   },
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
     "prettier.tabWidth": 2,
+    "editor.formatOnSave": true,
     "editor.insertSpaces": true
   },
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
     "prettier.tabWidth": 2,
+    "editor.formatOnSave": true,
     "editor.insertSpaces": true
   },
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
     "prettier.tabWidth": 2,
+    "editor.formatOnSave": true,
     "editor.insertSpaces": true
   },
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",
     "editor.tabSize": 4,
     "prettier.tabWidth": 4,
+    "editor.formatOnSave": true,
     "editor.insertSpaces": true
   },
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
     "prettier.tabWidth": 2,
+    "editor.formatOnSave": true,
     "editor.insertSpaces": true
+  },
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "[dockercompose]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "[html]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[cpp]": {
+    "editor.wordBasedSuggestions": "off",
+    "editor.semanticHighlighting.enabled": true,
+    "editor.stickyScroll.defaultModel": "foldingProviderModel",
+    "editor.formatOnSave": true,
+    "editor.suggest.insertMode": "replace"
+  },
+  "[bat]": {
+    "editor.formatOnSave": true,
+    "files.eol": "\r\n"
+  },
+  "[sql]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "inferrinizzard.prettier-sql-vscode"
+  },
+  "editor.unicodeHighlight.allowedLocales": {
+    "ru": true
   },
   "python.analysis.extraPaths": ["./backend"],
   "python.autoComplete.extraPaths": ["./backend"],
@@ -76,6 +110,9 @@
     "rgba(255,127,255,0.02)",
     "rgba(79,236,236,0.02)"
   ],
-  "python.analysis.typeCheckingMode": "basic",
-  "python-envs.defaultEnvManager": "ms-python.python:system"
+  "python.analysis.typeCheckingMode": "standard",
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+  "explorerExcludeManager.backup": {},
+  "commentTranslate.targetLanguage": "ru",
+  "python.terminal.useEnvFile": true
 }

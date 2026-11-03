@@ -5,12 +5,27 @@
 # ```
 
 repos:
+  # 1. Общие хуки для всех файлов (проверка пробелов, концов строк и т.д.)
+  # - repo: https://github.com/pre-commit/pre-commit-hooks
+  #   rev: v4.6.0 # Используйте актуальную версию
+  #   hooks:
+  #     - id: trailing-whitespace
+  #     - id: end-of-file-fixer
+  #     - id: check-yaml
+  #     - id: check-json
+  #     - id: check-added-large-files
+  #       args: [--maxkb=500]
+  #     - id: mixed-line-ending
+
+  # 2. Prettier для форматирования широкого спектра файлов
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
-        types_or: [javascript, jsx, ts, tsx, json, css, markdown, sql]
+        files: \.(js|jsx|ts|tsx|json|css|scss|less|html|md|markdown|yaml|yml|sql)$
         additional_dependencies: [prettier@3.9.10]
+
+  # 3. Black для Python (ваш текущий хук)
   - repo: https://github.com/psf/black
     rev: 26.10.1
     hooks:
