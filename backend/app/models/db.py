@@ -39,9 +39,7 @@ class UserDB(Base):
         server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
-        server_default=func.now(),
+        TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
 
@@ -67,9 +65,7 @@ class FileDB(Base):
         server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
-        server_default=func.now(),
+        TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
 
@@ -104,9 +100,7 @@ class ProjectDB(Base):
         server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
-        server_default=func.now(),
+        TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
 
@@ -141,9 +135,7 @@ class StudentDB(Base):
         server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
-        server_default=func.now(),
+        TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
 
@@ -173,7 +165,5 @@ class TeacherDB(Base):
         server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
-        server_default=func.now(),
+        TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
     )
