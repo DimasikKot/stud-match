@@ -243,8 +243,6 @@ services:
       - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:?RUSTFS_SECRET_KEY variable is not set}
       - RUSTFS_OBS_LOGGER_LEVEL=info
       - RUSTFS_OBS_LOG_DIRECTORY=/app/logs
-      # Optional TLS:
-      # - mount your cert directory to /opt/tls
       - RUSTFS_TLS_PATH=/opt/tls
       # - when TLS is enabled, health checks automatically switch to HTTPS
       # Keep strict disk topology checks enabled by default.
