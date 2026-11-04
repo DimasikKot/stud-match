@@ -245,7 +245,7 @@ services:
       - RUSTFS_OBS_LOG_DIRECTORY=/app/logs
       # Optional TLS:
       # - mount your cert directory to /opt/tls
-      # - set RUSTFS_TLS_PATH=/opt/tls
+      - RUSTFS_TLS_PATH=/opt/tls
       # - when TLS is enabled, health checks automatically switch to HTTPS
       # Keep strict disk topology checks enabled by default.
       # For local testing only, set `RUSTFS_UNSAFE_BYPASS_DISK_CHECK=true` explicitly.
@@ -253,6 +253,7 @@ services:
     volumes:
       - ./rustfs/data:/data
       - ./rustfs/logs:/app/logs
+      - ./rustfs/ssl:/opt/tls
     restart: unless-stopped
     healthcheck:
       # Default behavior:
@@ -298,7 +299,7 @@ services:
     image: alpine
     volumes:
       - ./rustfs/data:/data
-      - .rustfs/logs:/app/logs
+      - ./rustfs/logs:/app/logs
     command: >
       sh -c "
         chown -R 10001:10001 /data /app/logs &&
