@@ -6,7 +6,7 @@ from pydantic import field_validator
 from sqlalchemy.orm import Session
 from typing import Any
 from app.core.config import settings
-from app.models.db import ProjectDB, UserDB
+from app.models.db import UserDB, ProjectDB
 from fastapi import (
     APIRouter,
     Depends,
@@ -118,7 +118,6 @@ def update_project_by_id(
     new_description: str | None,
     new_skills_vector: dict[str, Any] | None,
 ) -> ProjectDB:
-    is_owner_of_project(project_id, user_id, db)
     project_db = fetch_project_db_by_id(project_id=project_id, user_id=user_id, db=db)
 
     if new_name is not None:
@@ -137,7 +136,6 @@ def update_project_by_id(
 
 
 def delete_project_by_id(project_id: int, user_id: int, db: Session) -> None:
-    is_owner_of_project(project_id, user_id, db)
     project_db = fetch_project_db_by_id(project_id=project_id, user_id=user_id, db=db)
     db.delete(project_db)
     db.commit()
