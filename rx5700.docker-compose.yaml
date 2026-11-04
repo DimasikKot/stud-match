@@ -17,7 +17,7 @@ services:
       - /dev/dri:/dev/dri
     group_add:
       - video
-      - "44" # render группа в WSL2 (может отличаться)
+      - "44" # render группа в WSL2 ( может отличаться)
     privileged: true
     ipc: host
     deploy:
