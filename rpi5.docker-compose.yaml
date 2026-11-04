@@ -234,7 +234,6 @@ services:
       - "no-new-privileges:true"
 
     environment:
-      - RUSTFS_VOLUMES=/data
       - RUSTFS_ADDRESS=${RUSTFS_ADDRESS}
       - RUSTFS_CONSOLE_ADDRESS=${RUSTFS_CONSOLE_ADDRESS}
       - RUSTFS_CONSOLE_ENABLE=true
@@ -242,6 +241,7 @@ services:
       - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:?RUSTFS_ACCESS_KEY variable is not set}
       - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:?RUSTFS_SECRET_KEY variable is not set}
       - RUSTFS_OBS_LOGGER_LEVEL=info
+      - RUSTFS_VOLUMES=/data
       - RUSTFS_OBS_LOG_DIRECTORY=/app/logs
       - RUSTFS_TLS_PATH=/opt/tls
       # - when TLS is enabled, health checks automatically switch to HTTPS
@@ -249,8 +249,8 @@ services:
       # For local testing only, set `RUSTFS_UNSAFE_BYPASS_DISK_CHECK=true` explicitly.
       - RUSTFS_UNSAFE_BYPASS_DISK_CHECK=${RUSTFS_UNSAFE_BYPASS_DISK_CHECK:-false}
     volumes:
-      - ./rustfs/data:/data
-      - ./rustfs/logs:/app/logs
+      - /home/rpi5/Xpart/sm-rustfs/data:/data
+      - /home/rpi5/Xpart/sm-rustfs/logs:/app/logs
       - ./rustfs/ssl:/opt/tls
     restart: unless-stopped
     healthcheck:
@@ -299,8 +299,8 @@ services:
   volume-permission-helper:
     image: alpine
     volumes:
-      - ./rustfs/data:/data
-      - ./rustfs/logs:/app/logs
+      - /home/rpi5/Xpart/sm-rustfs/data:/data
+      - /home/rpi5/Xpart/sm-rustfs/logs:/app/logs
     command: >
       sh -c "
         chown -R 10001:10001 /data /app/logs &&
