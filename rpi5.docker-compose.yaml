@@ -249,8 +249,8 @@ services:
       # For local testing only, set `RUSTFS_UNSAFE_BYPASS_DISK_CHECK=true` explicitly.
       - RUSTFS_UNSAFE_BYPASS_DISK_CHECK=${RUSTFS_UNSAFE_BYPASS_DISK_CHECK:-false}
     volumes:
-      - /home/rpi5/Xpart/sm-rustfs/data:/data
-      - /home/rpi5/Xpart/sm-rustfs/logs:/app/logs
+      - ./rustfs/data:/data
+      - ./rustfs/logs:/app/logs
       - ./rustfs/ssl:/opt/tls
     restart: unless-stopped
     healthcheck:
@@ -295,22 +295,6 @@ services:
           memory: 1G
     networks:
       - nginx-network
-
-  volume-permission-helper:
-    image: alpine
-    volumes:
-      - /home/rpi5/Xpart/sm-rustfs/data:/data
-      - /home/rpi5/Xpart/sm-rustfs/logs:/app/logs
-    command: >
-      sh -c "
-        chown -R 10001:10001 /data /app/logs &&
-        echo 'Volume Permissions fixed' &&
-        exit 0
-      "
-    # Permission baseline:
-    # - default RustFS runtime user is 10001:10001
-    # - alternatively, run rustfs service with host-matched `user: \"<uid>:<gid>\"`
-    restart: "no"
 
 networks:
   nginx-network:
