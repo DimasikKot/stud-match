@@ -35,4 +35,5 @@ nginx/certbot-webroot/
 nginx/letsencrypt/
 nginx/nginx.conf
 *.pytest_cache/
-rustfs/
+rustfs/data
+rustfs/logs
