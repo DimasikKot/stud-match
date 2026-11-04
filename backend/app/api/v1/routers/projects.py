@@ -81,7 +81,6 @@ class CreateProjectResponse(BaseModel):
 
 
 class PatchProjectRequest(BaseModel):
-    id: int
     name: str
     description: str
     skills_vector: dict[str, Any]
@@ -161,13 +160,14 @@ async def post_create_project(
 
 @router.patch("/{project_id}", response_model=PatchProjectResponse)
 async def patch_update_project(
+    project_id: int,
     projectrequest: PatchProjectRequest,
     db: Session = Depends(get_db),
     user: UserDB = Depends(get_current_user),
 ):
-    is_owner_of_project(project_id=projectrequest.id, user_id=user.id, db=db)
+    is_owner_of_project(project_id=project_id, user_id=user.id, db=db)
     project = update_project_by_id(
-        project_id=projectrequest.id,
+        project_id=project_id,
         user_id=user.id,
         db=db,
         new_name=projectrequest.name,

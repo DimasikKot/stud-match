@@ -112,11 +112,6 @@ class StudentDB(Base):
         primary_key=True,
         index=True,
     )
-    user_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=False,
-    )
     name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
