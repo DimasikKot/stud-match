@@ -172,7 +172,7 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.PROJECT_PATH }}
-            git pull origin main
+            sudo git pull origin main
 
             COMPOSE="docker compose -f rpi5.docker-compose.yaml"
 
