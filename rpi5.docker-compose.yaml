@@ -288,6 +288,9 @@ services:
       retries: 3
       start_period: 40s
 
+    ports:
+      - "9050:9050"
+      - "9150:9150"
     deploy:
       resources:
         limits:
