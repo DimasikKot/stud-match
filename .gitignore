@@ -30,6 +30,7 @@ dist-ssr
 backend/files/
 files/
 postgres/data/
+postgres/data_old/
 redis/data/
 nginx/certbot-webroot/
 nginx/letsencrypt/
