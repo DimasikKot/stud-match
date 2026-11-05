@@ -7,6 +7,7 @@ import { PrivateRoute } from "@/shared/components/PrivateRoute";
 import { Home } from "@/pages/main/Home";
 import { NotFound } from "@/pages/main/NotFound";
 import { Components } from "@/pages/main/Components";
+import { Files } from "@/pages/main/Files";
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="*" element={<NotFound />} />
           <Route path="/components" element={<Components />} />
+          <Route path="/files" element={<Files />} />
 
           {/* <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} /> */}

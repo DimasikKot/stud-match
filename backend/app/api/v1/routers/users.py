@@ -1,11 +1,8 @@
 from pydantic import BaseModel, ConfigDict
-import uuid
-from datetime import timedelta
 
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     Response,
     Security,
     status,
@@ -14,19 +11,13 @@ from redis import Redis
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.services import user as user_service
 from app.services.security_deps import (
     get_current_user,
     get_redis,
     refresh_cookie_scheme,
 )
 from app.models.db import UserDB
-from app.services.security import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    create_refresh_token,
-    decode_refresh_token,
-)
 from app.core.config import settings
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -89,21 +80,7 @@ def _clear_auth_cookies(response: Response) -> None:
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
 def register(user_in: UserRequest, db: Session = Depends(get_db)):
-    existing = db.query(UserDB).filter(UserDB.email == user_in.email).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
-        )
-
-    user = UserDB(
-        email=user_in.email,
-        hashed_password=hash_password(user_in.password),
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
+    return user_service.register_user(db, user_in.email, user_in.password)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -113,26 +90,9 @@ def login(
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ):
-    user = db.query(UserDB).filter(UserDB.email == user_in.email).first()
-    if not user or not verify_password(user_in.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-        )
+    user = user_service.authenticate_user(db, user_in.email, user_in.password)
 
-    # Создаём access-токен
-    access_token = create_access_token(user.id)
-
-    # Создаём refresh-токен с уникальным jti
-    jti = str(uuid.uuid4())
-    refresh_token = create_refresh_token(user.id, jti)
-
-    # Сохраняем jti в Redis (с TTL, равным времени жизни refresh-токена)
-    redis.set(
-        f"refresh:{jti}",
-        str(user.id),
-        ex=timedelta(hours=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS),
-    )
+    access_token, refresh_token = user_service.issue_auth_tokens(user, redis)
 
     # Устанавливаем куки
     _set_auth_cookies(response, access_token, refresh_token)
@@ -147,61 +107,14 @@ def refresh_tokens(
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ):
-    if not refresh_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token missing",
-        )
-
-    payload = decode_refresh_token(refresh_token)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token",
-        )
-
-    user_id = payload.get("sub")
-    jti = payload.get("jti")
-    if not user_id or not jti:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
-        )
-
-    # Проверяем, что jti существует в Redis (токен не отозван)
-    stored_user_id = redis.get(f"refresh:{jti}")
-    if not stored_user_id or stored_user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token revoked or reuse detected",
-        )
-
-    # Проверяем, что пользователь существует
-    user = db.query(UserDB).filter(UserDB.id == int(user_id)).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
-
-    # --- РОТАЦИЯ: удаляем старый jti и создаём новый ---
-    redis.delete(f"refresh:{jti}")
-
-    new_access_token = create_access_token(user.id)
-
-    new_jti = str(uuid.uuid4())
-    new_refresh_token = create_refresh_token(user.id, new_jti)
-
-    redis.set(
-        f"refresh:{new_jti}",
-        str(user.id),
-        ex=timedelta(hours=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS),
+    access_token, new_refresh_token = user_service.rotate_auth_tokens(
+        db, redis, refresh_token
     )
 
     # Устанавливаем новые куки
-    _set_auth_cookies(response, new_access_token, new_refresh_token)
+    _set_auth_cookies(response, access_token, new_refresh_token)
 
-    return TokenResponse(access_token=new_access_token)
+    return TokenResponse(access_token=access_token)
 
 
 @router.post("/logout")
@@ -211,10 +124,7 @@ def logout(
     redis: Redis = Depends(get_redis),
 ):
     # Отзываем refresh-токен, если он есть
-    if refresh_token:
-        payload = decode_refresh_token(refresh_token)
-        if payload and payload.get("jti"):
-            redis.delete(f"refresh:{payload['jti']}")
+    user_service.revoke_refresh_token(redis, refresh_token)
 
     # Удаляем куки
     _clear_auth_cookies(response)

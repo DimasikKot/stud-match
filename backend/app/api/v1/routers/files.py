@@ -1,27 +1,25 @@
-import uuid
-import os
 from datetime import datetime
-from sqlalchemy.orm import Session
-from botocore.exceptions import ClientError
+from urllib.parse import quote
+
 from fastapi import (
     APIRouter,
     Depends,
     File,
     UploadFile,
-    HTTPException,
 )
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from app.core.database import get_db
 from app.models.db import FileDB
-from app.services.file import s3_client
-from app.core.config import settings
+from app.services import file as file_service
 
 router: APIRouter = APIRouter(prefix="/files", tags=["Files"])
 
 
-class UploadFileResponse(BaseModel):
+class FileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -33,56 +31,100 @@ class UploadFileResponse(BaseModel):
     updated_at: datetime
 
 
-@router.post("/", response_model=UploadFileResponse)
-async def upload_file(
-    file: UploadFile = File(...),
+class FileListResponse(BaseModel):
+    data: list[FileResponse]
+
+
+class MessageResponse(BaseModel):
+    success: bool
+    detail: str
+
+
+def _content_disposition(disposition: str, filename: str) -> str:
+    """Content-Disposition с поддержкой не-ASCII имён (RFC 5987)."""
+    return f"{disposition}; filename*=UTF-8''{quote(filename)}"
+
+
+async def _stream_file(file_db: FileDB, disposition: str) -> StreamingResponse:
+    """Отдаёт файл из RustFS/S3 потоком."""
+    s3_response = await run_in_threadpool(file_service.get_file_object, file_db)
+    body = s3_response["Body"]
+
+    def iterator():
+        try:
+            while chunk := body.read(64 * 1024):
+                yield chunk
+        finally:
+            body.close()
+
+    headers = {
+        "Content-Disposition": _content_disposition(disposition, file_db.name),
+    }
+    content_length = s3_response.get("ContentLength")
+    if content_length is not None:
+        headers["Content-Length"] = str(content_length)
+
+    return StreamingResponse(
+        iterator(),
+        media_type=file_service.guess_content_type(file_db),
+        headers=headers,
+    )
+
+
+@router.post("/", response_model=list[FileResponse])
+async def upload_files(
+    files: list[UploadFile] = File(...),
     db: Session = Depends(get_db),
 ):
-    original_name = file.filename or "file"
-    ext = os.path.splitext(original_name)[1]
-    object_key = f"{uuid.uuid4()}{ext}"
-
-    file.file.seek(0, os.SEEK_END)
-    size = file.file.tell()
-    file.file.seek(0)
-
+    """Загружает один или несколько файлов (multipart/form-data, поле `files`)."""
     try:
-        await run_in_threadpool(
-            s3_client.upload_fileobj,
-            file.file,
-            settings.RUSTFS_BUCKET,
-            object_key,
-            ExtraArgs={
-                "ContentType": file.content_type or "application/octet-stream",
-            },
-        )
-    except ClientError as exc:
-        raise HTTPException(status_code=502, detail=f"RustFS error: {exc}")
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {exc}")
-    finally:
-        await file.close()
-
-    file_record = FileDB(
-        name=original_name,
-        object_key=object_key,
-        path=settings.RUSTFS_BUCKET,
-        size=size,
-    )
-    try:
-        db.add(file_record)
-        db.commit()
-        db.refresh(file_record)
-    except Exception as exc:
-        db.rollback()
-        try:
-            await run_in_threadpool(
-                s3_client.delete_object,
-                Bucket=settings.RUSTFS_BUCKET,
-                Key=object_key,
+        results = []
+        for file in files:
+            results.append(
+                await run_in_threadpool(
+                    file_service.upload_file,
+                    db,
+                    file.file,
+                    file.filename or "file",
+                    file.content_type or "application/octet-stream",
+                )
             )
-        except Exception:
-            pass
-        raise HTTPException(status_code=500, detail=f"DB error: {exc}")
+        return results
+    finally:
+        for file in files:
+            await file.close()
 
-    return file_record
+
+@router.get("/", response_model=FileListResponse)
+def list_files(db: Session = Depends(get_db)):
+    files = file_service.fetch_files(db)
+    return FileListResponse(data=[FileResponse.model_validate(file) for file in files])
+
+
+@router.get("/{file_id}/view")
+async def view_file(
+    file_id: int,
+    db: Session = Depends(get_db),
+):
+    """Просмотр файла inline (браузер откроет его, не скачивая)."""
+    file_db = file_service.fetch_file_by_id(db, file_id)
+    return await _stream_file(file_db, "inline")
+
+
+@router.get("/{file_id}/download")
+async def download_file(
+    file_id: int,
+    db: Session = Depends(get_db),
+):
+    """Скачивание файла как вложения (attachment)."""
+    file_db = file_service.fetch_file_by_id(db, file_id)
+    return await _stream_file(file_db, "attachment")
+
+
+@router.delete("/{file_id}", response_model=MessageResponse)
+def delete_file(
+    file_id: int,
+    db: Session = Depends(get_db),
+):
+    file_service.delete_file_by_id(db, file_id)
+    return MessageResponse(detail="Файл успешно удален!", success=True)

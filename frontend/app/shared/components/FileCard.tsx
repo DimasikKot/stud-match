@@ -65,10 +65,11 @@ export const FileCard = ({
           <TextUI variant="desc" maxLines={1} className="mt-1">
             <strong>Размечен моделью:</strong> {file.prediction_model.name}
             {" ("}
-            {file.prediction_model.parameters["Базовая модель"] &&
-              String(file.prediction_model.parameters["Базовая модель"])
-                .split("/")
-                .pop()}
+            {file.prediction_model.parameters["Базовая модель"]
+              ? String(file.prediction_model.parameters["Базовая модель"])
+                  .split("/")
+                  .pop()
+              : null}
             {")"}
           </TextUI>
         )}

@@ -166,6 +166,8 @@ export function Header({
             Компоненты
           </ButtonUI>
 
+          <ButtonUI onClick={() => navigate("/files")}>Файлы</ButtonUI>
+
           {username ? (
             <Menu as="div" className="relative">
               {/* Кнопка */}
