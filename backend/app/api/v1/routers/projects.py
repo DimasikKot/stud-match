@@ -51,80 +51,20 @@ class CreateProjectRequest(BaseModel):
 
     @field_validator("skills_vector")
     def validate_skills_vector(cls, value):
-        if len(value) > 1024:
+        if len(value) > 20000:
             raise HTTPException(
                 status_code=400,
-                detail="Вектор навыков не должен превышать 1024 символов",
+                detail="Вектор навыков не должен превышать 20000 символов",
             )
         return value
 
 
 class CreateProjectResponse(BaseModel):
-    name: str
-    description: str
-    skills_vector: dict[str, Any]
-
-
-class PatchProjectRequest(BaseModel):
-    name: str
-    description: str
-    skills_vector: dict[str, Any]
-
-    @field_validator("name")
-    def validate_name(cls, value):
-        if len(value) > 255:
-            raise HTTPException(
-                status_code=400,
-                detail="Название проекта не должно превышать 255 символов",
-            )
-        return value
-
-    @field_validator("description")
-    def validate_description(cls, value):
-        if len(value) > 1024:
-            raise HTTPException(
-                status_code=400,
-                detail="Описание проекта не должно превышать 1024 символов",
-            )
-        return value
-
-    @field_validator("skills_vector")
-    def validate_skills_vector(cls, value):
-        if len(value) > 1024:
-            raise HTTPException(
-                status_code=400,
-                detail="Вектор навыков не должен превышать 1024 символов",
-            )
-        return value
-
-
-class PatchProjectResponse(BaseModel):
-    name: str
-    description: str
-    skills_vector: dict[str, Any]
-
-
-class GetProjectResponse(BaseModel):
-    name: str
-    description: str
-    skills_vector: dict[str, Any]
-    created_at: datetime
-    updated_at: datetime
-
-
-class GetListProjectResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    id: int
+
     name: str
-
-
-class GetListProjectsResponse(BaseModel):
-    data: list[GetListProjectResponse]
-
-
-class GetEchoResponse(BaseModel):
-    detail: str
-    success: bool
+    description: str
+    skills_vector: dict[str, Any]
 
 
 @router.post("/", response_model=CreateProjectResponse)
@@ -141,6 +81,67 @@ async def post_create_project(
         skills_vector=projectrequest.skills_vector,
     )
     return project
+
+
+class GetListProjectResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+
+
+class GetListProjectsResponse(BaseModel):
+    data: list[GetListProjectResponse]
+
+
+@router.get("/", response_model=GetListProjectsResponse)
+async def get_list_projects(
+    sort: SortType | None = Query(
+        "created_at_desc",
+        description="Сортировка: name_asc, name_desc, created_at_asc, created_at_desc, updated_at_asc, updated_at_desc",
+    ),
+    search: str | None = Query(
+        None,
+        description="Поиск по названию проекта",
+    ),
+    db: Session = Depends(get_db),
+    user: UserDB = Depends(get_current_user),
+):
+    projects = fetch_projects_by_user_id(
+        user_id=user.id, db=db, sort=sort, search=search
+    )
+    return GetListProjectsResponse(
+        data=[GetListProjectResponse.model_validate(project) for project in projects]
+    )
+
+
+class GetProjectResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    description: str
+    skills_vector: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+
+@router.get("/{project_id}", response_model=GetProjectResponse)
+async def get_project(
+    project_id: int,
+    db: Session = Depends(get_db),
+    user: UserDB = Depends(get_current_user),
+):
+    project = fetch_project_db_by_id(project_id=project_id, user_id=user.id, db=db)
+    return project
+
+
+class PatchProjectRequest(CreateProjectRequest):
+    pass
+
+
+class PatchProjectResponse(CreateProjectResponse):
+    pass
 
 
 @router.patch("/{project_id}", response_model=PatchProjectResponse)
@@ -163,35 +164,9 @@ async def patch_update_project(
     return project
 
 
-@router.get("/{project_id}", response_model=GetProjectResponse)
-async def get_project(
-    project_id: int,
-    db: Session = Depends(get_db),
-    user: UserDB = Depends(get_current_user),
-):
-    project = fetch_project_db_by_id(project_id=project_id, user_id=user.id, db=db)
-    return project
-
-
-@router.get("/", response_model=GetListProjectsResponse)
-async def get_list_projects(
-    sort: SortType | None = Query(
-        "created_at_desc",
-        description="Сортировка: name_asc, name_desc, created_at_asc, created_at_desc, updated_at_asc, updated_at_desc",
-    ),
-    search: str | None = Query(
-        None,
-        description="Поиск по названию проекта",
-    ),
-    db: Session = Depends(get_db),
-    user: UserDB = Depends(get_current_user),
-):
-    projects = fetch_projects_by_user_id(
-        user_id=user.id, db=db, sort=sort, search=search
-    )
-    return GetListProjectsResponse(
-        data=[GetListProjectResponse.model_validate(project) for project in projects]
-    )
+class GetEchoResponse(BaseModel):
+    success: bool
+    detail: str
 
 
 @router.delete("/{project_id}", response_model=GetEchoResponse)

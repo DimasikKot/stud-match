@@ -22,25 +22,6 @@ from app.services.student import (
 router = APIRouter(prefix="/students", tags=["Students"])
 
 
-class GetStudentResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    name: str
-    description: str
-    skills_vector: dict[str, Any]
-    created_at: datetime
-    updated_at: datetime
-
-
-@router.get("/{student_id}", response_model=GetStudentResponse)
-async def get_student(
-    student_id: int,
-    db: Session = Depends(get_db),
-):
-    student = fetch_student_db_by_id(db=db, student_id=student_id)
-    return student
-
-
 class CreateStudentRequest(BaseModel):
     name: str
     description: str
@@ -75,12 +56,14 @@ class CreateStudentRequest(BaseModel):
 
 
 class CreateStudentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     name: str
     description: str
     skills_vector: dict[str, Any]
 
 
-@router.post("/", response_model=GetStudentResponse)
+@router.post("/", response_model=CreateStudentResponse)
 async def create_student(
     studentrequest: CreateStudentRequest,
     db: Session = Depends(get_db),
@@ -94,43 +77,61 @@ async def create_student(
     return student
 
 
-class UpdateStudentRequest(BaseModel):
-    name: str | None
-    description: str | None
-    skills_vector: dict[str, Any] | None
+class GetListStudentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
-    @field_validator("name")
-    def validate_name(cls, value):
-        if len(value) > 255:
-            raise HTTPException(
-                status_code=400,
-                detail="Имя студента не должно превышать 255 символов",
-            )
-        return value
-
-    @field_validator("description")
-    def validate_description(cls, value):
-        if len(value) > 1024:
-            raise HTTPException(
-                status_code=400,
-                detail="Описание студента не должно превышать 1024 символов",
-            )
-        return value
-
-    @field_validator("skills_vector")
-    def validate_skills_vector(cls, value):
-        if len(value) > 1024:
-            raise HTTPException(
-                status_code=400,
-                detail="Вектор навыков не должен превышать 1024 символов",
-            )
-        return value
+    id: int
+    name: str
 
 
-class UpdateStudentResponse(BaseModel):
+class GetListStudentsResponse(BaseModel):
+    data: list[GetListStudentResponse]
+
+
+@router.get("/", response_model=GetListStudentsResponse)
+async def get_all_students(
+    sort: SortType | None = Query(
+        "created_at_desc",
+        description="Сортировка: name_asc, name_desc, created_at_asc, created_at_desc, updated_at_asc, updated_at_desc",
+    ),
+    search: str | None = Query(
+        None,
+        description="Поиск по названию проекта",
+    ),
+    db: Session = Depends(get_db),
+):
+    students = fetch_all_students(db=db, sort=sort, search=search)
+    return GetListStudentsResponse(
+        data=[GetListStudentResponse.model_validate(student) for student in students]
+    )
+
+
+class GetStudentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
     name: str
     description: str
     skills_vector: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+
+@router.get("/{student_id}", response_model=GetStudentResponse)
+async def get_student(
+    student_id: int,
+    db: Session = Depends(get_db),
+):
+    student = fetch_student_db_by_id(db=db, student_id=student_id)
+    return student
+
+
+class UpdateStudentRequest(CreateStudentRequest):
+    pass
+
+
+class UpdateStudentResponse(CreateStudentResponse):
+    pass
 
 
 @router.patch("/{student_id}", response_model=UpdateStudentResponse)
@@ -149,31 +150,9 @@ async def update_student(
     return student
 
 
-class GetAllStudentsResponse(BaseModel):
-    data: list[GetStudentResponse]
-
-
-@router.get("/", response_model=GetAllStudentsResponse)
-async def get_all_students(
-    sort: SortType | None = Query(
-        "created_at_desc",
-        description="Сортировка: name_asc, name_desc, created_at_asc, created_at_desc, updated_at_asc, updated_at_desc",
-    ),
-    search: str | None = Query(
-        None,
-        description="Поиск по названию проекта",
-    ),
-    db: Session = Depends(get_db),
-):
-    students = fetch_all_students(db=db, sort=sort, search=search)
-    return GetAllStudentsResponse(
-        data=[GetStudentResponse.model_validate(student) for student in students]
-    )
-
-
 class GetEchoResponse(BaseModel):
-    detail: str
     success: bool
+    detail: str
 
 
 @router.delete("/{student_id}", response_model=GetEchoResponse)
