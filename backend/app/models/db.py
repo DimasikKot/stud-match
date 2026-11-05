@@ -63,7 +63,7 @@ class FileDB(Base):
         nullable=False,
     )
     size: Mapped[int] = mapped_column(
-        BigInteger,
+        Integer,
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(

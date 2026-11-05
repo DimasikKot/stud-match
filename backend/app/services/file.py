@@ -20,3 +20,9 @@ def create_s3_client():
 
 
 s3_client = create_s3_client()
+
+
+# def upload_file_in_s3():
+
+
+# def upload_file_in_db():
