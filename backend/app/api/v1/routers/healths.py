@@ -1,3 +1,4 @@
+import json
 import time
 from typing import Any
 from fastapi import APIRouter, Depends
@@ -15,6 +16,8 @@ import httpx
 import boto3
 from botocore.exceptions import ClientError
 from botocore.config import Config
+import warnings
+import urllib3
 
 router: APIRouter = APIRouter(prefix="/healths", tags=["Healths"])
 
@@ -167,6 +170,10 @@ async def get_redis_health(redis: aioredis.Redis = Depends(get_async_redis)):
         await redis.aclose()
 
 
+# подавляем шумные предупреждения от urllib3 (используется boto3)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
 @router.get("/rustfs", response_model=HealthResponse)
 async def get_rustfs_health():
     """
@@ -184,12 +191,12 @@ async def get_rustfs_health():
 
     try:
         # --- 1. Проверка нативного health-эндпоинта RustFS ---
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=5.0, verify=False) as client:
             resp = await client.get(f"{endpoint.rstrip('/')}/health")
             # /health возвращает 200, пока процесс жив[reference:1]
             metrics["health_endpoint"] = {
                 "status_code": resp.status_code,
-                "body": resp.text[:200],
+                "body": resp.json(),
             }
             if resp.status_code != 200:
                 raise RuntimeError(f"RustFS /health returned {resp.status_code}")
@@ -203,11 +210,11 @@ async def get_rustfs_health():
                 aws_secret_access_key=settings.RUSTFS_SECRET_KEY,
                 config=Config(
                     signature_version="s3v4",
-                    s3={
-                        "addressing_style": "path"
-                    },  # RustFS по умолчанию path-style[reference:2]
+                    s3={"addressing_style": "path"},
+                    retries={"max_attempts": 2},
                 ),
                 region_name=settings.RUSTFS_REGION or "us-east-1",
+                verify=False,  # отключаем проверку TLS для botocore
             )
             try:
                 s3.head_bucket(Bucket=settings.RUSTFS_BUCKET)

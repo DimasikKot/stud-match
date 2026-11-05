@@ -64,6 +64,7 @@ jobs:
             postgres_reinit:
               - 'postgres/init/**'
             all_build:
+              - '.github/workflows/push_main.yaml'
               - '.env.example'
               - 'rpi5.docker-compose.yaml'
 
@@ -172,7 +173,7 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.PROJECT_PATH }}
-            sudo git pull origin main
+            git pull origin main
 
             COMPOSE="docker compose -f rpi5.docker-compose.yaml"
 
@@ -258,7 +259,7 @@ jobs:
           DELAY=10
           failed=0
 
-          for ep in backend postgres redis; do
+          for ep in backend postgres redis rustfs; do
             ep_ok=0
             code="000"
             body=""
