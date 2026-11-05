@@ -38,3 +38,7 @@ nginx/nginx.conf
 *.pytest_cache/
 rustfs/data
 rustfs/logs
+nginx/ssl/
+postgres/ssl/
+redis/ssl/
+rustfs/ssl/

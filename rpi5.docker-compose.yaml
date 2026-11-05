@@ -241,24 +241,24 @@ services:
       - RUSTFS_VOLUMES=/data
       - RUSTFS_OBS_LOG_DIRECTORY=/app/logs
       - RUSTFS_TLS_PATH=/opt/tls
-      # - when TLS is enabled, health checks automatically switch to HTTPS
-      # Keep strict disk topology checks enabled by default.
-      # For local testing only, set `RUSTFS_UNSAFE_BYPASS_DISK_CHECK=true` explicitly.
-      - RUSTFS_UNSAFE_BYPASS_DISK_CHECK=${RUSTFS_UNSAFE_BYPASS_DISK_CHECK:-false}
+      # - при включенном TLS проверки работоспособности (healthchecks) автоматически переключаются на HTTPS
+      # По умолчанию сохраняется строгая проверка топологии диска.
+      # Только для локального тестирования можно явно задать
+      # - RUSTFS_UNSAFE_BYPASS_DISK_CHECK=${RUSTFS_UNSAFE_BYPASS_DISK_CHECK:-false}
     volumes:
       - ./rustfs/data:/data
       - ./rustfs/logs:/app/logs
       - ./rustfs/ssl:/opt/tls
     restart: unless-stopped
     healthcheck:
-      # Default behavior:
-      # - HTTP when RUSTFS_TLS_PATH is unset
-      # - HTTPS when RUSTFS_TLS_PATH is set
-      # - loopback TLS uses `-k` unless strict host+CA values are provided
+      # Поведение по умолчанию:
+      # - HTTP, если переменная RUSTFS_TLS_PATH не задана
+      # - HTTPS, если переменная RUSTFS_TLS_PATH задана
+      # - для TLS через loopback используется флаг `-k` (игнорирование проверки сертификата), если не указаны точные значения хоста и CA
       #
-      # Strict TLS example:
-      # - set RUSTFS_HEALTHCHECK_HOST to a SAN-covered hostname
-      # - optionally set RUSTFS_HEALTHCHECK_CA (defaults to /opt/tls/ca.crt when present)
+      # Пример настройки строгого TLS:
+      # - задайте RUSTFS_HEALTHCHECK_HOST (имя хоста, включенное в SAN сертификата)
+      # - при необходимости задайте RUSTFS_HEALTHCHECK_CA (по умолчанию используется /opt/tls/ca.crt, если этот файл существует)
       test: [
           "CMD",
           "sh",
