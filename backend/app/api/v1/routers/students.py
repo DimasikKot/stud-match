@@ -1,34 +1,15 @@
 from typing import Any
 from pydantic import BaseModel, ConfigDict, field_validator
-import uuid
-from datetime import timedelta, datetime
+from datetime import datetime
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
     Query,
-    Response,
-    Security,
-    status,
 )
-from redis import Redis
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.services.security_deps import (
-    get_current_user,
-    get_redis,
-    refresh_cookie_scheme,
-)
-from app.models.db import StudentDB, UserDB
-from app.services.security import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    create_refresh_token,
-    decode_refresh_token,
-)
-from app.core.config import settings
 from app.services.student import (
     delete_student_by_id,
     fetch_all_students,

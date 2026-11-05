@@ -1,13 +1,11 @@
 from datetime import datetime
 from typing import Any
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import (
-    Enum,
     Integer,
     String,
-    Boolean,
     TIMESTAMP,
     ForeignKey,
 )
@@ -52,6 +50,10 @@ class FileDB(Base):
         index=True,
     )
     name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    object_key: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
@@ -161,4 +163,17 @@ class TeacherDB(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class StudentFilesBD(Base):
+    __tablename__ = "student_files"
+
+    file_id: Mapped[int] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    student_id: Mapped[int] = mapped_column(
+        ForeignKey("students.id", ondelete="CASCADE"),
+        primary_key=True,
     )

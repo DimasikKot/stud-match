@@ -1,4 +1,3 @@
-import json
 import time
 from typing import Any
 from fastapi import APIRouter, Depends
@@ -16,8 +15,6 @@ import httpx
 import boto3
 from botocore.exceptions import ClientError
 from botocore.config import Config
-import warnings
-import urllib3
 
 router: APIRouter = APIRouter(prefix="/healths", tags=["Healths"])
 
@@ -168,10 +165,6 @@ async def get_redis_health(redis: aioredis.Redis = Depends(get_async_redis)):
         )
     finally:
         await redis.aclose()
-
-
-# подавляем шумные предупреждения от urllib3 (используется boto3)
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 @router.get("/rustfs", response_model=HealthResponse)

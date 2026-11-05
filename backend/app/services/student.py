@@ -1,25 +1,9 @@
-import shutil
-from pathlib import Path
 from typing import Literal
 from fastapi import HTTPException
-from pydantic import field_validator
 from sqlalchemy.orm import Session
 from typing import Any
-from app.core.config import settings
-from app.models.db import ProjectDB, StudentDB, UserDB
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Response,
-    Security,
-    status,
-)
-from app.services.security_deps import (
-    get_current_user,
-    get_redis,
-    refresh_cookie_scheme,
-)
+from app.models.db import StudentDB
+from fastapi import HTTPException
 
 
 def fetch_student_db_by_id(db: Session, student_id: int):

@@ -1,24 +1,11 @@
-import shutil
-from pathlib import Path
 from typing import Literal
 from fastapi import HTTPException
-from pydantic import field_validator
 from sqlalchemy.orm import Session
 from typing import Any
-from app.core.config import settings
 from app.models.db import UserDB, ProjectDB
 from fastapi import (
-    APIRouter,
-    Depends,
     HTTPException,
-    Response,
-    Security,
     status,
-)
-from app.services.security_deps import (
-    get_current_user,
-    get_redis,
-    refresh_cookie_scheme,
 )
 
 
