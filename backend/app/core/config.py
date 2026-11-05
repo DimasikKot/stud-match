@@ -9,7 +9,7 @@ class _Settings(BaseSettings):
     REDIS_PORT: int = 6300
     REDIS_PASSWORD: str = "password"
 
-    DB_HOST: str = "localhost"
+    DB_HOST: str = "postgres host"
     DB_PORT: int = 5400
     POSTGRES_DB: str = "name db"
     POSTGRES_USER: str = "name user"
@@ -25,9 +25,13 @@ class _Settings(BaseSettings):
     COOKIE_SECURE: bool = True
     COOKIE_SAMESITE: str = "lax"
 
-    TRAIN_JWT_ACCESS_TOKEN_SECRET: str = "r1yGRupzNCNGwEstj5fL0c5NFfjtON2B"
+    RUSTFS_URL: str = "rustfs host"
+    RUSTFS_BUCKET: str = "bucket"
+    RUSTFS_ACCESS_KEY: str = "user"
+    RUSTFS_SECRET_KEY: str = "password"
+    RUSTFS_REGION: str = "ru-central1"
 
-    STORAGE_PATH: str = "./files"
+    TRAIN_JWT_ACCESS_TOKENS: list[str] = ["r1yGRupzNCNGtON2B"]
 
     @property
     def DATABASE_URL(self) -> str:

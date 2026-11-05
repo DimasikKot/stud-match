@@ -38,3 +38,14 @@ export const fetchRedisHealth = async (): Promise<
     errorValidate(error);
   }
 };
+
+export const fetchRustfsHealth = async (): Promise<
+  GetHealthResponse | undefined
+> => {
+  try {
+    const response = await api.get<GetHealthResponse>("/healths/rustfs");
+    return response.data;
+  } catch (error: unknown) {
+    errorValidate(error);
+  }
+};

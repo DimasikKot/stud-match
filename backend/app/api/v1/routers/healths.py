@@ -1,4 +1,5 @@
 import time
+from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -8,13 +9,20 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.services.security_deps import get_async_redis
 
+import redis.asyncio as aioredis
+
+import httpx
+import boto3
+from botocore.exceptions import ClientError
+from botocore.config import Config
+
 router: APIRouter = APIRouter(prefix="/healths", tags=["Healths"])
 
 
 class HealthResponse(BaseModel):
     success: bool
     detail: str
-    metrics: dict | None = None
+    metrics: dict[str, Any] | None = None
 
 
 @router.get("/backend", response_model=HealthResponse)
@@ -115,9 +123,6 @@ def get_postgres_health(db: Session = Depends(get_db)):
         )
 
 
-import redis.asyncio as aioredis
-
-
 @router.get("/redis", response_model=HealthResponse)
 async def get_redis_health(redis: aioredis.Redis = Depends(get_async_redis)):
     use_tls = settings.REDIS_PORT == 6150
@@ -160,3 +165,74 @@ async def get_redis_health(redis: aioredis.Redis = Depends(get_async_redis)):
         )
     finally:
         await redis.aclose()
+
+
+@router.get("/rustfs", response_model=HealthResponse)
+async def get_rustfs_health():
+    """
+    Проверка здоровья RustFS:
+    1. HTTP-пинг /health (liveness/readiness, без аутентификации)
+    2. Опционально — проверка доступа к S3 API через boto3 (head_bucket)
+    """
+    start_time = time.perf_counter()
+    endpoint = settings.RUSTFS_URL
+
+    metrics: dict[str, Any] = {
+        "server": endpoint,
+        "bucket": settings.RUSTFS_BUCKET,
+    }
+
+    try:
+        # --- 1. Проверка нативного health-эндпоинта RustFS ---
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{endpoint.rstrip('/')}/health")
+            # /health возвращает 200, пока процесс жив[reference:1]
+            metrics["health_endpoint"] = {
+                "status_code": resp.status_code,
+                "body": resp.text[:200],
+            }
+            if resp.status_code != 200:
+                raise RuntimeError(f"RustFS /health returned {resp.status_code}")
+
+        # --- 2. Опциональная проверка S3-доступа (если заданы ключи) ---
+        if settings.RUSTFS_ACCESS_KEY and settings.RUSTFS_SECRET_KEY:
+            s3 = boto3.client(
+                "s3",
+                endpoint_url=endpoint,
+                aws_access_key_id=settings.RUSTFS_ACCESS_KEY,
+                aws_secret_access_key=settings.RUSTFS_SECRET_KEY,
+                config=Config(
+                    signature_version="s3v4",
+                    s3={
+                        "addressing_style": "path"
+                    },  # RustFS по умолчанию path-style[reference:2]
+                ),
+                region_name=settings.RUSTFS_REGION or "us-east-1",
+            )
+            try:
+                s3.head_bucket(Bucket=settings.RUSTFS_BUCKET)
+                metrics["s3_bucket_access"] = "ok"
+            except ClientError as e:
+                metrics["s3_bucket_access"] = f"error: {e}"
+                # Не считаем весь сервис нездоровым, если health-эндпоинт жив,
+                # но сообщаем о проблеме с бакетом/правами
+                metrics["s3_bucket_access_detail"] = str(e)
+
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        metrics["latency_ms"] = round(latency_ms, 2)
+
+        return HealthResponse(
+            success=True,
+            detail="RustFS is healthy",
+            metrics=metrics,
+        )
+
+    except Exception as e:
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        metrics["latency_ms"] = round(latency_ms, 2)
+        metrics["error"] = str(e)
+        return HealthResponse(
+            success=False,
+            detail="RustFS is not healthy",
+            metrics=metrics,
+        )

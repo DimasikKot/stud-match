@@ -9,6 +9,7 @@ import {
   fetchBackendHealth,
   fetchPostgresHealth,
   fetchRedisHealth,
+  fetchRustfsHealth,
   type GetHealthResponse,
 } from "@/shared/api/healths";
 import { TextUI } from "@/shared/components/TextUI";
@@ -48,6 +49,7 @@ export function Header({
   const [backendStatus, setBackendStatus] = useState({} as GetHealthResponse);
   const [postgresStatus, setPostgresStatus] = useState({} as GetHealthResponse);
   const [redisStatus, setRedisStatus] = useState({} as GetHealthResponse);
+  const [rustfsStatus, setRustfsStatus] = useState({} as GetHealthResponse);
   const username = localStorage.getItem("username");
 
   const formatPrimitive = (v: unknown): string => {
@@ -82,6 +84,7 @@ export function Header({
     fetchBackendHealth().then((v) => v !== undefined && setBackendStatus(v));
     fetchPostgresHealth().then((v) => v !== undefined && setPostgresStatus(v));
     fetchRedisHealth().then((v) => v !== undefined && setRedisStatus(v));
+    fetchRustfsHealth().then((v) => v !== undefined && setRustfsStatus(v));
   }, []);
 
   return (
@@ -107,32 +110,42 @@ export function Header({
         {/* Индикаторы состояния контейнеров */}
         <div className="flex gap-4">
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <StatusIndicator status={backendStatus.success} />
-            <TextUI
-              variant="desc"
-              isSpan
-              hoverText={formatMetrics(backendStatus.metrics)}
+            <div
+              className="flex flex-row items-center justify-center gap-1"
+              title={formatMetrics(backendStatus.metrics)}
             >
-              Backend
-            </TextUI>
-
-            <StatusIndicator status={postgresStatus.success} />
-            <TextUI
-              variant="desc"
-              isSpan
-              hoverText={formatMetrics(postgresStatus.metrics)}
+              <StatusIndicator status={backendStatus.success} />
+              <TextUI variant="desc" isSpan>
+                Backend
+              </TextUI>
+            </div>
+            <div
+              className="flex flex-row items-center justify-center gap-1"
+              title={formatMetrics(postgresStatus.metrics)}
             >
-              Postgres
-            </TextUI>
-
-            <StatusIndicator status={redisStatus.success} />
-            <TextUI
-              variant="desc"
-              isSpan
-              hoverText={formatMetrics(redisStatus.metrics)}
+              <StatusIndicator status={postgresStatus.success} />
+              <TextUI variant="desc" isSpan>
+                Postgres
+              </TextUI>
+            </div>
+            <div
+              className="flex flex-row items-center justify-center gap-1"
+              title={formatMetrics(redisStatus.metrics)}
             >
-              Redis
-            </TextUI>
+              <StatusIndicator status={redisStatus.success} />
+              <TextUI variant="desc" isSpan>
+                Redis
+              </TextUI>
+            </div>
+            <div
+              className="flex flex-row items-center justify-center gap-1"
+              title={formatMetrics(rustfsStatus.metrics)}
+            >
+              <StatusIndicator status={rustfsStatus.success} />
+              <TextUI variant="desc" isSpan>
+                Rustfs
+              </TextUI>
+            </div>
           </div>
         </div>
 
