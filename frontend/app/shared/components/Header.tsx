@@ -110,6 +110,11 @@ export function Header({
         {/* Индикаторы состояния контейнеров */}
         <div className="flex gap-4">
           <div className="flex flex-wrap items-center justify-center gap-3">
+            <img
+              src="https://github.com/DimasikKot/stud-match/actions/workflows/push_main.yaml/badge.svg"
+              alt="CI status"
+            ></img>
+
             <div
               className="flex flex-row items-center justify-center gap-1"
               title={formatMetrics(backendStatus.metrics)}
