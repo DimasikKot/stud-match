@@ -25,10 +25,13 @@ router: APIRouter = APIRouter(prefix="/files", tags=["Files"])
 class UploadFileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    status: str
+    id: int
+    name: str
     object_key: str
-    original_filename: str
-    download_url: str
+    path: str
+    size: int
+    created_at: datetime
+    updated_at: datetime
 
 
 @router.post("/", response_model=UploadFileResponse)
@@ -39,6 +42,10 @@ async def upload_file(
     original_name = file.filename or "file"
     ext = os.path.splitext(original_name)[1]
     object_key = f"{uuid.uuid4()}{ext}"
+
+    file.file.seek(0, os.SEEK_END)
+    size = file.file.tell()
+    file.file.seek(0)
 
     try:
         await run_in_threadpool(
@@ -57,11 +64,11 @@ async def upload_file(
     finally:
         await file.close()
 
-    # Сохраняем метаданные в БД
     file_record = FileDB(
         name=original_name,
         object_key=object_key,
         path=settings.RUSTFS_BUCKET,
+        size=size,
     )
     try:
         db.add(file_record)
@@ -69,7 +76,6 @@ async def upload_file(
         db.refresh(file_record)
     except Exception as exc:
         db.rollback()
-        # Откатываем загрузку в S3, чтобы не оставлять «сиротский» объект
         try:
             await run_in_threadpool(
                 s3_client.delete_object,

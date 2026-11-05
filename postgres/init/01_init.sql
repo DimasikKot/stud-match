@@ -11,6 +11,7 @@ CREATE TABLE files (
   name       VARCHAR (255) NOT NULL,
   object_key VARCHAR (255) NOT NULL,
   path       VARCHAR (255) NOT NULL,
+  size       BIGINT        NOT NULL,
   created_at TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP     DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

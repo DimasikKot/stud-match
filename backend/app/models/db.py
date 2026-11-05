@@ -4,6 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import (
+    BigInteger,
     Integer,
     String,
     TIMESTAMP,
@@ -59,6 +60,10 @@ class FileDB(Base):
     )
     path: Mapped[str] = mapped_column(
         String(255),
+        nullable=False,
+    )
+    size: Mapped[int] = mapped_column(
+        BigInteger,
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(
