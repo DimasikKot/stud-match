@@ -187,6 +187,9 @@ async def get_rustfs_health():
     metrics: dict[str, Any] = {
         "server": endpoint,
         "bucket": settings.RUSTFS_BUCKET,
+        "ssl": {
+            "enabled": settings.RUSTFS_URL[-4:] == "9050",
+        },
     }
 
     try:

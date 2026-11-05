@@ -192,6 +192,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "9050:9050"
+      - "9150:9150"
     deploy:
       resources:
         limits:
@@ -215,7 +217,7 @@ services:
       - RUSTFS_OBS_LOGGER_LEVEL=info
       - RUSTFS_VOLUMES=/data
       - RUSTFS_OBS_LOG_DIRECTORY=/app/logs
-      - RUSTFS_TLS_PATH=/opt/tls
+      # - RUSTFS_TLS_PATH=/opt/tls
       # - при включенном TLS проверки работоспособности (healthchecks) автоматически переключаются на HTTPS
       # По умолчанию сохраняется строгая проверка топологии диска.
       # Только для локального тестирования можно явно задать
@@ -223,7 +225,7 @@ services:
     volumes:
       - sm_rustfs_data:/data
       - sm_rustfs_logs:/app/logs
-      - ./rustfs/ssl:/opt/tls
+      # - ./rustfs/ssl:/opt/tls
     restart: unless-stopped
     healthcheck:
       # Поведение по умолчанию:
@@ -245,22 +247,19 @@ services:
           if [ -z \"$${ca_path}\" ] && [ -f /opt/tls/ca.crt ]; then ca_path=/opt/tls/ca.crt; fi; \
           case \"$${host}\" in 127.0.0.1|localhost) strict_host=false ;; *) strict_host=true ;; esac; \
           if [ \"$${strict_host}\" = true ] && [ -n \"$${ca_path}\" ]; then \
-          set -- \"$${@}\" --cacert \"$${ca_path}\" --resolve \"$${host}:9050:127.0.0.1\" --resolve \"$${host}:9150:127.0.0.1\"; \
+          set -- \"$${@}\" --cacert \"$${ca_path}\" --resolve \"$${host}:9250:127.0.0.1\" --resolve \"$${host}:9350:127.0.0.1\"; \
           else \
           set -- \"$${@}\" -k; \
           fi; \
           fi; \
-          curl \"$${@}\" \"$${scheme}://$${host}:9050/health\" && \
-          curl \"$${@}\" \"$${scheme}://$${host}:9150/rustfs/console/health\"",
+          curl \"$${@}\" \"$${scheme}://$${host}:9250/health\" && \
+          curl \"$${@}\" \"$${scheme}://$${host}:9350/rustfs/console/health\"",
         ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-    ports:
-      - "9050:9050"
-      - "9150:9150"
     deploy:
       resources:
         limits:
