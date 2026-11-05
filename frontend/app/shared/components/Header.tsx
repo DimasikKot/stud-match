@@ -143,7 +143,7 @@ export function Header({
             >
               <StatusIndicator status={rustfsStatus.success} />
               <TextUI variant="desc" isSpan>
-                Rustfs
+                RustFS
               </TextUI>
             </div>
           </div>
