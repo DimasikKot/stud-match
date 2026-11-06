@@ -23,11 +23,20 @@ services:
 
     environment:
       - HF_TOKEN=${HF_TOKEN}
+      # Очередь задач (Redis) и бэк, откуда берутся запрос и файлы
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${R_PASSWORD}
+      - BACKEND_URL=${LLM_BACKEND_URL:-http://sm-backend:8060/api/v1}
+      - TRAIN_JWT_ACCESS_TOKENS=${TRAIN_JWT_ACCESS_TOKENS}
 
     volumes:
       - ./llm-worker:/app
       - sm_hf_cache:/root/.cache/huggingface # Кэш моделей HF
     # - /app/data:/data # Общая папка для моделей
+
+    networks:
+      - nginx-network # Доступ к sm-redis и sm-backend
 
     deploy:
       resources:
@@ -38,6 +47,10 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
+networks:
+  nginx-network:
+    external: true
 
 volumes:
   sm_hf_cache:

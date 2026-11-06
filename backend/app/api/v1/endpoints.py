@@ -1,12 +1,13 @@
 from fastapi import APIRouter
 
-from app.api.v1.routers import files, healths, users, projects, students
+from app.api.v1.routers import files, healths, llms, users, projects, students
 
 api_router: APIRouter = APIRouter()
 
 
 # В пути лучше всегда делать множественное число, тк так легче писать фронтэнд
 api_router.include_router(files.router)
+api_router.include_router(llms.router)
 api_router.include_router(projects.router)
 api_router.include_router(students.router)
 api_router.include_router(users.router)

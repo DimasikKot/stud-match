@@ -168,6 +168,8 @@ export function Header({
 
           <ButtonUI onClick={() => navigate("/files")}>Файлы</ButtonUI>
 
+          <ButtonUI onClick={() => navigate("/llm")}>Нейросеть</ButtonUI>
+
           {username ? (
             <Menu as="div" className="relative">
               {/* Кнопка */}

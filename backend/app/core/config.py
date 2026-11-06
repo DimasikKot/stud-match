@@ -33,6 +33,8 @@ class _Settings(BaseSettings):
 
     TRAIN_JWT_ACCESS_TOKENS: list[str] = ["r1yGRupzNCNGtON2B"]
 
+    LLM_MAX_FILES_CHARS: int = 12000  # ~8k токенов контекста влезает в 4 ГБ VRAM
+
     @property
     def DATABASE_URL(self) -> str:
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.POSTGRES_DB}?sslmode={self.DB_SSLMODE}"

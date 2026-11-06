@@ -1,7 +1,11 @@
+import json
 import os
 import threading
+import time
 from contextlib import asynccontextmanager
 
+import httpx
+import redis
 import torch
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, StreamingResponse
@@ -18,6 +22,23 @@ MODEL_NAME = os.getenv("LLM_MODEL", "Qwen/Qwen3-4B")
 HF_TOKEN = os.getenv("HF_TOKEN") or None
 MAX_NEW_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "2048"))
 THINK_END_TOKEN_ID = 151668  # </think>
+
+# Очередь задач: бэк кладёт id в Redis, воркер забирает запрос и файлы с бэка
+BACKEND_URL = os.getenv("BACKEND_URL", "http://sm-backend:8060/api/v1")
+REDIS_HOST = os.getenv("REDIS_HOST", "sm-redis")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6350"))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD") or None
+QUEUE_KEY = "llm:queue"
+TASK_TTL_SECONDS = 24 * 60 * 60
+
+
+def _service_token() -> str:
+    try:
+        tokens = json.loads(os.getenv("TRAIN_JWT_ACCESS_TOKENS") or "[]")
+    except json.JSONDecodeError:
+        return ""
+    return tokens[0] if tokens else ""
+
 
 llm: dict = {}
 gpu_lock = threading.Lock()
@@ -45,6 +66,10 @@ def load_model():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_model()
+    llm["queue_thread"] = threading.Thread(
+        target=queue_loop, daemon=True, name="llm-queue"
+    )
+    llm["queue_thread"].start()
     yield
     llm.clear()
     torch.cuda.empty_cache()
@@ -91,7 +116,13 @@ def log_request(request: GenerateRequest):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": MODEL_NAME, "loaded": "model" in llm}
+    queue_thread = llm.get("queue_thread")
+    return {
+        "status": "ok",
+        "model": MODEL_NAME,
+        "loaded": "model" in llm,
+        "queue": bool(queue_thread and queue_thread.is_alive()),
+    }
 
 
 @app.post("/generate", response_model=GenerateResponse)
@@ -146,6 +177,92 @@ def generate_stream(request: GenerateRequest):
 
     threading.Thread(target=run, daemon=True).start()
     return StreamingResponse(stream_and_log(), media_type="text/plain; charset=utf-8")
+
+
+class RedisStreamer(TextStreamer):
+    """Пишет куски ответа в Redis Stream (для стриминга на фронт) и в логи."""
+
+    def __init__(self, tokenizer, client: redis.Redis, key: str):
+        super().__init__(tokenizer, skip_prompt=True, skip_special_tokens=True)
+        self.client, self.key, self.parts = client, key, []
+
+    def on_finalized_text(self, text: str, stream_end: bool = False):
+        if text:
+            self.parts.append(text)
+            self.client.xadd(self.key, {"chunk": text})
+        super().on_finalized_text(text, stream_end)
+
+
+def process_task(client: redis.Redis, http: httpx.Client, task_id: str):
+    stream_key = f"llm:task:{task_id}:stream"
+    try:
+        response = http.get(f"/llms/tasks/{task_id}/context")
+        response.raise_for_status()
+        context = response.json()
+        request = GenerateRequest(
+            prompt=context["prompt"],
+            enable_thinking=context["enable_thinking"],
+            max_new_tokens=context["max_new_tokens"],
+        )
+        streamer = RedisStreamer(llm["tokenizer"], client, stream_key)
+        with gpu_lock, torch.inference_mode():
+            print(f"\n[llm] task {task_id}", flush=True)
+            log_request(request)
+            llm["model"].generate(
+                **build_inputs(request),
+                max_new_tokens=request.max_new_tokens,
+                streamer=streamer,
+            )
+        payload = {"result": "".join(streamer.parts)}
+        event = {"event": "done"}
+    except Exception as exc:
+        detail = (
+            exc.response.text if isinstance(exc, httpx.HTTPStatusError) else str(exc)
+        )
+        print(f"\n[llm] task {task_id} failed: {detail}", flush=True)
+        payload = {"error": detail or type(exc).__name__}
+        event = {"event": "error", "detail": payload["error"]}
+
+    try:
+        http.post(f"/llms/tasks/{task_id}/result", json=payload).raise_for_status()
+    except httpx.HTTPError as exc:
+        print(
+            f"[llm] task {task_id}: не удалось сохранить результат: {exc}", flush=True
+        )
+    client.xadd(stream_key, event)
+    client.expire(stream_key, TASK_TTL_SECONDS)
+
+
+def queue_loop():
+    use_tls = REDIS_PORT == 6150
+    client = redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        password=REDIS_PASSWORD,
+        decode_responses=True,
+        ssl=use_tls,
+        ssl_cert_reqs="none" if use_tls else "required",
+        health_check_interval=30,
+    )
+    http = httpx.Client(
+        base_url=BACKEND_URL,
+        headers={"Authorization": f"Bearer {_service_token()}"},
+        timeout=30.0,
+    )
+    print(
+        f"[llm] queue {QUEUE_KEY} @ {REDIS_HOST}:{REDIS_PORT}, backend {BACKEND_URL}",
+        flush=True,
+    )
+    while True:
+        try:
+            item = client.brpop([QUEUE_KEY], timeout=5)
+            if item:
+                process_task(client, http, item[1])
+        except redis.RedisError as exc:
+            print(f"[llm] redis error: {exc}", flush=True)
+            time.sleep(5)
+        except Exception as exc:
+            print(f"[llm] queue error: {exc}", flush=True)
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
