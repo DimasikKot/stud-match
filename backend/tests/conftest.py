@@ -1,4 +1,9 @@
-import pytest
+import os
+
+# Дефолт "rustfs host" — невалидный endpoint для boto3, ломает импорт app.services.file
+os.environ.setdefault("RUSTFS_URL", "http://localhost:9000")
+
+import pytest  # noqa: E402
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -77,3 +82,18 @@ def auth_client(client, registered_user):
     resp = client.post("/users/login", json=registered_user)
     assert resp.status_code == 200
     return client
+
+
+@pytest.fixture()
+def make_client(db_session, fake_redis):
+    """Собирает TestClient с нужными роутерами и подменёнными БД/Redis."""
+
+    def _make(*routers) -> TestClient:
+        app = FastAPI()
+        for router in routers:
+            app.include_router(router)
+        app.dependency_overrides[get_db] = lambda: db_session
+        app.dependency_overrides[get_redis] = lambda: fake_redis
+        return TestClient(app, base_url="https://testserver")
+
+    return _make
