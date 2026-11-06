@@ -11,6 +11,7 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
     TextIteratorStreamer,
+    TextStreamer,
 )
 
 MODEL_NAME = os.getenv("LLM_MODEL", "Qwen/Qwen3-4B")
@@ -83,6 +84,11 @@ def build_inputs(request: GenerateRequest):
     return tokenizer([text], return_tensors="pt").to(model.device)
 
 
+def log_request(request: GenerateRequest):
+    last = request.prompt or (request.messages[-1].content if request.messages else "")
+    print(f"\n[llm] >>> {last}\n[llm] <<< ", end="", flush=True)
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "model": MODEL_NAME, "loaded": "model" in llm}
@@ -93,9 +99,14 @@ def generate(request: GenerateRequest):
     tokenizer, model = llm["tokenizer"], llm["model"]
     model_inputs = build_inputs(request)
 
+    log_streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+
     with gpu_lock, torch.inference_mode():
+        log_request(request)
         generated_ids = model.generate(
-            **model_inputs, max_new_tokens=request.max_new_tokens
+            **model_inputs,
+            max_new_tokens=request.max_new_tokens,
+            streamer=log_streamer,
         )
     output_ids = generated_ids[0][len(model_inputs.input_ids[0]) :].tolist()
 
@@ -120,14 +131,21 @@ def generate_stream(request: GenerateRequest):
 
     def run():
         with gpu_lock, torch.inference_mode():
+            log_request(request)
             model.generate(
                 **model_inputs,
                 max_new_tokens=request.max_new_tokens,
                 streamer=streamer,
             )
 
+    def stream_and_log():
+        for chunk in streamer:
+            print(chunk, end="", flush=True)
+            yield chunk
+        print(flush=True)
+
     threading.Thread(target=run, daemon=True).start()
-    return StreamingResponse(streamer, media_type="text/plain; charset=utf-8")
+    return StreamingResponse(stream_and_log(), media_type="text/plain; charset=utf-8")
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
