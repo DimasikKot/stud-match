@@ -123,6 +123,8 @@ async def get_student(
     db: Session = Depends(get_db),
 ):
     student = fetch_student_db_by_id(db=db, student_id=student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="студент не найден")
     return student
 
 
