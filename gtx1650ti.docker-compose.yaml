@@ -7,9 +7,26 @@ services:
       context: ./llm-worker # Папка, содержащая файлы контейнера
       dockerfile: gtx1650ti.llm-worker.Dockerfile
     restart: always
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8070/health'', timeout=5)" || exit 1',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+
+    ports:
+      - "127.0.0.1:8070:8070"
+
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
 
     volumes:
       - ./llm-worker:/app
+      - sm_hf_cache:/root/.cache/huggingface # Кэш моделей HF
     # - /app/data:/data # Общая папка для моделей
 
     deploy:
@@ -21,3 +38,6 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+
+volumes:
+  sm_hf_cache:

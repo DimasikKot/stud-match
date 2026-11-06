@@ -9,4 +9,6 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python3", "-m", "main"]
+EXPOSE 8070
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8070"]
