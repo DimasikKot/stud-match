@@ -27,8 +27,17 @@ class FakeAsyncRedis:
 
 
 @pytest.fixture()
-def client(make_client):
-    return make_client(healths.router)
+def client(make_client, admin):
+    return make_client(healths.router, user=admin)
+
+
+@pytest.mark.parametrize("as_teacher", [False, True])
+def test_metrics_hidden_from_non_admin(make_client, teacher, as_teacher):
+    client = make_client(healths.router, user=teacher if as_teacher else None)
+    body = client.get("/healths/backend").json()
+    assert body["success"] is True
+    assert body["detail"]
+    assert body["metrics"] is None
 
 
 def test_backend(client):

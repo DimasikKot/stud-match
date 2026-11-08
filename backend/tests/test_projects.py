@@ -12,20 +12,24 @@ def api(make_client):
     return make_client(users_router, projects_router)
 
 
-def login(client: TestClient, email: str) -> TestClient:
-    creds = {"email": email, "password": "secret123"}
-    assert client.post("/users/register", json=creds).status_code == 201
-    assert client.post("/users/login", json=creds).status_code == 200
-    return client
+@pytest.fixture()
+def login(make_user):
+    def _login(client: TestClient, email: str) -> TestClient:
+        make_user(email)
+        creds = {"email": email, "password": "secret123"}
+        assert client.post("/users/login", json=creds).status_code == 200
+        return client
+
+    return _login
 
 
 @pytest.fixture()
-def owner(api):
+def owner(api, login):
     return login(api, "owner@example.com")
 
 
 @pytest.fixture()
-def stranger(api):
+def stranger(api, login):
     return login(TestClient(api.app, base_url="https://testserver"), "x@example.com")
 
 
