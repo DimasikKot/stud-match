@@ -6,8 +6,14 @@ STUDENT = {"name": "Иван", "description": "3 курс", "skills_vector": {"p
 
 
 @pytest.fixture()
-def client(make_client):
-    return make_client(students_router)
+def client(make_client, admin):
+    return make_client(students_router, user=admin)
+
+
+def test_requires_admin(make_client, teacher):
+    assert make_client(students_router).get("/students/").status_code == 401
+    resp = make_client(students_router, user=teacher).get("/students/")
+    assert resp.status_code == 403
 
 
 def create(client, **overrides):

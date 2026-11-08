@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from fastapi import (
     APIRouter,
@@ -16,6 +16,7 @@ from app.services.security_deps import (
     get_current_user,
     get_redis,
     refresh_cookie_scheme,
+    require_admin,
 )
 from app.models.db import UserDB
 from app.core.config import settings
@@ -33,6 +34,16 @@ class UserResponse(BaseModel):
 
     id: int
     email: str
+    role: str
+
+
+class UserListResponse(BaseModel):
+    data: list[UserResponse]
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str = Field(min_length=1)
 
 
 class TokenResponse(BaseModel):
@@ -77,10 +88,21 @@ def _clear_auth_cookies(response: Response) -> None:
 
 
 @router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+    "/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)],
 )
 def register(user_in: UserRequest, db: Session = Depends(get_db)):
+    """Создаёт преподавателя. Доступно только администратору."""
     return user_service.register_user(db, user_in.email, user_in.password)
+
+
+@router.get("/", response_model=UserListResponse, dependencies=[Depends(require_admin)])
+def list_users(db: Session = Depends(get_db)):
+    return UserListResponse(
+        data=[UserResponse.model_validate(u) for u in user_service.fetch_users(db)]
+    )
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -134,3 +156,15 @@ def logout(
 @router.get("/me", response_model=UserResponse)
 def read_me(current_user: UserDB = Depends(get_current_user)):
     return current_user
+
+
+@router.patch("/me/password")
+def patch_my_password(
+    request: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: UserDB = Depends(get_current_user),
+):
+    user_service.change_password(
+        db, current_user, request.old_password, request.new_password
+    )
+    return {"message": "Password changed"}

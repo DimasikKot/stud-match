@@ -9,8 +9,9 @@ from docx.table import Table
 from fastapi import HTTPException
 from pypdf import PdfReader
 from redis import Redis
+from sqlalchemy.orm import Session
 
-from app.models.db import FileDB
+from app.models.db import FileDB, LLMRequestDB, LLMRequestFileDB
 from app.services import file as file_service
 
 QUEUE_KEY = "llm:queue"
@@ -65,6 +66,45 @@ def get_task(redis: Redis, task_id: str) -> dict:
 
 def update_task(redis: Redis, task_id: str, **fields) -> None:
     redis.hset(task_key(task_id), mapping=fields)
+
+
+def save_request(
+    db: Session,
+    task_id: str,
+    user_id: int | None,
+    prompt: str,
+    file_ids: list[int],
+    enable_thinking: bool,
+    max_new_tokens: int,
+) -> LLMRequestDB:
+    """Сохраняет запрос к нейросети и использованные файлы в БД."""
+    request_db = LLMRequestDB(
+        task_id=task_id,
+        user_id=user_id,
+        prompt=prompt,
+        enable_thinking=enable_thinking,
+        max_new_tokens=max_new_tokens,
+        status="queued",
+    )
+    db.add(request_db)
+    db.flush()
+    db.add_all(
+        LLMRequestFileDB(request_id=request_db.id, file_id=file_id)
+        for file_id in dict.fromkeys(file_ids)
+    )
+    db.commit()
+    db.refresh(request_db)
+    return request_db
+
+
+def update_request(db: Session, task_id: str, **fields) -> None:
+    """Обновляет статус/ответ нейросети в БД (если запрос там есть)."""
+    request_db = db.query(LLMRequestDB).filter(LLMRequestDB.task_id == task_id).first()
+    if request_db is None:
+        return
+    for name, value in fields.items():
+        setattr(request_db, name, value)
+    db.commit()
 
 
 def _extract_pdf(data: bytes) -> str:

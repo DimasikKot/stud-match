@@ -37,8 +37,13 @@ def s3(monkeypatch):
 
 
 @pytest.fixture()
-def client(make_client, s3):
-    return make_client(files_router)
+def client(make_client, s3, admin):
+    return make_client(files_router, user=admin)
+
+
+def test_requires_admin(make_client, s3, teacher):
+    assert make_client(files_router).get("/files/").status_code == 401
+    assert make_client(files_router, user=teacher).get("/files/").status_code == 403
 
 
 def upload(client, *files):
