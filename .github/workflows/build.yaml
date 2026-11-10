@@ -211,13 +211,25 @@ jobs:
               [ -z "$FIRST" ] && FIRST=$(ls postgres/init/*.sql | LC_ALL=C sort | head -1)
               echo "=== [postgres] Reinit init-scripts from: $FIRST ==="
 
+              # (Опционально) Загружаем переменные из .env в окружение runner'а, 
+              # если они не передаются через secrets GitHub Actions напрямую.
+              if [ -f .env ]; then
+                set -a
+                source .env
+                set +a
+              fi
+
               RUN=0
               for f in $(ls postgres/init/*.sql | LC_ALL=C sort); do
                 [ "$f" = "$FIRST" ] && RUN=1
                 [ "$RUN" = "1" ] || continue
-                echo "--- running $f"
-                docker exec -i sm-postgres sh -c \
-                  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1' < "$f"
+                echo "--- running $f (with env substitution)"
+
+                # envsubst подставит значения переменных перед отправкой в psql.
+                # Указание конкретных переменных '${ADMIN_EMAIL} ${ADMIN_PASSWORD}' безопасно 
+                # и предотвратит случайную замену других символов '$' в SQL.
+                envsubst '${ADMIN_EMAIL} ${ADMIN_PASSWORD}' < "$f" | docker exec -i sm-postgres sh -c \
+                  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1'
               done
             fi
 
@@ -358,14 +370,6 @@ jobs:
 
             COMPOSE="docker compose -f rpi5.docker-compose.yaml"
 
-            # ---------- all_build — полный пересбор ----------
-            if [ "$ALL_BUILD" = "true" ]; then
-              echo "=== [rollback:all_build] ==="
-              $COMPOSE up -d --build
-              docker system prune --volumes --force
-              exit 0
-            fi
-
             # ---------- postgres_reinit — восстановление из бэкапа ----------
             if [ "$POSTGRES_REINIT" = "true" ]; then
               if [ -d ./postgres/data_old ]; then
@@ -378,6 +382,14 @@ jobs:
               else
                 echo "::warning::./postgres/data_old not found — reinit never ran or backup was already consumed, DB data left intact"
               fi
+            fi
+
+            # ---------- all_build — полный пересбор ----------
+            if [ "$ALL_BUILD" = "true" ]; then
+              echo "=== [rollback:all_build] ==="
+              $COMPOSE up -d --build
+              docker system prune --volumes --force
+              exit 0
             fi
 
             # ---------- frontend / backend — пересборка образов ----------
