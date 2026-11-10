@@ -270,7 +270,6 @@ jobs:
     permissions:
       contents: write # ← ОБЯЗАТЕЛЬНО для git push
     if: |
-      always() &&
       needs.build_deploy.result == 'success'
     steps:
       - name: Checkout code
