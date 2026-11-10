@@ -65,7 +65,7 @@ jobs:
             postgres_reinit:
               - 'postgres/init/**'
             all_build:
-              - '.github/workflows/push_main.yaml'
+              - '.github/workflows/build.yaml'
               - '.env.example'
               - 'rpi5.docker-compose.yaml'
 

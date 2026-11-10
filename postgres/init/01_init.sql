@@ -1,3 +1,13 @@
+-- Реинит: сбрасываем схему перед созданием (скрипт идемпотентен)
+DROP TABLE IF EXISTS llm_request_files CASCADE;
+DROP TABLE IF EXISTS llm_requests CASCADE;
+DROP TABLE IF EXISTS student_files CASCADE;
+DROP TABLE IF EXISTS teachers CASCADE;
+DROP TABLE IF EXISTS projects CASCADE;
+DROP TABLE IF EXISTS students CASCADE;
+DROP TABLE IF EXISTS files CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto; -- crypt()/gen_salt() для bcrypt-хеша пароля админа
 
 CREATE TABLE users (
@@ -12,16 +22,12 @@ CREATE TABLE users (
 -- Администратор может быть только один
 CREATE UNIQUE INDEX users_single_admin ON users (role) WHERE role = 'admin';
 
--- Администратор. Почту и пароль можно передать в контейнер postgres
--- переменными ADMIN_EMAIL / ADMIN_PASSWORD, иначе берутся значения ниже.
--- Пароль по умолчанию смените сразу после первого входа (PATCH /users/me/password).
-\set admin_email 'admin@stud-match.ru'
-\set admin_password 'admin'
-\getenv admin_email ADMIN_EMAIL
-\getenv admin_password ADMIN_PASSWORD
-
 INSERT INTO users (email, hashed_password, role)
-VALUES (:'admin_email', crypt(:'admin_password', gen_salt('bf', 12)), 'admin');
+VALUES (
+  'localhost@stud-match.ru',
+  crypt('localhost_password', gen_salt('bf', 12)),
+  'admin'
+);
 
 CREATE TABLE files (
   id         SERIAL        PRIMARY KEY,

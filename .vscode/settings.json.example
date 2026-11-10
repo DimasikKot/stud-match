@@ -24,7 +24,8 @@
     ".dockerignore": true,
     "backend/requirements.dev.txt": true,
     "**/.pytest_cache": true,
-    "**/__pycache__": true
+    "**/__pycache__": true,
+    "**/nul": true
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
