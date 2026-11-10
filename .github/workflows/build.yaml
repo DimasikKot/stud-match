@@ -178,14 +178,6 @@ jobs:
 
             COMPOSE="docker compose -f rpi5.docker-compose.yaml"
 
-            # ---------- ALL BUILD (полный пересбор) ----------
-            if [ "$ALL_BUILD" = "true" ]; then
-              echo "=== [all_build] Full rebuild & restart ==="
-              $COMPOSE up -d --build
-              docker system prune --volumes --force
-              exit 0
-            fi
-
             # ---------- Postgres: точечный реинит init-скриптов ----------
             # Запускаем все *.sql начиная с первого изменённого — drop+create внутри файлов идемпотентны
             if [ "$POSTGRES_REINIT" = "true" ]; then
@@ -227,6 +219,14 @@ jobs:
                 docker exec -i sm-postgres sh -c \
                   'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1' < "$f"
               done
+            fi
+
+            # ---------- ALL BUILD (полный пересбор) ----------
+            if [ "$ALL_BUILD" = "true" ]; then
+              echo "=== [all_build] Full rebuild & restart ==="
+              $COMPOSE up -d --build
+              docker system prune --volumes --force
+              exit 0
             fi
 
             # ---------- Точечные сборки frontend / backend ----------
