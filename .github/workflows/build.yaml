@@ -170,7 +170,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
-          envs: FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,ALL_BUILD
+          envs: FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,ALL_BUILD,PREV_SHA
           script: |
             set -e
             cd ${{ secrets.PROJECT_PATH }}
@@ -186,12 +186,11 @@ jobs:
               exit 0
             fi
 
-            # ---------- Postgres: полная реинициализация (с бэкапом) ----------
+            # ---------- Postgres: точечный реинит init-скриптов ----------
+            # Запускаем все *.sql начиная с первого изменённого — drop+create внутри файлов идемпотентны
             if [ "$POSTGRES_REINIT" = "true" ]; then
-              echo "=== [postgres] Reinitialize (backup + drop data) ==="
-              $COMPOSE rm -sf sm-postgres || true
-
-              # Делаем бэкап старой БД перед удалением
+              # Бэкап data -> data_old (только на остановленном postgres, иначе копия может быть битой)
+              $COMPOSE stop sm-postgres
               if [ -d ./postgres/data ]; then
                 if [ -d ./postgres/data_old ]; then
                   echo "::warning::./postgres/data_old already exists, overwriting"
@@ -202,9 +201,32 @@ jobs:
               else
                 echo "No ./postgres/data to backup (fresh install?)"
               fi
-
-              sudo rm -rf ./postgres/data
               $COMPOSE up -d sm-postgres
+
+              # Ждём готовности postgres
+              for i in $(seq 1 30); do
+                docker exec sm-postgres sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"' >/dev/null 2>&1 && break
+                [ "$i" = "30" ] && { echo "::error::postgres not ready"; exit 1; }
+                sleep 2
+              done
+
+              FIRST=""
+              if [ -n "$PREV_SHA" ]; then
+                FIRST=$(git diff --name-only --diff-filter=AM "$PREV_SHA"..HEAD -- 'postgres/init/*.sql' \
+                        | while read -r f; do [ -f "$f" ] && echo "$f"; done \
+                        | LC_ALL=C sort | head -1)
+              fi
+              [ -z "$FIRST" ] && FIRST=$(ls postgres/init/*.sql | LC_ALL=C sort | head -1)
+              echo "=== [postgres] Reinit init-scripts from: $FIRST ==="
+
+              RUN=0
+              for f in $(ls postgres/init/*.sql | LC_ALL=C sort); do
+                [ "$f" = "$FIRST" ] && RUN=1
+                [ "$RUN" = "1" ] || continue
+                echo "--- running $f"
+                docker exec -i sm-postgres sh -c \
+                  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1' < "$f"
+              done
             fi
 
             # ---------- Точечные сборки frontend / backend ----------
@@ -240,6 +262,7 @@ jobs:
           POSTGRES_BUILD: ${{ needs.detect-changes.outputs.postgres_build }}
           POSTGRES_REINIT: ${{ needs.detect-changes.outputs.postgres_reinit }}
           ALL_BUILD: ${{ needs.detect-changes.outputs.all_build }}
+          PREV_SHA: ${{ needs.detect-changes.outputs.prev_sha }}
 
   smoke-test:
     needs: build_deploy
