@@ -1,0 +1,13 @@
+-- Реинит: сбрасываем таблицу перед созданием (скрипт идемпотентен)
+DROP TABLE IF EXISTS files CASCADE;
+
+CREATE TABLE
+  files (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    object_key VARCHAR(255) NOT NULL,
+    path VARCHAR(255) NOT NULL,
+    size INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+  );
