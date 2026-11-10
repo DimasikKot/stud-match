@@ -17,6 +17,7 @@
     "ms-python.debugpy",
     "ms-python.vscode-python-envs",
     "ms-ceintl.vscode-language-pack-ru",
-    "tomoki1207.pdf"
+    "tomoki1207.pdf",
+    "mohd-akram.vscode-html-format"
   ]
 }

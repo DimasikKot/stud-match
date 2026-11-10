@@ -6,7 +6,7 @@
     "**/.jj": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "postgres/ssl": true,
+    ".vscode": false,
     "frontend/main.tsx": true,
     "frontend/index.html": true,
     "frontend/node_modules": true,
@@ -15,6 +15,7 @@
     "frontend/tsconfig.node.json": true,
     "frontend/vite.config.ts": true,
     ".github/": true,
+    "postgres/": false,
     "nginx/": true,
     "redis/": true,
     ".pre-commit-config.yaml": true,
@@ -78,7 +79,7 @@
   },
   "[html]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "mohd-akram.vscode-html-format"
   },
   "[cpp]": {
     "editor.wordBasedSuggestions": "off",

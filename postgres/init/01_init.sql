@@ -12,6 +12,17 @@ CREATE TABLE users (
 -- Администратор может быть только один
 CREATE UNIQUE INDEX users_single_admin ON users (role) WHERE role = 'admin';
 
+-- Администратор. Почту и пароль можно передать в контейнер postgres
+-- переменными ADMIN_EMAIL / ADMIN_PASSWORD, иначе берутся значения ниже.
+-- Пароль по умолчанию смените сразу после первого входа (PATCH /users/me/password).
+\set admin_email 'admin@stud-match.ru'
+\set admin_password 'admin'
+\getenv admin_email ADMIN_EMAIL
+\getenv admin_password ADMIN_PASSWORD
+
+INSERT INTO users (email, hashed_password, role)
+VALUES (:'admin_email', crypt(:'admin_password', gen_salt('bf', 12)), 'admin');
+
 CREATE TABLE files (
   id         SERIAL        PRIMARY KEY,
   name       VARCHAR (255) NOT NULL,
@@ -87,14 +98,3 @@ CREATE TABLE llm_request_files (
 );
 
 CREATE INDEX llm_request_files_file_id_idx ON llm_request_files (file_id);
-
--- Администратор. Почту и пароль можно передать в контейнер postgres
--- переменными ADMIN_EMAIL / ADMIN_PASSWORD, иначе берутся значения ниже.
--- Пароль по умолчанию смените сразу после первого входа (PATCH /users/me/password).
-\set admin_email 'admin@stud-match.ru'
-\set admin_password 'admin'
-\getenv admin_email ADMIN_EMAIL
-\getenv admin_password ADMIN_PASSWORD
-
-INSERT INTO users (email, hashed_password, role)
-VALUES (:'admin_email', crypt(:'admin_password', gen_salt('bf', 12)), 'admin');
