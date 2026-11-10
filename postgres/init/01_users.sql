@@ -27,3 +27,11 @@ crypt('localhost_password', gen_salt('bf', 12)),
 'admin'
 );
  */
+
+-- Вставка админа с использованием переменных окружения
+INSERT INTO users (email, hashed_password, role)
+VALUES (
+    '${ADMIN_EMAIL}',
+    crypt('${ADMIN_PASSWORD}', gen_salt('bf', 12)),
+    'admin'
+);
