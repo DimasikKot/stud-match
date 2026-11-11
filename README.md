@@ -242,7 +242,7 @@ fetchRedisHealth().then((v) => v !== undefined && setRedisStatus(v));
 
 ## Kafka: SASL_SSL + PLAIN, декларативный provisioning
 
-Kafka работает в KRaft-режиме с авторизацией: внешний доступ — `SASL_SSL` (порт `KAFKA_SSL_PORT`, внутри контейнера `9093`), клиенты внутри docker-сети — `SASL_PLAINTEXT_INTERNAL` (`sm-kafka:19094`, SASL без TLS). `PLAINTEXT` слушает только `127.0.0.1` внутри контейнера — используется для healthcheck и provisioning, наружу не публикуется.
+Kafka работает в KRaft-режиме с авторизацией: внешний доступ — `SASL_SSL` (порт `KAFKA_SSL_PORT`, внутри контейнера `8092`), клиенты внутри docker-сети — `SASL_PLAINTEXT_INTERNAL` (`sm-kafka:8292`, SASL без TLS). `PLAINTEXT` слушает только `127.0.0.1` внутри контейнера — используется для healthcheck и provisioning, наружу не публикуется.
 
 **Пользователи, топики и права настраиваются в `kafka/auth.conf`** — ничего создавать вручную не нужно: при каждом старте `sm-kafka` entrypoint-скрипт генерирует JAAS с PLAIN-пользователями, дожидается готовности брокера и применяет топики и ACL. Все операции идемпотентны.
 
@@ -276,7 +276,7 @@ docker compose -f rpi5.docker-compose.yaml restart sm-kafka
 
 ```env
 KAFKA_HOST="stud-match.mooo.com"   # публичный хост Kafka
-KAFKA_PORT=9193                    # KAFKA_SSL_PORT на сервере
+KAFKA_PORT=8092                    # KAFKA_SSL_PORT на сервере
 LLM_KF_USERNAME="llm_worker_1"     # llm_worker_1 / _2 / _3 — по одному на воркер
 LLM_KF_PASSWORD="CHANGE_ME"
 ```

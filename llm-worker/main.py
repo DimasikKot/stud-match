@@ -25,11 +25,11 @@ THINK_END_TOKEN_ID = 151668  # </think>
 
 # Очередь задач через Kafka: бэк кладёт задачу в llm.tasks, воркер отвечает в llm.results
 KAFKA_HOST = os.getenv("KAFKA_HOST", "sm-kafka")
-KAFKA_PORT = int(os.getenv("KAFKA_PORT", "9092"))
+KAFKA_PORT = int(os.getenv("KAFKA_PORT", "8292"))
 KAFKA_SECURITY_PROTOCOL = os.getenv("KAFKA_SECURITY_PROTOCOL", "").strip().upper()
 KAFKA_SASL_MECHANISM = os.getenv("KAFKA_SASL_MECHANISM", "PLAIN")
-LLM_KF_USERNAME = os.getenv("LLM_KF_USERNAME", "")
-LLM_KF_PASSWORD = os.getenv("LLM_KF_PASSWORD", "")
+KAFKA_USERNAME = os.getenv("KAFKA_USERNAME", "")
+KAFKA_PASSWORD = os.getenv("KAFKA_PASSWORD", "")
 KAFKA_SSL_CA_FILE = os.getenv("KAFKA_SSL_CA_FILE", "")
 KAFKA_SSL_CHECK_HOSTNAME = (
     os.getenv("KAFKA_SSL_CHECK_HOSTNAME", "false").lower() == "true"
@@ -37,8 +37,8 @@ KAFKA_SSL_CHECK_HOSTNAME = (
 TASKS_TOPIC = "llm.tasks"
 RESULTS_TOPIC = "llm.results"
 CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP", "sm-llm-worker")
-# TLS-порты: 9093 — SSL-листенер, 9193 — внешний SASL_SSL (внутренний 19094 — SASL_PLAINTEXT)
-KAFKA_TLS_PORTS = (9093, 9193)
+# TLS-порты: 8092 — SASL_SSL снаружи (внутренний 8292 — SASL_PLAINTEXT, 8290 — PLAINTEXT localhost)
+KAFKA_TLS_PORTS = (8092,)
 KAFKA_SASL_PROTOCOLS = ("SASL_SSL", "SASL_PLAINTEXT")
 KAFKA_SSL_PROTOCOLS = ("SSL", "SASL_SSL")
 
@@ -46,9 +46,9 @@ KAFKA_SSL_PROTOCOLS = ("SSL", "SASL_SSL")
 def _security_protocol() -> str:
     if KAFKA_SECURITY_PROTOCOL:
         return KAFKA_SECURITY_PROTOCOL
-    if LLM_KF_USERNAME or LLM_KF_PASSWORD:
+    if KAFKA_USERNAME or KAFKA_PASSWORD:
         return "SASL_SSL" if KAFKA_PORT in KAFKA_TLS_PORTS else "SASL_PLAINTEXT"
-    return "SSL" if KAFKA_PORT in (9093, 9193) else "PLAINTEXT"
+    return "SSL" if KAFKA_PORT in (8092,) else "PLAINTEXT"
 
 
 def _ssl_context() -> ssl.SSLContext:
@@ -75,12 +75,12 @@ def _kafka_kwargs(**extra) -> dict:
     if protocol in KAFKA_SSL_PROTOCOLS:
         kwargs["ssl_context"] = _ssl_context()
     if protocol in KAFKA_SASL_PROTOCOLS:
-        if not LLM_KF_USERNAME or not LLM_KF_PASSWORD:
+        if not KAFKA_USERNAME or not KAFKA_PASSWORD:
             raise ValueError("LLM_KF_USERNAME/LLM_KF_PASSWORD обязательны для SASL")
         kwargs.update(
             sasl_mechanism=KAFKA_SASL_MECHANISM.upper(),
-            sasl_plain_username=LLM_KF_USERNAME,
-            sasl_plain_password=LLM_KF_PASSWORD,
+            sasl_plain_username=KAFKA_USERNAME,
+            sasl_plain_password=KAFKA_PASSWORD,
         )
     kwargs.update(extra)
     return kwargs

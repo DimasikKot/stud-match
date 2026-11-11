@@ -52,7 +52,7 @@ chmod 600 "$JAAS" || true
 /etc/kafka/docker/run "$@" &
 KAFKA_PID=$!
 
-BOOTSTRAP=127.0.0.1:9092 # PLAINTEXT, только localhost внутри контейнера, без авторизации
+BOOTSTRAP=127.0.0.1:8290 # PLAINTEXT, только localhost внутри контейнера, без авторизации
 
 ready=0
 for _ in $(seq 1 90); do

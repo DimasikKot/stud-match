@@ -23,11 +23,10 @@ services:
 
     environment:
       - HF_TOKEN=${HF_TOKEN}
-      # Пользователь llm_worker_N из kafka/auth.conf (LLM_KF_* в .env машины воркера)
-      - KAFKA_HOST=${KAFKA_HOST}
-      - KAFKA_PORT=${KAFKA_PORT}
-      - LLM_KF_USERNAME=${LLM_KF_USERNAME}
-      - LLM_KF_PASSWORD=${LLM_KF_PASSWORD}
+      - KAFKA_HOST=${LLM_KF_HOST}
+      - KAFKA_PORT=${LLM_KF_PORT}
+      - KAFKA_USERNAME=${LLM_KF_USERNAME}
+      - KAFKA_PASSWORD=${LLM_KF_PASSWORD}
 
     volumes:
       - ./llm-worker:/app
