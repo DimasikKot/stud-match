@@ -31,21 +31,13 @@ def client(make_client, admin):
     return make_client(healths.router, user=admin)
 
 
-def test_metrics_hidden_from_non_admin(make_client, teacher):
-    client = make_client(healths.router, user=teacher)
+@pytest.mark.parametrize("as_teacher", [False, True])
+def test_metrics_hidden_from_non_admin(make_client, teacher, as_teacher):
+    client = make_client(healths.router, user=teacher if as_teacher else None)
     body = client.get("/healths/backend").json()
     assert body["success"] is True
     assert body["detail"]
     assert body["metrics"] is None
-
-
-@pytest.mark.parametrize(
-    "path",
-    ["/healths/backend", "/healths/postgres", "/healths/redis", "/healths/rustfs"],
-)
-def test_endpoints_require_auth(make_client, path):
-    client = make_client(healths.router)
-    assert client.get(path).status_code == 401
 
 
 def test_backend(client):

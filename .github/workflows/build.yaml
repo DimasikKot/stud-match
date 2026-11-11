@@ -280,8 +280,9 @@ jobs:
     needs: build_deploy
     runs-on: ubuntu-latest
     permissions:
-      contents: write # ← ОБЯЗАТЕЛЬНО для git push
+      contents: write # для git push
     if: |
+      always() &&
       needs.build_deploy.result == 'success'
     steps:
       - name: Checkout code
