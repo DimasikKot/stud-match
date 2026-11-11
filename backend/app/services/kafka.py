@@ -9,8 +9,8 @@ from app.core.config import settings
 TASKS_TOPIC = "llm.tasks"
 RESULTS_TOPIC = "llm.results"
 
-# TLS-порты: 9093 — SSL-листенер, 9193 — внешний SASL_SSL (внутренний 19094 — SASL_PLAINTEXT)
-TLS_PORTS = (9093, 9193)
+# TLS-порты: 8092 — SASL_SSL снаружи (внутренний 8292 — SASL_PLAINTEXT, 8290 — PLAINTEXT localhost)
+TLS_PORTS = (8092,)
 SASL_PROTOCOLS = ("SASL_SSL", "SASL_PLAINTEXT")
 SSL_PROTOCOLS = ("SSL", "SASL_SSL")
 
@@ -23,9 +23,9 @@ def _security_protocol() -> str:
     explicit = (settings.KAFKA_SECURITY_PROTOCOL or "").strip().upper()
     if explicit:
         return explicit
-    if settings.KF_USERNAME or settings.KF_PASSWORD:
+    if settings.KAFKA_USERNAME or settings.KAFKA_PASSWORD:
         return "SASL_SSL" if settings.KAFKA_PORT in TLS_PORTS else "SASL_PLAINTEXT"
-    return "SSL" if settings.KAFKA_PORT in (9093, 9193) else "PLAINTEXT"
+    return "SSL" if settings.KAFKA_PORT in (8092,) else "PLAINTEXT"
 
 
 def _ssl_context() -> ssl.SSLContext:
@@ -53,12 +53,12 @@ def connection_kwargs(**extra) -> dict:
     if protocol in SSL_PROTOCOLS:
         kwargs["ssl_context"] = _ssl_context()
     if protocol in SASL_PROTOCOLS:
-        if not settings.KF_USERNAME or not settings.KF_PASSWORD:
+        if not settings.KAFKA_USERNAME or not settings.KAFKA_PASSWORD:
             raise ValueError("KF_USERNAME/KF_PASSWORD обязательны для SASL")
         kwargs.update(
             sasl_mechanism=(settings.KAFKA_SASL_MECHANISM or "PLAIN").upper(),
-            sasl_plain_username=settings.KF_USERNAME,
-            sasl_plain_password=settings.KF_PASSWORD,
+            sasl_plain_username=settings.KAFKA_USERNAME,
+            sasl_plain_password=settings.KAFKA_PASSWORD,
         )
     kwargs.update(extra)
     return kwargs

@@ -97,7 +97,7 @@ def _postgres_health(db: Session) -> HealthResponse:
             success=True,
             detail=f"PostgreSQL is healthy",
             metrics={
-                "server": f"{settings.DB_HOST}:{settings.DB_PORT}",
+                "server": f"{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}",
                 "auth": f"{settings.POSTGRES_USER}@{settings.POSTGRES_DB}",
                 "ssl": ssl_info,
                 "version": f"{version}",
@@ -115,7 +115,7 @@ def _postgres_health(db: Session) -> HealthResponse:
             success=False,
             detail="PostgreSQL is not healthy",
             metrics={
-                "server": f"{settings.DB_HOST}:{settings.DB_PORT}",
+                "server": f"{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}",
                 "auth": f"{settings.POSTGRES_USER} in {settings.POSTGRES_DB}",
                 "error": str(e),
             },

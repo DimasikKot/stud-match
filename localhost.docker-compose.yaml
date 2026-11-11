@@ -63,10 +63,10 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${R_PASSWORD:?R_PASSWORD variable is not set}
-      # DB
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_SSLMODE=${DB_SSLMODE}
+      # PostgreSQL
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_SSLMODE=${POSTGRES_SSLMODE}
       - POSTGRES_DB=${PG_DB}
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_PASSWORD=${PG_PASSWORD:?PG_PASSWORD variable is not set}
@@ -85,11 +85,11 @@ services:
       - RUSTFS_ACCESS_KEY=${RFS_ACCESS_KEY:?RFS_ACCESS_KEY variable is not set}
       - RUSTFS_SECRET_KEY=${RFS_SECRET_KEY:?RFS_SECRET_KEY variable is not set}
       - RUSTFS_REGION=${RUSTFS_REGION}
-      # Kafka (один пользователь для backend и всех воркеров)
-      - KAFKA_HOST=${KAFKA_HOST}
-      - KAFKA_PORT=${KAFKA_PORT}
-      - KF_USERNAME=${KF_USERNAME}
-      - KF_PASSWORD=${KF_PASSWORD}
+      # Kafka
+      - KAFKA_HOST=${KF_HOST}
+      - KAFKA_PORT=${KF_PORT}
+      - KAFKA_USERNAME=${KF_USERNAME}
+      - KAFKA_PASSWORD=${KF_PASSWORD}
       - KAFKA_RESULTS_GROUP_ID=${KAFKA_RESULTS_GROUP_ID:-sm-backend-llm-results}
 
     deploy:
@@ -138,7 +138,7 @@ services:
       "
 
     ports:
-      - "4500:5432"
+      - "5200:5432"
     deploy:
       resources:
         limits:
@@ -198,12 +198,12 @@ services:
       - KAFKA_HEAP_OPTS=-Xmx512M -Xms512M
       - KAFKA_NODE_ID=1
       - KAFKA_PROCESS_ROLES=broker,controller
-      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9094
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:8291
       # SASL_SSL - внешний доступ для воркеров, SASL_PLAINTEXT_INTERNAL - клиенты в docker-сети.
       # Пользователи/топики/ACL задаются в kafka/auth.conf и применяются entrypoint-скриптом.
-      - KAFKA_LISTENERS=PLAINTEXT://127.0.0.1:9092,SASL_SSL://:9093,SASL_PLAINTEXT_INTERNAL://:19094,CONTROLLER://localhost:9094
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092,SASL_SSL://${KAFKA_ADVERTISED_HOST}:${KAFKA_SSL_PORT},SASL_PLAINTEXT_INTERNAL://sm-kafka:19094
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SASL_SSL:SASL_SSL,SASL_PLAINTEXT_INTERNAL:SASL_PLAINTEXT
+      - KAFKA_LISTENERS=PLAINTEXT://127.0.0.1:8290,CONTROLLER://localhost:8291,SASL_SSL://:8092,SASL_PLAINTEXT_INTERNAL://:8292
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:8290,SASL_SSL://${KAFKA_ADVERTISED_HOST}:${KAFKA_SSL_PORT},SASL_PLAINTEXT_INTERNAL://sm-kafka:8292
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,SASL_SSL:SASL_SSL,SASL_PLAINTEXT_INTERNAL:SASL_PLAINTEXT
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
       - KAFKA_SASL_ENABLED_MECHANISMS=PLAIN
@@ -224,13 +224,13 @@ services:
       - KAFKA_SSL_CLIENT_AUTH=none
 
     ports:
-      - "${KAFKA_SSL_PORT}:9093" # внешний SASL_SSL; 19094 internal и 9092 localhost не публикуются
+      - "${KAFKA_SSL_PORT}:8092" # внешний SASL_SSL; 8292 internal и 8290 localhost не публикуются
 
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server 127.0.0.1:9092 > /dev/null 2>&1",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server 127.0.0.1:8290 > /dev/null 2>&1",
         ]
       interval: 30s
       timeout: 10s
