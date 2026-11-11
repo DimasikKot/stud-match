@@ -31,7 +31,8 @@ class _Settings(BaseSettings):
     RUSTFS_SECRET_KEY: str = "password"
     RUSTFS_REGION: str = "ru-central1"
 
-    TRAIN_JWT_ACCESS_TOKENS: list[str] = ["r1yGRupzNCNGtON2B"]
+    KAFKA_HOST: str = "kafka host"
+    KAFKA_PORT: int = 9900
 
     LLM_MAX_FILES_CHARS: int = 12000  # ~8k токенов контекста влезает в 4 ГБ VRAM
 

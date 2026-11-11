@@ -1,7 +1,5 @@
-import secrets
-
 from fastapi import Depends, HTTPException, Security, status
-from fastapi.security import APIKeyCookie, HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import APIKeyCookie
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from redis import Redis
@@ -61,26 +59,6 @@ refresh_cookie_scheme = APIKeyCookie(
     description="HttpOnly cookie с refresh-токеном",
     auto_error=False,
 )
-
-
-service_token_scheme = HTTPBearer(
-    scheme_name="ServiceToken",
-    description="Токен внутренних сервисов (TRAIN_JWT_ACCESS_TOKENS), например llm-worker",
-    auto_error=False,
-)
-
-
-def verify_service_token(
-    credentials: HTTPAuthorizationCredentials | None = Security(service_token_scheme),
-) -> None:
-    if credentials is None or not any(
-        secrets.compare_digest(credentials.credentials, token)
-        for token in settings.TRAIN_JWT_ACCESS_TOKENS
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid service token",
-        )
 
 
 def get_current_user(

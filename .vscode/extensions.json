@@ -2,7 +2,6 @@
   "recommendations": [
     "dbaeumer.vscode-eslint",
     "bradlc.vscode-tailwindcss",
-    "ms-python.python",
     "inferrinizzard.prettier-sql-vscode",
     "esbenp.prettier-vscode",
     "pkief.material-icon-theme",
@@ -13,10 +12,10 @@
     "ms-vsliveshare.vsliveshare",
     "ahmadalli.vscode-nginx-conf",
     "ms-python.vscode-pylance",
-    "ms-python.debugpy",
-    "ms-python.vscode-python-envs",
     "ms-ceintl.vscode-language-pack-ru",
     "tomoki1207.pdf",
-    "mohd-akram.vscode-html-format"
+    "mohd-akram.vscode-html-format",
+    "ms-azuretools.vscode-docker",
+    "ms-python.python"
   ]
 }

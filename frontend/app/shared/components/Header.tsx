@@ -10,6 +10,7 @@ import {
   fetchPostgresHealth,
   fetchRedisHealth,
   fetchRustfsHealth,
+  fetchKafkaHealth,
   type GetHealthResponse,
 } from "@/shared/api/healths";
 import { TextUI } from "@/shared/components/TextUI";
@@ -50,6 +51,7 @@ export function Header({
   const [postgresStatus, setPostgresStatus] = useState({} as GetHealthResponse);
   const [redisStatus, setRedisStatus] = useState({} as GetHealthResponse);
   const [rustfsStatus, setRustfsStatus] = useState({} as GetHealthResponse);
+  const [kafkaStatus, setKafkaStatus] = useState({} as GetHealthResponse);
   const username = localStorage.getItem("username");
 
   const formatPrimitive = (v: unknown): string => {
@@ -85,6 +87,7 @@ export function Header({
     fetchPostgresHealth().then((v) => v !== undefined && setPostgresStatus(v));
     fetchRedisHealth().then((v) => v !== undefined && setRedisStatus(v));
     fetchRustfsHealth().then((v) => v !== undefined && setRustfsStatus(v));
+    fetchKafkaHealth().then((v) => v !== undefined && setKafkaStatus(v));
   }, []);
 
   return (
@@ -155,6 +158,15 @@ export function Header({
               <StatusIndicator status={rustfsStatus.success} />
               <TextUI variant="desc" isSpan>
                 RustFS
+              </TextUI>
+            </div>
+            <div
+              className="flex flex-row items-center justify-center gap-1"
+              title={formatMetrics(kafkaStatus.metrics)}
+            >
+              <StatusIndicator status={kafkaStatus.success} />
+              <TextUI variant="desc" isSpan>
+                Kafka
               </TextUI>
             </div>
           </div>

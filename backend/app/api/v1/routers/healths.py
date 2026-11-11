@@ -238,6 +238,59 @@ async def _rustfs_health() -> HealthResponse:
         )
 
 
+def _kafka_health() -> HealthResponse:
+    from kafka import KafkaAdminClient
+
+    from app.services import kafka as kafka_service
+
+    start_time = time.perf_counter()
+    bootstrap = f"{settings.KAFKA_HOST}:{settings.KAFKA_PORT}"
+    use_tls = kafka_service.use_tls()
+
+    metrics: dict[str, Any] = {
+        "server": bootstrap,
+        "ssl": {
+            "enabled": use_tls,
+        },
+    }
+
+    client: KafkaAdminClient | None = None
+    try:
+        client = KafkaAdminClient(
+            **kafka_service.connection_kwargs(
+                api_version_auto_timeout_ms=5000,
+                request_timeout_ms=5000,
+            )
+        )
+        metadata = client.list_topics(timeout_ms=5000)
+
+        topics = sorted(t for t in metadata.topics if not t.startswith("_"))
+        latency_ms = (time.perf_counter() - start_time) * 1000
+
+        metrics["latency_ms"] = round(latency_ms, 2)
+        metrics["topic_count"] = len(topics)
+        metrics["topics"] = topics
+
+        return HealthResponse(
+            success=True,
+            detail="Kafka is healthy",
+            metrics=metrics,
+        )
+
+    except Exception as e:
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        metrics["latency_ms"] = round(latency_ms, 2)
+        metrics["error"] = str(e)
+        return HealthResponse(
+            success=False,
+            detail="Kafka is not healthy",
+            metrics=metrics,
+        )
+    finally:
+        if client is not None:
+            client.close()
+
+
 def _visible(health: HealthResponse, user: UserDB | None) -> HealthResponse:
     """Статус доступен всем, метрики — только администратору."""
     if user is None or user.role != ROLE_ADMIN:
@@ -269,3 +322,8 @@ async def get_redis_health(
 @router.get("/rustfs", response_model=HealthResponse)
 async def get_rustfs_health(user: UserDB | None = Depends(get_optional_user)):
     return _visible(await _rustfs_health(), user)
+
+
+@router.get("/kafka", response_model=HealthResponse)
+def get_kafka_health(user: UserDB | None = Depends(get_optional_user)):
+    return _visible(_kafka_health(), user)
