@@ -1,12 +1,12 @@
 import json
 import os
+import ssl
 import threading
 import time
 from contextlib import asynccontextmanager
 
-import httpx
-import redis
 import torch
+from kafka import KafkaConsumer, KafkaProducer
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -23,21 +23,67 @@ HF_TOKEN = os.getenv("HF_TOKEN") or None
 MAX_NEW_TOKENS = int(os.getenv("LLM_MAX_NEW_TOKENS", "2048"))
 THINK_END_TOKEN_ID = 151668  # </think>
 
-# Очередь задач: бэк кладёт id в Redis, воркер забирает запрос и файлы с бэка
-BACKEND_URL = os.getenv("BACKEND_URL", "http://sm-backend:8060/api/v1")
-REDIS_HOST = os.getenv("REDIS_HOST", "sm-redis")
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6350"))
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD") or None
-QUEUE_KEY = "llm:queue"
-TASK_TTL_SECONDS = 24 * 60 * 60
+# Очередь задач через Kafka: бэк кладёт задачу в llm.tasks, воркер отвечает в llm.results
+KAFKA_HOST = os.getenv("KAFKA_HOST", "sm-kafka")
+KAFKA_PORT = int(os.getenv("KAFKA_PORT", "9092"))
+KAFKA_SECURITY_PROTOCOL = os.getenv("KAFKA_SECURITY_PROTOCOL", "").strip().upper()
+KAFKA_SASL_MECHANISM = os.getenv("KAFKA_SASL_MECHANISM", "PLAIN")
+LLM_KF_USERNAME = os.getenv("LLM_KF_USERNAME", "")
+LLM_KF_PASSWORD = os.getenv("LLM_KF_PASSWORD", "")
+KAFKA_SSL_CA_FILE = os.getenv("KAFKA_SSL_CA_FILE", "")
+KAFKA_SSL_CHECK_HOSTNAME = (
+    os.getenv("KAFKA_SSL_CHECK_HOSTNAME", "false").lower() == "true"
+)
+TASKS_TOPIC = "llm.tasks"
+RESULTS_TOPIC = "llm.results"
+CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP", "sm-llm-worker")
+# TLS-порты: 9093 — SSL-листенер, 9193 — внешний SASL_SSL (внутренний 19094 — SASL_PLAINTEXT)
+KAFKA_TLS_PORTS = (9093, 9193)
+KAFKA_SASL_PROTOCOLS = ("SASL_SSL", "SASL_PLAINTEXT")
+KAFKA_SSL_PROTOCOLS = ("SSL", "SASL_SSL")
 
 
-def _service_token() -> str:
-    try:
-        tokens = json.loads(os.getenv("TRAIN_JWT_ACCESS_TOKENS") or "[]")
-    except json.JSONDecodeError:
-        return ""
-    return tokens[0] if tokens else ""
+def _security_protocol() -> str:
+    if KAFKA_SECURITY_PROTOCOL:
+        return KAFKA_SECURITY_PROTOCOL
+    if LLM_KF_USERNAME or LLM_KF_PASSWORD:
+        return "SASL_SSL" if KAFKA_PORT in KAFKA_TLS_PORTS else "SASL_PLAINTEXT"
+    return "SSL" if KAFKA_PORT in (9093, 9193) else "PLAINTEXT"
+
+
+def _ssl_context() -> ssl.SSLContext:
+    if KAFKA_SSL_CA_FILE:
+        context = ssl.create_default_context(cafile=KAFKA_SSL_CA_FILE)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.check_hostname = KAFKA_SSL_CHECK_HOSTNAME
+        return context
+
+    # Самоподписанный сертификат без CA — поведение как раньше (только для локальной разработки)
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    return context
+
+
+def _kafka_kwargs(**extra) -> dict:
+    protocol = _security_protocol()
+    kwargs = {
+        "bootstrap_servers": f"{KAFKA_HOST}:{KAFKA_PORT}",
+        "api_version_auto_timeout_ms": 5000,
+        "security_protocol": protocol,
+    }
+    if protocol in KAFKA_SSL_PROTOCOLS:
+        kwargs["ssl_context"] = _ssl_context()
+    if protocol in KAFKA_SASL_PROTOCOLS:
+        if not LLM_KF_USERNAME or not LLM_KF_PASSWORD:
+            raise ValueError("LLM_KF_USERNAME/LLM_KF_PASSWORD обязательны для SASL")
+        kwargs.update(
+            sasl_mechanism=KAFKA_SASL_MECHANISM.upper(),
+            sasl_plain_username=LLM_KF_USERNAME,
+            sasl_plain_password=LLM_KF_PASSWORD,
+        )
+    kwargs.update(extra)
+    return kwargs
 
 
 llm: dict = {}
@@ -67,7 +113,7 @@ def load_model():
 async def lifespan(app: FastAPI):
     load_model()
     llm["queue_thread"] = threading.Thread(
-        target=queue_loop, daemon=True, name="llm-queue"
+        target=kafka_loop, daemon=True, name="llm-kafka"
     )
     llm["queue_thread"].start()
     yield
@@ -121,7 +167,7 @@ def health():
         "status": "ok",
         "model": MODEL_NAME,
         "loaded": "model" in llm,
-        "queue": bool(queue_thread and queue_thread.is_alive()),
+        "consumer": bool(queue_thread and queue_thread.is_alive()),
     }
 
 
@@ -179,32 +225,32 @@ def generate_stream(request: GenerateRequest):
     return StreamingResponse(stream_and_log(), media_type="text/plain; charset=utf-8")
 
 
-class RedisStreamer(TextStreamer):
-    """Пишет куски ответа в Redis Stream (для стриминга на фронт) и в логи."""
+class CollectStreamer(TextStreamer):
+    """Собирает куски ответа для итогового результата."""
 
-    def __init__(self, tokenizer, client: redis.Redis, key: str):
+    def __init__(self, tokenizer):
         super().__init__(tokenizer, skip_prompt=True, skip_special_tokens=True)
-        self.client, self.key, self.parts = client, key, []
+        self.parts: list[str] = []
 
     def on_finalized_text(self, text: str, stream_end: bool = False):
         if text:
             self.parts.append(text)
-            self.client.xadd(self.key, {"chunk": text})
         super().on_finalized_text(text, stream_end)
 
 
-def process_task(client: redis.Redis, http: httpx.Client, task_id: str):
-    stream_key = f"llm:task:{task_id}:stream"
+def process_task(producer: KafkaProducer, task: dict):
+    task_id = task["task_id"]
     try:
-        response = http.get(f"/llms/tasks/{task_id}/context")
-        response.raise_for_status()
-        context = response.json()
-        request = GenerateRequest(
-            prompt=context["prompt"],
-            enable_thinking=context["enable_thinking"],
-            max_new_tokens=context["max_new_tokens"],
+        producer.send(RESULTS_TOPIC, {"task_id": task_id, "status": "running"}).get(
+            timeout=10
         )
-        streamer = RedisStreamer(llm["tokenizer"], client, stream_key)
+
+        request = GenerateRequest(
+            prompt=task["prompt"],
+            enable_thinking=task.get("enable_thinking", True),
+            max_new_tokens=task.get("max_new_tokens") or MAX_NEW_TOKENS,
+        )
+        streamer = CollectStreamer(llm["tokenizer"])
         with gpu_lock, torch.inference_mode():
             print(f"\n[llm] task {task_id}", flush=True)
             log_request(request)
@@ -213,56 +259,48 @@ def process_task(client: redis.Redis, http: httpx.Client, task_id: str):
                 max_new_tokens=request.max_new_tokens,
                 streamer=streamer,
             )
-        payload = {"result": "".join(streamer.parts)}
-        event = {"event": "done"}
+        payload = {"task_id": task_id, "result": "".join(streamer.parts)}
     except Exception as exc:
-        detail = (
-            exc.response.text if isinstance(exc, httpx.HTTPStatusError) else str(exc)
-        )
-        print(f"\n[llm] task {task_id} failed: {detail}", flush=True)
-        payload = {"error": detail or type(exc).__name__}
-        event = {"event": "error", "detail": payload["error"]}
+        print(f"\n[llm] task {task_id} failed: {exc}", flush=True)
+        payload = {"task_id": task_id, "error": str(exc) or type(exc).__name__}
 
     try:
-        http.post(f"/llms/tasks/{task_id}/result", json=payload).raise_for_status()
-    except httpx.HTTPError as exc:
+        producer.send(RESULTS_TOPIC, payload).get(timeout=10)
+    except Exception as exc:
         print(
-            f"[llm] task {task_id}: не удалось сохранить результат: {exc}", flush=True
+            f"[llm] task {task_id}: не удалось отправить результат: {exc}", flush=True
         )
-    client.xadd(stream_key, event)
-    client.expire(stream_key, TASK_TTL_SECONDS)
 
 
-def queue_loop():
-    use_tls = REDIS_PORT == 6150
-    client = redis.Redis(
-        host=REDIS_HOST,
-        port=REDIS_PORT,
-        password=REDIS_PASSWORD,
-        decode_responses=True,
-        ssl=use_tls,
-        ssl_cert_reqs="none" if use_tls else "required",
-        health_check_interval=30,
-    )
-    http = httpx.Client(
-        base_url=BACKEND_URL,
-        headers={"Authorization": f"Bearer {_service_token()}"},
-        timeout=30.0,
+def kafka_loop():
+    producer = KafkaProducer(
+        value_serializer=lambda value: json.dumps(value).encode(),
+        **_kafka_kwargs(),
     )
     print(
-        f"[llm] queue {QUEUE_KEY} @ {REDIS_HOST}:{REDIS_PORT}, backend {BACKEND_URL}",
+        f"[llm] kafka {TASKS_TOPIC} -> {RESULTS_TOPIC} @ {KAFKA_HOST}:{KAFKA_PORT}",
         flush=True,
     )
     while True:
+        consumer = None
         try:
-            item = client.brpop([QUEUE_KEY], timeout=5)
-            if item:
-                process_task(client, http, item[1])
-        except redis.RedisError as exc:
-            print(f"[llm] redis error: {exc}", flush=True)
-            time.sleep(5)
+            consumer = KafkaConsumer(
+                TASKS_TOPIC,
+                group_id=CONSUMER_GROUP,
+                auto_offset_reset="earliest",
+                enable_auto_commit=False,
+                value_deserializer=lambda raw: json.loads(raw.decode()),
+                **_kafka_kwargs(),
+            )
+            for message in consumer:
+                process_task(producer, message.value)
+                consumer.commit()
         except Exception as exc:
-            print(f"[llm] queue error: {exc}", flush=True)
+            print(f"[llm] kafka error: {exc}", flush=True)
+            time.sleep(5)
+        finally:
+            if consumer is not None:
+                consumer.close()
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)

@@ -1,7 +1,3 @@
-import json
-
-import fakeredis
-import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -87,24 +83,12 @@ def client():
     )  # без `with` — lifespan (загрузка модели) не запускается
 
 
-@pytest.mark.parametrize(
-    "raw,expected",
-    [('["a", "b"]', "a"), ("[]", ""), ("not json", ""), (None, "")],
-)
-def test_service_token(monkeypatch, raw, expected):
-    if raw is None:
-        monkeypatch.delenv("TRAIN_JWT_ACCESS_TOKENS", raising=False)
-    else:
-        monkeypatch.setenv("TRAIN_JWT_ACCESS_TOKENS", raw)
-    assert main._service_token() == expected
-
-
 def test_health(client, llm):
     assert client.get("/health").json()["loaded"] is False
     llm()
     body = client.get("/health").json()
     assert body["loaded"] is True
-    assert body["queue"] is False
+    assert body["consumer"] is False
 
 
 def test_playground(client):
@@ -148,99 +132,70 @@ def test_generate_validates_max_tokens(client, llm):
     assert client.post("/generate", json={"max_new_tokens": 0}).status_code == 422
 
 
-def test_redis_streamer_skips_empty_chunks(llm):
-    redis = fakeredis.FakeRedis(decode_responses=True)
-    streamer = main.RedisStreamer(llm()["tokenizer"], redis, "stream")
+def test_collect_streamer_skips_empty_chunks(llm):
+    streamer = main.CollectStreamer(llm()["tokenizer"])
     for text in ("a", "", "b"):
         streamer.on_finalized_text(text)
     assert streamer.parts == ["a", "b"]
-    assert [f for _, f in redis.xrange("stream")] == [{"chunk": "a"}, {"chunk": "b"}]
 
 
-class Backend:
-    """Фейковый бэкенд для llm-worker: отдаёт контекст и принимает результат."""
+class FakeProducer:
+    """Минимальная замена KafkaProducer: send() возвращает объект с .get()."""
 
-    def __init__(self, context_status=200, result_status=200):
-        self.context_status, self.result_status = context_status, result_status
-        self.results = []
-        self.auth = []
+    def __init__(self, fail_after_gets=None):
+        self.messages = []
+        self._fail_after_gets = fail_after_gets
+        self._gets = 0
 
-    def __call__(self, request: httpx.Request) -> httpx.Response:
-        self.auth.append(request.headers.get("authorization"))
-        if request.url.path.endswith("/context"):
-            if self.context_status != 200:
-                return httpx.Response(self.context_status, text="Задача не найдена")
-            return httpx.Response(
-                200,
-                json={
-                    "task_id": "t1",
-                    "prompt": "вопрос",
-                    "enable_thinking": False,
-                    "max_new_tokens": 7,
-                },
-            )
-        self.results.append(json.loads(request.content))
-        return httpx.Response(self.result_status, json={})
+    def send(self, topic, value=None):
+        self.messages.append((topic, value))
+        return self
 
-    def client(self):
-        return httpx.Client(
-            base_url="http://backend/api/v1",
-            transport=httpx.MockTransport(self),
-            headers={"Authorization": "Bearer tkn"},
-        )
+    def get(self, timeout=None):
+        self._gets += 1
+        if self._fail_after_gets is not None and self._gets > self._fail_after_gets:
+            raise RuntimeError("kafka down")
+        return None
 
 
-def stream_events(redis):
-    return [fields for _, fields in redis.xrange("llm:task:t1:stream")]
-
-
-@pytest.fixture()
-def redis():
-    return fakeredis.FakeRedis(decode_responses=True)
-
-
-def test_process_task_success(llm, redis):
+def test_process_task_success(llm):
     state = llm(chunks=["При", "вет"])
-    backend = Backend()
+    producer = FakeProducer()
 
-    main.process_task(redis, backend.client(), "t1")
+    main.process_task(
+        producer,
+        {
+            "task_id": "t1",
+            "prompt": "вопрос",
+            "enable_thinking": False,
+            "max_new_tokens": 7,
+        },
+    )
 
     assert state["model"].calls == [7]
-    assert backend.results == [{"result": "Привет"}]
-    assert backend.auth == ["Bearer tkn", "Bearer tkn"]
-    assert stream_events(redis) == [
-        {"chunk": "При"},
-        {"chunk": "вет"},
-        {"event": "done"},
+    assert producer.messages == [
+        (main.RESULTS_TOPIC, {"task_id": "t1", "status": "running"}),
+        (main.RESULTS_TOPIC, {"task_id": "t1", "result": "Привет"}),
     ]
-    assert 0 < redis.ttl("llm:task:t1:stream") <= main.TASK_TTL_SECONDS
 
 
-def test_process_task_context_error(llm, redis):
-    state = llm()
-    backend = Backend(context_status=404)
-
-    main.process_task(redis, backend.client(), "t1")
-
-    assert state["model"].calls == []
-    assert backend.results == [{"error": "Задача не найдена"}]
-    assert stream_events(redis) == [{"event": "error", "detail": "Задача не найдена"}]
-
-
-def test_process_task_generation_error(llm, redis):
+def test_process_task_generation_error(llm):
     llm(error=RuntimeError("CUDA OOM"))
-    backend = Backend()
+    producer = FakeProducer()
 
-    main.process_task(redis, backend.client(), "t1")
+    main.process_task(producer, {"task_id": "t1", "prompt": "вопрос"})
 
-    assert backend.results == [{"error": "CUDA OOM"}]
-    assert stream_events(redis)[-1] == {"event": "error", "detail": "CUDA OOM"}
+    assert producer.messages[-1] == (
+        main.RESULTS_TOPIC,
+        {"task_id": "t1", "error": "CUDA OOM"},
+    )
 
 
-def test_process_task_survives_result_upload_failure(llm, redis):
+def test_process_task_survives_result_upload_failure(llm):
     llm(chunks=["ok"])
-    backend = Backend(result_status=500)
+    # первый send (running) успешен, второй (result) падает
+    producer = FakeProducer(fail_after_gets=1)
 
-    main.process_task(redis, backend.client(), "t1")
+    main.process_task(producer, {"task_id": "t1", "prompt": "вопрос"})
 
-    assert stream_events(redis)[-1] == {"event": "done"}
+    assert producer.messages[-1][1]["task_id"] == "t1"

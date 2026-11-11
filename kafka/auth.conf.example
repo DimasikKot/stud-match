@@ -1,0 +1,126 @@
+# ============================================================================
+#  Kafka auth.conf — пользователи, топики и права доступа (ACL)
+# ============================================================================
+#
+# Этот файл читается kafka/entrypoint.sh при КАЖДОМ старте контейнера sm-kafka:
+#   - user   → генерирует JAAS-конфиг с SASL/PLAIN пользователями;
+#   - topic  → создаёт топики (если нет — создаёт, если есть — пропускает);
+#   - acl    → выдаёт права на топики, consumer groups и cluster.
+#
+# После изменений применить:
+#   docker compose restart sm-kafka
+# (или docker compose up -d --force-recreate sm-kafka)
+#
+# Механизм аутентификации — SASL/PLAIN поверх SASL_SSL (трафик шифруется TLS,
+# пароль внутри TLS не виден).
+#
+# Имена переменных в .env клиентов:
+#   backend     → KF_USERNAME / KF_PASSWORD
+#   llm-worker  → LLM_KF_USERNAME / LLM_KF_PASSWORD
+# Пароль каждого user ниже должен совпадать с паролем в .env клиента.
+#
+# ----------------------------------------------------------------------------
+# ФОРМАТ
+# ----------------------------------------------------------------------------
+# Одна директива на строку. Строки, начинающиеся с #, и пустые строки
+# игнорируются. Имена и пароли НЕ должны содержать пробелов.
+#
+#   user <name> <password>
+#       SASL/PLAIN пользователь. <name> — латиница, цифры, подчёркивание
+#       (дефисы допустимы, но подчёркивание надёжнее).
+#
+#   topic <name> <partitions>
+#       Топик с заданным числом partitions (replication-factor всегда 1).
+#       partitions в llm.tasks = сколько воркеров может брать задачи
+#       параллельно (поэтому 3 — под 3 воркера).
+#
+#   acl <principal> <тип> <имя|-> <операции>
+#       Права доступа.
+#         principal   — User:<name>, имя должно совпадать с user выше
+#         тип         — topic | group | cluster
+#         имя         — имя топика / consumer group; для cluster ставь '-'
+#         операции    — через запятую БЕЗ пробелов:
+#
+#           Read              читать топик / входить в consumer group
+#           Write             писать в топик
+#           Describe          метаданные топика / группы (нужна почти всем
+#                            клиентам — без неё клиент не видит топик)
+#           Create            создавать топики
+#           Delete            удалять топики
+#           Alter             изменять конфигурацию топика
+#           DescribeConfigs   читать конфигурацию
+#           AlterConfigs      менять конфигурацию
+#           IdempotentWrite   идемпотентный продьюсер
+#           ClusterAction     действия уровня кластера
+#
+# ----------------------------------------------------------------------------
+# ТЕКУЩАЯ СХЕМА: 1 backend + 3 llm-worker
+# ----------------------------------------------------------------------------
+# backend пишет задачи в llm.tasks и читает результаты из llm.results
+# (его consumer group — sm-backend-llm-results).
+# Каждый llm-worker читает llm.tasks и пишет результаты в llm.results.
+# Все воркеры делят ОДНУ consumer group sm-llm-worker — задачи
+# распределяются между ними, а не дублируются.
+# ----------------------------------------------------------------------------
+
+user backend        Bk9fT2wQpLxZm4Rv
+user llm_worker_1   Wkr1a8Kd2nPq5Xs
+user llm_worker_2   Wkr2b7Jc3mQr6Yt
+user llm_worker_3   Wkr3c6Ld4nRs7Zu
+
+topic llm.tasks     3
+topic llm.results   1
+
+# --- backend ---
+acl User:backend topic llm.tasks Write,Describe
+acl User:backend topic llm.results Read,Describe
+acl User:backend group sm-backend-llm-results Read,Describe
+acl User:backend cluster - Describe
+
+# --- llm_worker_1 / _2 / _3 (одинаковые права, общая group sm-llm-worker) ---
+acl User:llm_worker_1 topic llm.tasks Read,Describe
+acl User:llm_worker_1 topic llm.results Write,Describe
+acl User:llm_worker_1 group sm-llm-worker Read,Describe
+acl User:llm_worker_1 cluster - Describe
+
+acl User:llm_worker_2 topic llm.tasks Read,Describe
+acl User:llm_worker_2 topic llm.results Write,Describe
+acl User:llm_worker_2 group sm-llm-worker Read,Describe
+acl User:llm_worker_2 cluster - Describe
+
+acl User:llm_worker_3 topic llm.tasks Read,Describe
+acl User:llm_worker_3 topic llm.results Write,Describe
+acl User:llm_worker_3 group sm-llm-worker Read,Describe
+acl User:llm_worker_3 cluster - Describe
+
+# ----------------------------------------------------------------------------
+# КАК ДОБАВИТЬ ЕЩЁ ОДНОГО ВОРКЕРА (llm_worker_4)
+# ----------------------------------------------------------------------------
+# 1) Добавь пользователя:
+#      user llm_worker_4  <пароль>
+# 2) Выдай ему те же права, что у остальных воркеров (общая group
+#    sm-llm-worker — каждая задача достаётся только одному воркеру):
+#      acl User:llm_worker_4 topic llm.tasks Read,Describe
+#      acl User:llm_worker_4 topic llm.results Write,Describe
+#      acl User:llm_worker_4 group sm-llm-worker Read,Describe
+#      acl User:llm_worker_4 cluster - Describe
+# 3) На машине воркера в .env пропиши:
+#      LLM_KF_USERNAME="llm_worker_4"
+#      LLM_KF_PASSWORD="<тот же пароль>"
+# 4) docker compose restart sm-kafka  →  перезапусти воркер.
+#
+# ----------------------------------------------------------------------------
+# КАК ДОБАВИТЬ НОВЫЙ ТОПИК
+# ----------------------------------------------------------------------------
+# 1) Добавь строку:
+#      topic my.topic 1
+# 2) Выдай права на него нужным пользователям:
+#      acl User:backend topic my.topic Write,Describe
+#      acl User:llm_worker_1 topic my.topic Read,Describe
+# 3) docker compose restart sm-kafka.
+#
+# ВНИМАНИЕ: права (ACL) проверяются только для ресурсов, на которые ACL
+# уже выданы. Если на ресурс нет ни одного ACL — доступ есть у любого
+# авторизованного пользователя (KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true).
+# Чтобы ограничить ресурс — просто выдай на него ACL только нужным User:.
+# ============================================================================

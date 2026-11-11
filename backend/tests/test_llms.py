@@ -1,34 +1,31 @@
 import io
 
-import fakeredis
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.v1.routers.llms import router as llms_router
-from app.core.config import settings
 from app.core.database import get_db
 from app.models.db import FileDB, LLMRequestDB, LLMRequestFileDB
 from app.services import file as file_service
+from app.services import kafka as kafka_service
 from app.services import llm as llm_service
-from app.services.security_deps import get_async_redis, get_redis
-
-TOKEN = settings.TRAIN_JWT_ACCESS_TOKENS[0]
-WORKER_HEADERS = {"Authorization": f"Bearer {TOKEN}"}
 
 
 @pytest.fixture()
-def redis_server():
-    return fakeredis.FakeServer()
+def produced(monkeypatch):
+    """Перехватывает сообщения, которые сервис отправил бы в Kafka."""
+    messages = []
+    monkeypatch.setattr(
+        kafka_service,
+        "produce",
+        lambda topic, payload: messages.append((topic, payload)),
+    )
+    return messages
 
 
 @pytest.fixture()
-def sync_redis(redis_server):
-    return fakeredis.FakeRedis(server=redis_server, decode_responses=True)
-
-
-@pytest.fixture()
-def llm_client(db_session, redis_server, sync_redis, monkeypatch):
+def llm_client(db_session, produced, monkeypatch):
     monkeypatch.setattr(
         file_service,
         "get_file_object",
@@ -41,10 +38,6 @@ def llm_client(db_session, redis_server, sync_redis, monkeypatch):
         yield db_session
 
     app.dependency_overrides[get_db] = _get_db
-    app.dependency_overrides[get_redis] = lambda: sync_redis
-    app.dependency_overrides[get_async_redis] = lambda: fakeredis.FakeAsyncRedis(
-        server=redis_server, decode_responses=True
-    )
     with TestClient(app) as client:
         yield client
 
@@ -57,7 +50,7 @@ def file_id(db_session):
     return file_db.id
 
 
-def test_task_full_cycle(llm_client, sync_redis, file_id, db_session):
+def test_task_lifecycle(llm_client, produced, file_id, db_session):
     resp = llm_client.post(
         "/llms/tasks",
         json={
@@ -67,32 +60,25 @@ def test_task_full_cycle(llm_client, sync_redis, file_id, db_session):
         },
     )
     assert resp.status_code == 200
-    task_id = resp.json()["task_id"]
-    assert resp.json()["status"] == "queued"
-    assert sync_redis.rpop(llm_service.QUEUE_KEY) == task_id
+    body = resp.json()
+    task_id = body["task_id"]
+    assert body["status"] == "queued"
 
-    # llm-worker забирает запрос и файлы
-    resp = llm_client.get(f"/llms/tasks/{task_id}/context", headers=WORKER_HEADERS)
-    assert resp.status_code == 200
-    context = resp.json()
-    assert "content of notes.txt" in context["prompt"]
-    assert "Что в файле?" in context["prompt"]
-    assert context["enable_thinking"] is False
+    # В Kafka ушла задача с готовым prompt (файл уже прочитан бэкендом)
+    topic, message = produced[0]
+    assert topic == kafka_service.TASKS_TOPIC
+    assert message["task_id"] == task_id
+    assert "content of notes.txt" in message["prompt"]
+    assert "Что в файле?" in message["prompt"]
+
+    # Статус задачи — из БД
+    assert llm_client.get(f"/llms/tasks/{task_id}").json()["status"] == "queued"
+
+    # llm-worker присылает running, затем результат
+    llm_service.apply_result(db_session, {"task_id": task_id, "status": "running"})
     assert llm_client.get(f"/llms/tasks/{task_id}").json()["status"] == "running"
 
-    # llm-worker стримит токены в Redis и сохраняет итог
-    stream_key = llm_service.stream_key(task_id)
-    sync_redis.xadd(stream_key, {"chunk": "При"})
-    sync_redis.xadd(stream_key, {"chunk": "вет"})
-    resp = llm_client.post(
-        f"/llms/tasks/{task_id}/result",
-        json={"result": "Привет"},
-        headers=WORKER_HEADERS,
-    )
-    assert resp.json()["status"] == "done"
-    sync_redis.xadd(stream_key, {"event": "done"})
-
-    assert llm_client.get(f"/llms/tasks/{task_id}/stream").text == "Привет"
+    llm_service.apply_result(db_session, {"task_id": task_id, "result": "Привет"})
     task = llm_client.get(f"/llms/tasks/{task_id}").json()
     assert task == {
         "task_id": task_id,
@@ -110,24 +96,9 @@ def test_task_full_cycle(llm_client, sync_redis, file_id, db_session):
     assert [f.file_id for f in db_session.query(LLMRequestFileDB).all()] == [file_id]
 
 
-def test_worker_endpoints_require_token(llm_client):
-    task_id = llm_client.post("/llms/tasks", json={"prompt": "hi"}).json()["task_id"]
-    assert llm_client.get(f"/llms/tasks/{task_id}/context").status_code == 401
-    resp = llm_client.post(
-        f"/llms/tasks/{task_id}/result",
-        json={"result": "x"},
-        headers={"Authorization": "Bearer wrong"},
-    )
-    assert resp.status_code == 401
-
-
 def test_error_result(llm_client, db_session):
     task_id = llm_client.post("/llms/tasks", json={"prompt": "hi"}).json()["task_id"]
-    llm_client.post(
-        f"/llms/tasks/{task_id}/result",
-        json={"error": "CUDA OOM"},
-        headers=WORKER_HEADERS,
-    )
+    llm_service.apply_result(db_session, {"task_id": task_id, "error": "CUDA OOM"})
     task = llm_client.get(f"/llms/tasks/{task_id}").json()
     assert task["status"] == "error"
     assert task["error"] == "CUDA OOM"
@@ -144,4 +115,3 @@ def test_unknown_file_and_task(llm_client):
         == 404
     )
     assert llm_client.get("/llms/tasks/nope").status_code == 404
-    assert llm_client.get("/llms/tasks/nope/stream").status_code == 404

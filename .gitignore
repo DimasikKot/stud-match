@@ -45,3 +45,5 @@ rustfs/ssl/
 **nul
 kafka/ssl/
 kafka/secrets/
+kafka/data/
+kafka/auth.conf

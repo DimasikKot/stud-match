@@ -11,7 +11,6 @@ import {
   createLLMTask,
   fetchLLMTask,
   splitThinking,
-  streamLLMTask,
   type LLMTaskStatus,
 } from "@/shared/api/llm";
 
@@ -63,19 +62,21 @@ export function Llm() {
       });
       setStatus(task.status);
 
-      await streamLLMTask(
-        task.task_id,
-        (chunk) => {
-          setStatus("running");
-          setOutput((prev) => prev + chunk);
-        },
-        controller.signal,
-      );
-
-      const final = await fetchLLMTask(task.task_id);
-      setStatus(final.status);
-      if (final.status === "done") setOutput(final.result);
-      if (final.status === "error") toast.error(final.error);
+      // Стриминга нет — опрашиваем статус до завершения задачи
+      while (!controller.signal.aborted) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        if (controller.signal.aborted) break;
+        const current = await fetchLLMTask(task.task_id);
+        setStatus(current.status);
+        if (current.status === "done") {
+          setOutput(current.result);
+          break;
+        }
+        if (current.status === "error") {
+          toast.error(current.error || "Ошибка генерации");
+          break;
+        }
+      }
     } catch {
       // ошибка уже показана тостом либо генерацию остановили
     } finally {

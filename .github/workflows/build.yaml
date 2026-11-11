@@ -22,6 +22,7 @@ jobs:
       nginx_build: ${{ steps.filter.outputs.nginx_build }}
       postgres_build: ${{ steps.filter.outputs.postgres_build }}
       postgres_reinit: ${{ steps.filter.outputs.postgres_reinit }}
+      kafka_deploy: ${{ steps.filter.outputs.kafka_deploy }}
       all_build: ${{ steps.filter.outputs.all_build }}
       prev_sha: ${{ steps.prev.outputs.sha }}
     steps:
@@ -64,6 +65,9 @@ jobs:
               - 'postgres/pg_hba.conf'
             postgres_reinit:
               - 'postgres/init/**'
+            kafka_deploy:
+              - 'kafka/auth.conf.example'
+              - 'kafka/entrypoint.sh'
             all_build:
               - '.github/workflows/build.yaml'
               - '.env.example'
@@ -170,7 +174,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
-          envs: FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,ALL_BUILD,PREV_SHA
+          envs: FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,KAFKA_DEPLOY,ALL_BUILD,PREV_SHA
           script: |
             set -e
             cd ${{ secrets.PROJECT_PATH }}
@@ -265,6 +269,12 @@ jobs:
               $COMPOSE up -d --no-deps --force-recreate sm-postgres
             fi
 
+            # ---------- Kafka: entrypoint/auth.conf.example — пересоздание sm-kafka ----------
+            if [ "$KAFKA_DEPLOY" = "true" ]; then
+              echo "=== [kafka] Restart sm-kafka (entrypoint + auth.conf) ==="
+              $COMPOSE up -d --no-deps --force-recreate sm-kafka
+            fi
+
             docker system prune --volumes --force
             echo "=== DEPLOY DONE ==="
         env:
@@ -273,6 +283,7 @@ jobs:
           NGINX_BUILD: ${{ needs.detect-changes.outputs.nginx_build }}
           POSTGRES_BUILD: ${{ needs.detect-changes.outputs.postgres_build }}
           POSTGRES_REINIT: ${{ needs.detect-changes.outputs.postgres_reinit }}
+          KAFKA_DEPLOY: ${{ needs.detect-changes.outputs.kafka_deploy }}
           ALL_BUILD: ${{ needs.detect-changes.outputs.all_build }}
           PREV_SHA: ${{ needs.detect-changes.outputs.prev_sha }}
 
@@ -295,7 +306,7 @@ jobs:
           DELAY=10
           failed=0
 
-          for ep in backend postgres redis rustfs; do
+          for ep in backend postgres redis rustfs kafka; do
             ep_ok=0
             code="000"
             body=""
@@ -360,7 +371,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
-          envs: PREV_SHA,FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,ALL_BUILD
+          envs: PREV_SHA,FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,KAFKA_DEPLOY,ALL_BUILD
           script: |
             cd ${{ secrets.PROJECT_PATH }}
             git fetch --tags --force
@@ -416,6 +427,12 @@ jobs:
               $COMPOSE up -d --no-deps --force-recreate sm-postgres
             fi
 
+            # ---------- kafka — пересоздание sm-kafka ----------
+            if [ "$KAFKA_DEPLOY" = "true" ]; then
+              echo "=== [rollback:kafka] ==="
+              $COMPOSE up -d --no-deps --force-recreate sm-kafka
+            fi
+
             docker system prune --volumes --force
             echo "=== ROLLBACK DONE ==="
         env:
@@ -425,4 +442,5 @@ jobs:
           NGINX_BUILD: ${{ needs.detect-changes.outputs.nginx_build }}
           POSTGRES_BUILD: ${{ needs.detect-changes.outputs.postgres_build }}
           POSTGRES_REINIT: ${{ needs.detect-changes.outputs.postgres_reinit }}
+          KAFKA_DEPLOY: ${{ needs.detect-changes.outputs.kafka_deploy }}
           ALL_BUILD: ${{ needs.detect-changes.outputs.all_build }}

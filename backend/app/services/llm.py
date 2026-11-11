@@ -1,83 +1,50 @@
 import io
-import json
+import time
 import uuid
-from datetime import datetime, timezone
 from pathlib import PurePath
 
 import docx
 from docx.table import Table
 from fastapi import HTTPException
 from pypdf import PdfReader
-from redis import Redis
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
+from app.core.database import SessionLocal
 from app.models.db import FileDB, LLMRequestDB, LLMRequestFileDB
 from app.services import file as file_service
-
-QUEUE_KEY = "llm:queue"
-TASK_TTL_SECONDS = 24 * 60 * 60
+from app.services import kafka as kafka_service
 
 
-def task_key(task_id: str) -> str:
-    return f"llm:task:{task_id}"
+def build_task_prompt(db: Session, file_ids: list[int], prompt: str) -> str:
+    """Итоговый запрос для нейросети: текст пользователя + содержимое файлов."""
+    files: list[tuple[str, str]] = []
+    chars_left = settings.LLM_MAX_FILES_CHARS
+    for file_id in file_ids:
+        if chars_left <= 0:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Слишком много текста в файлах (лимит {settings.LLM_MAX_FILES_CHARS} символов)",
+            )
+        file_db = file_service.fetch_file_by_id(db, file_id)
+        text = read_file_text(file_db, chars_left)
+        chars_left -= len(text)
+        files.append((file_db.name, text))
+    return build_prompt(prompt, files)
 
 
-def stream_key(task_id: str) -> str:
-    """Redis Stream с кусками ответа, его пишет llm-worker."""
-    return f"llm:task:{task_id}:stream"
-
-
-def create_task(
-    redis: Redis,
-    prompt: str,
-    file_ids: list[int],
-    enable_thinking: bool,
-    max_new_tokens: int,
-) -> str:
-    """Сохраняет задачу в Redis и ставит её в очередь для llm-worker."""
-    task_id = uuid.uuid4().hex
-    key = task_key(task_id)
-    pipe = redis.pipeline()
-    pipe.hset(
-        key,
-        mapping={
-            "status": "queued",
-            "prompt": prompt,
-            "file_ids": json.dumps(file_ids),
-            "enable_thinking": int(enable_thinking),
-            "max_new_tokens": max_new_tokens,
-            "result": "",
-            "error": "",
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        },
-    )
-    pipe.expire(key, TASK_TTL_SECONDS)
-    pipe.lpush(QUEUE_KEY, task_id)
-    pipe.execute()
-    return task_id
-
-
-def get_task(redis: Redis, task_id: str) -> dict:
-    task = redis.hgetall(task_key(task_id))
-    if not task:
-        raise HTTPException(status_code=404, detail=f"Задача {task_id} не найдена")
-    return task
-
-
-def update_task(redis: Redis, task_id: str, **fields) -> None:
-    redis.hset(task_key(task_id), mapping=fields)
-
-
-def save_request(
+def create_llm_task(
     db: Session,
-    task_id: str,
-    user_id: int | None,
     prompt: str,
     file_ids: list[int],
     enable_thinking: bool,
     max_new_tokens: int,
+    user_id: int | None,
 ) -> LLMRequestDB:
-    """Сохраняет запрос к нейросети и использованные файлы в БД."""
+    """Сохраняет задачу в БД и отправляет её в Kafka для llm-worker."""
+    task_id = uuid.uuid4().hex
+    full_prompt = build_task_prompt(db, file_ids, prompt)
+
     request_db = LLMRequestDB(
         task_id=task_id,
         user_id=user_id,
@@ -94,6 +61,21 @@ def save_request(
     )
     db.commit()
     db.refresh(request_db)
+
+    try:
+        kafka_service.produce(
+            kafka_service.TASKS_TOPIC,
+            {
+                "task_id": task_id,
+                "prompt": full_prompt,
+                "enable_thinking": enable_thinking,
+                "max_new_tokens": max_new_tokens,
+            },
+        )
+    except Exception as exc:
+        update_request(db, task_id, status="error", error=str(exc))
+        raise HTTPException(status_code=503, detail="Kafka недоступна")
+
     return request_db
 
 
@@ -105,6 +87,53 @@ def update_request(db: Session, task_id: str, **fields) -> None:
     for name, value in fields.items():
         setattr(request_db, name, value)
     db.commit()
+
+
+def apply_result(db: Session, payload: dict) -> None:
+    """Применяет сообщение llm-worker из топика llm.results к задаче в БД."""
+    task_id = payload.get("task_id")
+    request_db = (
+        db.query(LLMRequestDB).filter(LLMRequestDB.task_id == task_id).first()
+        if task_id
+        else None
+    )
+    if request_db is None:
+        return
+
+    if payload.get("status") == "running":
+        request_db.status = "running"
+    elif payload.get("error") is not None:
+        request_db.status = "error"
+        request_db.error = payload["error"]
+    elif "result" in payload:
+        request_db.status = "done"
+        request_db.result = payload["result"] or ""
+    else:
+        return
+    db.commit()
+
+
+def results_consumer_loop() -> None:
+    """Фоновый поток: читает llm.results и обновляет статусы задач в БД."""
+    while True:
+        consumer = None
+        try:
+            consumer = kafka_service.results_consumer()
+            for message in consumer:
+                db = SessionLocal()
+                try:
+                    apply_result(db, message.value)
+                except Exception as exc:
+                    db.rollback()
+                    print(f"[kafka] llm.results error: {exc}", flush=True)
+                finally:
+                    db.close()
+        except Exception as exc:
+            print(f"[kafka] consumer error: {exc}", flush=True)
+            time.sleep(5)
+        finally:
+            if consumer is not None:
+                consumer.close()
 
 
 def _extract_pdf(data: bytes) -> str:
