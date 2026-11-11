@@ -43,3 +43,5 @@ postgres/ssl/
 redis/ssl/
 rustfs/ssl/
 **nul
+kafka/ssl/
+kafka/secrets/

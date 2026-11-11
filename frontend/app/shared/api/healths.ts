@@ -49,3 +49,14 @@ export const fetchRustfsHealth = async (): Promise<
     errorValidate(error);
   }
 };
+
+export const fetchKafkaHealth = async (): Promise<
+  GetHealthResponse | undefined
+> => {
+  try {
+    const response = await api.get<GetHealthResponse>("/healths/kafka");
+    return response.data;
+  } catch (error: unknown) {
+    errorValidate(error);
+  }
+};

@@ -79,14 +79,15 @@ services:
       - COOKIE_HTTPONLY=${COOKIE_HTTPONLY}
       - COOKIE_SECURE=${COOKIE_SECURE}
       - COOKIE_SAMESITE=${COOKIE_SAMESITE}
-      #RustFS
+      # RustFS
       - RUSTFS_URL=${RUSTFS_URL}
       - RUSTFS_BUCKET=${RUSTFS_BUCKET}
       - RUSTFS_ACCESS_KEY=${RFS_ACCESS_KEY:?RFS_ACCESS_KEY variable is not set}
       - RUSTFS_SECRET_KEY=${RFS_SECRET_KEY:?RFS_SECRET_KEY variable is not set}
       - RUSTFS_REGION=${RUSTFS_REGION}
-      # LLM
-      - TRAIN_JWT_ACCESS_TOKENS=${TRAIN_JWT_ACCESS_TOKENS}
+      # Kafka
+      - KAFKA_HOST=${KAFKA_HOST}
+      - KAFKA_PORT=${KAFKA_PORT}
 
     deploy:
       resources:
@@ -169,6 +170,66 @@ services:
 
     ports:
       - "6150:6150"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    networks:
+      - nginx-network
+
+  sm-kafka:
+    container_name: sm-kafka
+    image: apache/kafka:4.2.2 # KRaft (без ZooKeeper)
+    restart: unless-stopped
+
+    entrypoint: ["/bin/bash", "/kafka/entrypoint.sh"]
+
+    volumes:
+      - ./kafka/entrypoint.sh:/kafka/entrypoint.sh:ro
+      - ./kafka/ssl:/etc/kafka/ssl:ro
+      - ./kafka/secrets:/etc/kafka/secrets
+      - ./kafka/data:/var/lib/kafka/data
+
+    environment:
+      - SM_KAFKA_STORE_PASSWORD=${SM_KAFKA_STORE_PASSWORD:-changeit}
+      - CLUSTER_ID=${KAFKA_CLUSTER_ID:-SmKafkaCluster1Ab2CdEf}
+      - KAFKA_HEAP_OPTS=-Xmx512M -Xms512M
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9094
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,SSL://:9093,CONTROLLER://:9094
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://sm-kafka:9092,SSL://${KAFKA_ADVERTISED_HOST}:${KAFKA_SSL_PORT}
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+      - KAFKA_LOG_DIRS=/var/lib/kafka/data
+      # SSL: keystore/truststore генерируются entrypoint-скриптом в /etc/kafka/secrets
+      - KAFKA_SSL_KEYSTORE_FILENAME=keystore.p12
+      - KAFKA_SSL_KEYSTORE_CREDENTIALS=keystore_creds
+      - KAFKA_SSL_KEY_CREDENTIALS=key_creds
+      - KAFKA_SSL_TRUSTSTORE_FILENAME=truststore.p12
+      - KAFKA_SSL_TRUSTSTORE_CREDENTIALS=truststore_creds
+      - KAFKA_SSL_CLIENT_AUTH=none
+      - KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM=
+
+    ports:
+      - "${KAFKA_SSL_PORT}:9093" # внешний TLS-порт; PLAINTEXT :9092 только внутри сети
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server 127.0.0.1:9093 --command-config /etc/kafka/secrets/healthcheck.properties > /dev/null 2>&1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
     deploy:
       resources:
         limits:

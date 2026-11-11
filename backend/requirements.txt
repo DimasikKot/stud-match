@@ -1,6 +1,7 @@
 bcrypt==4.3.0
 fastapi==0.141.1
 httpx==0.28.1
+kafka-python-ng==2.2.3
 passlib[bcrypt]==1.7.4
 psycopg[binary]==3.3.6
 pydantic-settings==2.16.1
