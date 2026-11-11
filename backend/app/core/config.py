@@ -33,6 +33,15 @@ class _Settings(BaseSettings):
 
     KAFKA_HOST: str = "kafka host"
     KAFKA_PORT: int = 9900
+    KAFKA_SECURITY_PROTOCOL: str = (
+        ""  # PLAINTEXT | SSL | SASL_SSL | SASL_PLAINTEXT; пусто = авто по порту
+    )
+    KAFKA_SASL_MECHANISM: str = "PLAIN"
+    KF_USERNAME: str = ""
+    KF_PASSWORD: str = ""
+    KAFKA_SSL_CA_FILE: str = ""
+    KAFKA_SSL_CHECK_HOSTNAME: bool = False
+    KAFKA_RESULTS_GROUP_ID: str = "sm-backend-llm-results"
 
     LLM_MAX_FILES_CHARS: int = 12000  # ~8k токенов контекста влезает в 4 ГБ VRAM
 

@@ -245,12 +245,16 @@ def _kafka_health() -> HealthResponse:
 
     start_time = time.perf_counter()
     bootstrap = f"{settings.KAFKA_HOST}:{settings.KAFKA_PORT}"
-    use_tls = kafka_service.use_tls()
+    protocol = kafka_service.security_protocol()
 
     metrics: dict[str, Any] = {
         "server": bootstrap,
+        "security_protocol": protocol,
         "ssl": {
-            "enabled": use_tls,
+            "enabled": protocol in ("SSL", "SASL_SSL"),
+        },
+        "sasl": {
+            "enabled": protocol in ("SASL_SSL", "SASL_PLAINTEXT"),
         },
     }
 
@@ -262,9 +266,9 @@ def _kafka_health() -> HealthResponse:
                 request_timeout_ms=5000,
             )
         )
-        metadata = client.list_topics(timeout_ms=5000)
+        topics_raw = client.list_topics()
 
-        topics = sorted(t for t in metadata.topics if not t.startswith("_"))
+        topics = sorted(t for t in topics_raw if not t.startswith("_"))
         latency_ms = (time.perf_counter() - start_time) * 1000
 
         metrics["latency_ms"] = round(latency_ms, 2)

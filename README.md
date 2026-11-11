@@ -239,3 +239,58 @@ fetchBackendHealth().then((v) => v !== undefined && setBackendStatus(v));
 fetchPostgresHealth().then((v) => v !== undefined && setPostgresStatus(v));
 fetchRedisHealth().then((v) => v !== undefined && setRedisStatus(v));
 ```
+
+## Kafka: SASL_SSL + PLAIN, декларативный provisioning
+
+Kafka работает в KRaft-режиме с авторизацией: внешний доступ — `SASL_SSL` (порт `KAFKA_SSL_PORT`, внутри контейнера `9093`), клиенты внутри docker-сети — `SASL_PLAINTEXT_INTERNAL` (`sm-kafka:19094`, SASL без TLS). `PLAINTEXT` слушает только `127.0.0.1` внутри контейнера — используется для healthcheck и provisioning, наружу не публикуется.
+
+**Пользователи, топики и права настраиваются в `kafka/auth.conf`** — ничего создавать вручную не нужно: при каждом старте `sm-kafka` entrypoint-скрипт генерирует JAAS с PLAIN-пользователями, дожидается готовности брокера и применяет топики и ACL. Все операции идемпотентны.
+
+### Запуск
+
+1. Скопируйте шаблон и заполните своими значениями:
+
+```bash
+cp kafka/auth.conf.example kafka/auth.conf
+```
+
+В `auth.conf` директивы `user` / `topic` / `acl` — см. комментарии в файле. По умолчанию там 1 backend + 3 llm-worker'а (`llm_worker_1..3`).
+
+2. Заполните `.env` (см. `.env.example`): адрес брокера — `KAFKA_HOST`, `KAFKA_PORT`, `KAFKA_ADVERTISED_HOST`, `KAFKA_SSL_PORT`; креды клиентов — `KF_USERNAME`/`KF_PASSWORD` у backend и `LLM_KF_USERNAME`/`LLM_KF_PASSWORD` у каждого воркера (пароли должны совпадать с `user` в `auth.conf`).
+
+3. Поднимите Kafka:
+
+```bash
+docker compose -f rpi5.docker-compose.yaml up -d sm-kafka
+```
+
+После правок `auth.conf` примените изменения:
+
+```bash
+docker compose -f rpi5.docker-compose.yaml restart sm-kafka
+```
+
+### llm-worker на другой машине
+
+В `.env` на машине воркера укажите публичный адрес Kafka и креды своего пользователя `llm_worker_N` из `auth.conf` (у каждого воркера свой логин/пароль):
+
+```env
+KAFKA_HOST="stud-match.mooo.com"   # публичный хост Kafka
+KAFKA_PORT=9193                    # KAFKA_SSL_PORT на сервере
+LLM_KF_USERNAME="llm_worker_1"     # llm_worker_1 / _2 / _3 — по одному на воркер
+LLM_KF_PASSWORD="CHANGE_ME"
+```
+
+```bash
+docker compose -f gtx1650ti.docker-compose.yaml up -d --build
+```
+
+### ACL и несколько backend
+
+- Доступ к топикам/группам ограничен ACL из `auth.conf`: backend (`User:backend`) пишет в `llm.tasks` и читает `llm.results`, каждый `llm_worker_N` читает `llm.tasks` и пишет `llm.results`. Все воркеры делят общую consumer group `sm-llm-worker` — задача достаётся только одному воркеру.
+- Права действуют только на ресурсы, для которых есть ACL; остальные доступны любому авторизованному пользователю (`KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true`).
+- Все backend могут использовать одни топики `llm.tasks`/`llm.results`, но у каждого должен быть свой `KAFKA_RESULTS_GROUP_ID` и свой `Read,Describe` ACL на эту group в `auth.conf`, иначе consumer group будет делить сообщения `llm.results` между backend'ами.
+
+### Сетевая безопасность
+
+SASL_SSL защищает аутентификацию и шифрует трафик, но порт Kafka всё равно не стоит открывать всему интернету. Ограничьте `KAFKA_SSL_PORT` firewall'ом по IP воркеров или выведите воркеров в VPN/Tailscale/WireGuard.

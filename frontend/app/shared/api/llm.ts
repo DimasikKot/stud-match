@@ -1,5 +1,3 @@
-import toast from "react-hot-toast";
-
 import api, { errorValidate } from "@/shared/api/axios";
 
 // ===== Типы =====
@@ -18,9 +16,6 @@ export interface LLMTaskResponse {
   result: string;
   error: string;
 }
-
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL ?? "https://localhost/backend/api/v1";
 
 export const createLLMTask = async (
   body: LLMTaskCreate,
@@ -43,32 +38,6 @@ export const fetchLLMTask = async (
   } catch (error) {
     errorValidate(error);
     throw error;
-  }
-};
-
-// axios в браузере не умеет читать ответ по частям, поэтому стрим через fetch
-export const streamLLMTask = async (
-  taskId: string,
-  onChunk: (chunk: string) => void,
-  signal?: AbortSignal,
-): Promise<void> => {
-  const response = await fetch(`${BACKEND_URL}/llms/tasks/${taskId}/stream`, {
-    credentials: "include",
-    signal,
-  });
-
-  if (!response.ok || !response.body) {
-    const errorText = `Ошибка стрима ${response.status}`;
-    toast.error(errorText);
-    throw new Error(errorText);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    onChunk(decoder.decode(value, { stream: true }));
   }
 };
 

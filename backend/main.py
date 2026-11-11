@@ -1,9 +1,26 @@
+import threading
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-from app.api.v1.endpoints import api_router
 
-app: FastAPI = FastAPI(root_path="/backend")
+from app.api.v1.endpoints import api_router
+from app.services import llm as llm_service
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    consumer_thread = threading.Thread(
+        target=llm_service.results_consumer_loop,
+        daemon=True,
+        name="kafka-llm-results",
+    )
+    consumer_thread.start()
+    yield
+
+
+app: FastAPI = FastAPI(root_path="/backend", lifespan=lifespan)
 
 
 def _fix_binary_schema(node):
