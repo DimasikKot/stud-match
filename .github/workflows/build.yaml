@@ -304,7 +304,6 @@ jobs:
           BASE="https://stud-match.mooo.com/backend/api/v1/healths"
           MAX_ATTEMPTS=15      # ~2.5 минуты с паузой 10с
           DELAY=10
-          failed=0
 
           for ep in backend postgres redis rustfs kafka; do
             ep_ok=0
@@ -313,7 +312,6 @@ jobs:
             success="false"
 
             for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
-              # Один запрос — сразу и тело, и http-код
               resp=$(curl -s -w $'\n%{http_code}' --max-time 15 -fk "$BASE/$ep" || printf '\n000')
               code=$(printf '%s' "$resp" | tail -n1)
               body=$(printf '%s' "$resp" | sed '$d')
@@ -332,11 +330,11 @@ jobs:
               err=$(printf '%s' "$body" | jq -r '.metrics.error // .error // .message // "no error details"' 2>/dev/null || echo "no error details")
               echo "::error::$ep health check failed after $MAX_ATTEMPTS attempts (status=$code, success=$success, error=$err)"
               echo "$ep last response: $body"
-              failed=1
+              exit 1
             fi
           done
 
-          exit $failed
+          exit 0
 
       - name: Check frontend availability (via nginx)
         run: |
