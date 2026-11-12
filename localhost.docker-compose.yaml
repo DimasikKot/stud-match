@@ -99,151 +99,6 @@ services:
     networks:
       - nginx-network
 
-  sm-postgres:
-    container_name: sm-postgres
-    image: postgres:18 # фиксированная версия для стабильности
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sm-admin -d sm-db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-    volumes:
-      - ./postgres/data:/var/lib/postgresql # Сохраняем данные
-      - ./postgres/init:/docker-entrypoint-initdb.d # Папка со скриптами инициализации
-      - ./postgres/ssl/server.crt:/var/lib/postgresql/server.crt:ro
-      - ./postgres/ssl/server.key:/var/lib/postgresql/server.key:ro
-      - ./postgres/pg_hba.conf:/var/lib/postgresql/pg_hba.conf:ro # Настройки доступа
-
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD variable is not set}
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@stud-match.ru}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-    command: >
-      sh -c "
-      cp /var/lib/postgresql/server.crt /tmp/server.crt &&
-      cp /var/lib/postgresql/server.key /tmp/server.key &&
-      cp /var/lib/postgresql/pg_hba.conf /tmp/pg_hba.conf &&
-      chown 999:999 /tmp/server.crt /tmp/server.key /tmp/pg_hba.conf &&
-      chmod 600 /tmp/server.key &&
-      chmod 644 /tmp/pg_hba.conf &&
-      exec docker-entrypoint.sh postgres
-      -c ssl=on
-      -c ssl_cert_file=/tmp/server.crt
-      -c ssl_key_file=/tmp/server.key
-      -c hba_file=/tmp/pg_hba.conf
-      "
-
-    ports:
-      - "5200:5432"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-    networks:
-      - nginx-network
-
-  sm-redis:
-    container_name: sm-redis
-    image: redis:8
-    restart: always
-
-    volumes:
-      - ./redis/data:/var/lib/redis/data
-      - ./redis/ssl:/etc/redis/ssl:ro
-
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}
-    command:
-      - /bin/sh
-      - -c
-      - >
-        redis-server 
-        --port 6350 
-        --tls-port 6150 
-        --tls-cert-file /etc/redis/ssl/server.crt 
-        --tls-key-file /etc/redis/ssl/server.key 
-        --tls-ca-cert-file /etc/redis/ssl/server.crt 
-        --tls-auth-clients no 
-        --tls-protocols "TLSv1.2 TLSv1.3" 
-        --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
-
-    ports:
-      - "6150:6150"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-    networks:
-      - nginx-network
-
-  sm-kafka:
-    container_name: sm-kafka
-    image: apache/kafka:4.2.2 # KRaft (без ZooKeeper)
-    restart: unless-stopped
-
-    entrypoint: ["/bin/bash", "/kafka/entrypoint.sh"]
-
-    volumes:
-      - ./kafka/entrypoint.sh:/kafka/entrypoint.sh:ro
-      - ./kafka/auth.conf:/etc/kafka/auth.conf:ro
-      - ./kafka/ssl:/etc/kafka/ssl:ro # PEM-сертификат для keystore и JAAS (генерируются при старте)
-      - ./kafka/data:/var/lib/kafka/data
-
-    environment:
-      - CLUSTER_ID=${KAFKA_CLUSTER_ID:-SmKafkaCluster1Ab2CdEf}
-      - KAFKA_HEAP_OPTS=-Xmx512M -Xms512M
-      - KAFKA_NODE_ID=1
-      - KAFKA_PROCESS_ROLES=broker,controller
-      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:8291
-      # SASL_SSL - внешний доступ для воркеров, SASL_PLAINTEXT_INTERNAL - клиенты в docker-сети.
-      # Пользователи/топики/ACL задаются в kafka/auth.conf и применяются entrypoint-скриптом.
-      - KAFKA_LISTENERS=PLAINTEXT://127.0.0.1:8290,CONTROLLER://localhost:8291,SASL_SSL://:8092,SASL_PLAINTEXT_INTERNAL://:8292
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:8290,SASL_SSL://${KAFKA_ADVERTISED_HOST}:${KAFKA_SSL_PORT},SASL_PLAINTEXT_INTERNAL://sm-kafka:8292
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,SASL_SSL:SASL_SSL,SASL_PLAINTEXT_INTERNAL:SASL_PLAINTEXT
-      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      - KAFKA_SASL_ENABLED_MECHANISMS=PLAIN
-      - KAFKA_OPTS=-Djava.security.auth.login.config=/etc/kafka/jaas.conf
-      - KAFKA_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer
-      - KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true # PLAINTEXT localhost — для provisioning/healthcheck
-      - KAFKA_SUPER_USERS=User:ANONYMOUS # только PLAINTEXT 127.0.0.1 внутри контейнера — provisioning всегда имеет права
-      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
-      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
-      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
-      - KAFKA_LOG_DIRS=/var/lib/kafka/data
-      # SSL keystore генерируется entrypoint-скриптом в /etc/kafka/secrets
-      - KAFKA_SSL_KEYSTORE_FILENAME=keystore.p12
-      - KAFKA_SSL_KEYSTORE_CREDENTIALS=keystore_creds
-      - KAFKA_SSL_KEY_CREDENTIALS=key_creds
-      - KAFKA_SSL_KEYSTORE_TYPE=PKCS12
-      - KAFKA_SSL_CLIENT_AUTH=none
-
-    ports:
-      - "${KAFKA_SSL_PORT}:8092" # внешний SASL_SSL; 8292 internal и 8290 localhost не публикуются
-
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server 127.0.0.1:8290 > /dev/null 2>&1",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-    networks:
-      - nginx-network
-
   nginx:
     container_name: nginx
     image: nginx:alpine
@@ -262,8 +117,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "9050:9050"
-      - "9150:9150"
+      # - "9050:9050" # RustFS API
+      # - "9150:9150" # RustFS WebUI
     deploy:
       resources:
         limits:
@@ -271,71 +126,216 @@ services:
     networks:
       - nginx-network
 
-  sm-rustfs:
-    image: rustfs/rustfs:1.0.4-glibc
-    container_name: sm-rustfs
-    security_opt:
-      - "no-new-privileges:true"
+  # sm-postgres:
+  #   container_name: sm-postgres
+  #   image: postgres:18 # фиксированная версия для стабильности
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U sm-admin -d sm-db"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
-    environment:
-      - RUSTFS_ADDRESS=${RUSTFS_ADDRESS}
-      - RUSTFS_CONSOLE_ADDRESS=${RUSTFS_CONSOLE_ADDRESS}
-      - RUSTFS_CONSOLE_ENABLE=true
-      - RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS=*
-      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:?RUSTFS_ACCESS_KEY variable is not set}
-      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:?RUSTFS_SECRET_KEY variable is not set}
-      - RUSTFS_OBS_LOGGER_LEVEL=info
-      - RUSTFS_VOLUMES=/data
-      - RUSTFS_OBS_LOG_DIRECTORY=/app/logs
-      # - RUSTFS_TLS_PATH=/opt/tls
-      # - при включенном TLS проверки работоспособности (healthchecks) автоматически переключаются на HTTPS
-      # По умолчанию сохраняется строгая проверка топологии диска.
-      # Только для локального тестирования можно явно задать
-      # - RUSTFS_UNSAFE_BYPASS_DISK_CHECK=${RUSTFS_UNSAFE_BYPASS_DISK_CHECK:-false}
-    volumes:
-      - sm_rustfs_data:/data
-      - sm_rustfs_logs:/app/logs
-      # - ./rustfs/ssl:/opt/tls
-    restart: unless-stopped
-    healthcheck:
-      # Поведение по умолчанию:
-      # - HTTP, если переменная RUSTFS_TLS_PATH не задана
-      # - HTTPS, если переменная RUSTFS_TLS_PATH задана
-      # - для TLS через loopback используется флаг `-k` (игнорирование проверки сертификата), если не указаны точные значения хоста и CA
-      #
-      # Пример настройки строгого TLS:
-      # - задайте RUSTFS_HEALTHCHECK_HOST (имя хоста, включенное в SAN сертификата)
-      # - при необходимости задайте RUSTFS_HEALTHCHECK_CA (по умолчанию используется /opt/tls/ca.crt, если этот файл существует)
-      test: [
-          "CMD",
-          "sh",
-          "-ec",
-          "host=\"$${RUSTFS_HEALTHCHECK_HOST:-127.0.0.1}\"; scheme=\"http\"; set -- -fsS; \
-          if [ -n \"$${RUSTFS_TLS_PATH:-}\" ]; then \
-          scheme=\"https\"; \
-          ca_path=\"$${RUSTFS_HEALTHCHECK_CA:-}\"; \
-          if [ -z \"$${ca_path}\" ] && [ -f /opt/tls/ca.crt ]; then ca_path=/opt/tls/ca.crt; fi; \
-          case \"$${host}\" in 127.0.0.1|localhost) strict_host=false ;; *) strict_host=true ;; esac; \
-          if [ \"$${strict_host}\" = true ] && [ -n \"$${ca_path}\" ]; then \
-          set -- \"$${@}\" --cacert \"$${ca_path}\" --resolve \"$${host}:9250:127.0.0.1\" --resolve \"$${host}:9350:127.0.0.1\"; \
-          else \
-          set -- \"$${@}\" -k; \
-          fi; \
-          fi; \
-          curl \"$${@}\" \"$${scheme}://$${host}:9250/health\" && \
-          curl \"$${@}\" \"$${scheme}://$${host}:9350/rustfs/console/health\"",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  #   volumes:
+  #     - ./postgres/data:/var/lib/postgresql # Сохраняем данные
+  #     - ./postgres/init:/docker-entrypoint-initdb.d # Папка со скриптами инициализации
+  #     - ./postgres/ssl/server.crt:/var/lib/postgresql/server.crt:ro
+  #     - ./postgres/ssl/server.key:/var/lib/postgresql/server.key:ro
+  #     - ./postgres/pg_hba.conf:/var/lib/postgresql/pg_hba.conf:ro # Настройки доступа
 
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-    networks:
-      - nginx-network
+  #   environment:
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD variable is not set}
+  #     - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@stud-match.ru}
+  #     - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+  #   command: >
+  #     sh -c "
+  #     cp /var/lib/postgresql/server.crt /tmp/server.crt &&
+  #     cp /var/lib/postgresql/server.key /tmp/server.key &&
+  #     cp /var/lib/postgresql/pg_hba.conf /tmp/pg_hba.conf &&
+  #     chown 999:999 /tmp/server.crt /tmp/server.key /tmp/pg_hba.conf &&
+  #     chmod 600 /tmp/server.key &&
+  #     chmod 644 /tmp/pg_hba.conf &&
+  #     exec docker-entrypoint.sh postgres
+  #     -c ssl=on
+  #     -c ssl_cert_file=/tmp/server.crt
+  #     -c ssl_key_file=/tmp/server.key
+  #     -c hba_file=/tmp/pg_hba.conf
+  #     "
+
+  #   ports:
+  #     - "5200:5432"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 1G
+  #   networks:
+  #     - nginx-network
+
+  # sm-redis:
+  #   container_name: sm-redis
+  #   image: redis:8
+  #   restart: always
+
+  #   volumes:
+  #     - ./redis/data:/var/lib/redis/data
+  #     - ./redis/ssl:/etc/redis/ssl:ro
+
+  #   environment:
+  #     - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}
+  #   command:
+  #     - /bin/sh
+  #     - -c
+  #     - >
+  #       redis-server
+  #       --port 6350
+  #       --tls-port 6150
+  #       --tls-cert-file /etc/redis/ssl/server.crt
+  #       --tls-key-file /etc/redis/ssl/server.key
+  #       --tls-ca-cert-file /etc/redis/ssl/server.crt
+  #       --tls-auth-clients no
+  #       --tls-protocols "TLSv1.2 TLSv1.3"
+  #       --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
+
+  #   ports:
+  #     - "6150:6150"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 1G
+  #   networks:
+  #     - nginx-network
+
+  # sm-kafka:
+  #   container_name: sm-kafka
+  #   image: apache/kafka:4.2.2 # KRaft (без ZooKeeper)
+  #   restart: unless-stopped
+
+  #   entrypoint: ["/bin/bash", "/kafka/entrypoint.sh"]
+
+  #   volumes:
+  #     - ./kafka/entrypoint.sh:/kafka/entrypoint.sh:ro
+  #     - ./kafka/auth.conf:/etc/kafka/auth.conf:ro
+  #     - ./kafka/ssl:/etc/kafka/ssl:ro # PEM-сертификат для keystore и JAAS (генерируются при старте)
+  #     - ./kafka/data:/var/lib/kafka/data
+
+  #   environment:
+  #     - CLUSTER_ID=${KAFKA_CLUSTER_ID:-SmKafkaCluster1Ab2CdEf}
+  #     - KAFKA_HEAP_OPTS=-Xmx512M -Xms512M
+  #     - KAFKA_NODE_ID=1
+  #     - KAFKA_PROCESS_ROLES=broker,controller
+  #     - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:8291
+  #     # SASL_SSL - внешний доступ для воркеров, SASL_PLAINTEXT_INTERNAL - клиенты в docker-сети.
+  #     # Пользователи/топики/ACL задаются в kafka/auth.conf и применяются entrypoint-скриптом.
+  #     - KAFKA_LISTENERS=PLAINTEXT://127.0.0.1:8290,CONTROLLER://localhost:8291,SASL_SSL://:8092,SASL_PLAINTEXT_INTERNAL://:8292
+  #     - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:8290,SASL_SSL://${KAFKA_ADVERTISED_HOST}:${KAFKA_SSL_PORT},SASL_PLAINTEXT_INTERNAL://sm-kafka:8292
+  #     - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,SASL_SSL:SASL_SSL,SASL_PLAINTEXT_INTERNAL:SASL_PLAINTEXT
+  #     - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+  #     - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+  #     - KAFKA_SASL_ENABLED_MECHANISMS=PLAIN
+  #     - KAFKA_OPTS=-Djava.security.auth.login.config=/etc/kafka/jaas.conf
+  #     - KAFKA_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer
+  #     - KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true # PLAINTEXT localhost — для provisioning/healthcheck
+  #     - KAFKA_SUPER_USERS=User:ANONYMOUS # только PLAINTEXT 127.0.0.1 внутри контейнера — provisioning всегда имеет права
+  #     - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+  #     - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+  #     - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+  #     - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+  #     - KAFKA_LOG_DIRS=/var/lib/kafka/data
+  #     # SSL keystore генерируется entrypoint-скриптом в /etc/kafka/secrets
+  #     - KAFKA_SSL_KEYSTORE_FILENAME=keystore.p12
+  #     - KAFKA_SSL_KEYSTORE_CREDENTIALS=keystore_creds
+  #     - KAFKA_SSL_KEY_CREDENTIALS=key_creds
+  #     - KAFKA_SSL_KEYSTORE_TYPE=PKCS12
+  #     - KAFKA_SSL_CLIENT_AUTH=none
+
+  #   ports:
+  #     - "${KAFKA_SSL_PORT}:8092" # внешний SASL_SSL; 8292 internal и 8290 localhost не публикуются
+
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD-SHELL",
+  #         "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server 127.0.0.1:8290 > /dev/null 2>&1",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 60s
+
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 1G
+  #   networks:
+  #     - nginx-network
+
+  # sm-rustfs:
+  #   image: rustfs/rustfs:1.0.4-glibc
+  #   container_name: sm-rustfs
+  #   security_opt:
+  #     - "no-new-privileges:true"
+
+  #   environment:
+  #     - RUSTFS_ADDRESS=${RUSTFS_ADDRESS}
+  #     - RUSTFS_CONSOLE_ADDRESS=${RUSTFS_CONSOLE_ADDRESS}
+  #     - RUSTFS_CONSOLE_ENABLE=true
+  #     - RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS=*
+  #     - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:?RUSTFS_ACCESS_KEY variable is not set}
+  #     - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:?RUSTFS_SECRET_KEY variable is not set}
+  #     - RUSTFS_OBS_LOGGER_LEVEL=info
+  #     - RUSTFS_VOLUMES=/data
+  #     - RUSTFS_OBS_LOG_DIRECTORY=/app/logs
+  #     # - RUSTFS_TLS_PATH=/opt/tls
+  #     # - при включенном TLS проверки работоспособности (healthchecks) автоматически переключаются на HTTPS
+  #     # По умолчанию сохраняется строгая проверка топологии диска.
+  #     # Только для локального тестирования можно явно задать
+  #     # - RUSTFS_UNSAFE_BYPASS_DISK_CHECK=${RUSTFS_UNSAFE_BYPASS_DISK_CHECK:-false}
+  #   volumes:
+  #     - sm_rustfs_data:/data
+  #     - sm_rustfs_logs:/app/logs
+  #     # - ./rustfs/ssl:/opt/tls
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     # Поведение по умолчанию:
+  #     # - HTTP, если переменная RUSTFS_TLS_PATH не задана
+  #     # - HTTPS, если переменная RUSTFS_TLS_PATH задана
+  #     # - для TLS через loopback используется флаг `-k` (игнорирование проверки сертификата), если не указаны точные значения хоста и CA
+  #     #
+  #     # Пример настройки строгого TLS:
+  #     # - задайте RUSTFS_HEALTHCHECK_HOST (имя хоста, включенное в SAN сертификата)
+  #     # - при необходимости задайте RUSTFS_HEALTHCHECK_CA (по умолчанию используется /opt/tls/ca.crt, если этот файл существует)
+  #     test: [
+  #         "CMD",
+  #         "sh",
+  #         "-ec",
+  #         "host=\"$${RUSTFS_HEALTHCHECK_HOST:-127.0.0.1}\"; scheme=\"http\"; set -- -fsS; \
+  #         if [ -n \"$${RUSTFS_TLS_PATH:-}\" ]; then \
+  #         scheme=\"https\"; \
+  #         ca_path=\"$${RUSTFS_HEALTHCHECK_CA:-}\"; \
+  #         if [ -z \"$${ca_path}\" ] && [ -f /opt/tls/ca.crt ]; then ca_path=/opt/tls/ca.crt; fi; \
+  #         case \"$${host}\" in 127.0.0.1|localhost) strict_host=false ;; *) strict_host=true ;; esac; \
+  #         if [ \"$${strict_host}\" = true ] && [ -n \"$${ca_path}\" ]; then \
+  #         set -- \"$${@}\" --cacert \"$${ca_path}\" --resolve \"$${host}:9250:127.0.0.1\" --resolve \"$${host}:9350:127.0.0.1\"; \
+  #         else \
+  #         set -- \"$${@}\" -k; \
+  #         fi; \
+  #         fi; \
+  #         curl \"$${@}\" \"$${scheme}://$${host}:9250/health\" && \
+  #         curl \"$${@}\" \"$${scheme}://$${host}:9350/rustfs/console/health\"",
+  #       ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
+
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 1G
+  #   networks:
+  #     - nginx-network
 
 networks:
   nginx-network:
