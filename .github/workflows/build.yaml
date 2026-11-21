@@ -237,14 +237,6 @@ jobs:
               done
             fi
 
-            # ---------- ALL BUILD (полный пересбор) ----------
-            if [ "$ALL_BUILD" = "true" ]; then
-              echo "=== [all_build] Full rebuild & restart ==="
-              $COMPOSE up -d --build
-              docker system prune --force
-              exit 0
-            fi
-
             # ---------- Точечные сборки frontend / backend ----------
             BUILD_SERVICES=""
             [ "$FRONTEND_BUILD" = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-frontend"
@@ -273,6 +265,12 @@ jobs:
             if [ "$KAFKA_DEPLOY" = "true" ]; then
               echo "=== [kafka] Restart sm-kafka (entrypoint + auth.conf) ==="
               $COMPOSE up -d --no-deps --force-recreate sm-kafka
+            fi
+
+            # ---------- ALL BUILD (полный пересбор) ----------
+            if [ "$ALL_BUILD" = "true" ]; then
+              echo "=== [all_build] Full rebuild & restart ==="
+              $COMPOSE up -d --build
             fi
 
             docker system prune --force
@@ -394,14 +392,6 @@ jobs:
               fi
             fi
 
-            # ---------- all_build — полный пересбор ----------
-            if [ "$ALL_BUILD" = "true" ]; then
-              echo "=== [rollback:all_build] ==="
-              $COMPOSE up -d --build
-              docker system prune --volumes --force
-              exit 0
-            fi
-
             # ---------- frontend / backend — пересборка образов ----------
             BUILD_SERVICES=""
             [ "$FRONTEND_BUILD" = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-frontend"
@@ -429,6 +419,12 @@ jobs:
             if [ "$KAFKA_DEPLOY" = "true" ]; then
               echo "=== [rollback:kafka] ==="
               $COMPOSE up -d --no-deps --force-recreate sm-kafka
+            fi
+
+            # ---------- all_build — полный пересбор ----------
+            if [ "$ALL_BUILD" = "true" ]; then
+              echo "=== [rollback:all_build] ==="
+              $COMPOSE up -d --build
             fi
 
             docker system prune --force
