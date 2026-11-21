@@ -5,7 +5,7 @@ services:
     container_name: sm-tags-worker
     build:
       context: ./tags-worker # Папка, содержащая файлы контейнера
-      dockerfile: gtx1650ti.tags-worker.Dockerfile
+      dockerfile: tags-worker.gtx1650ti.Dockerfile
     restart: always
     healthcheck:
       test:

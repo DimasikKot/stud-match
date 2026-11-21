@@ -19,7 +19,7 @@
     "nginx/": true,
     "redis/": true,
     ".pre-commit-config.yaml": true,
-    "rpi5.docker-compose.yaml": true,
+    "s.rpi5.docker-compose.yaml": true,
     ".gitattributes": true,
     ".dockerignore": true,
     "backend/requirements.dev.txt": true,

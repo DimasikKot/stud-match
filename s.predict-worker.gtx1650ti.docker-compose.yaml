@@ -1,0 +1,53 @@
+# gtx1650ti
+
+services:
+  sm-predict-worker:
+    container_name: sm-predict-worker
+    build:
+      context: ./predict-worker # Папка, содержащая файлы контейнера
+      dockerfile: predict-worker.gtx1650ti.Dockerfile
+    restart: always
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8070/health'', timeout=5)" || exit 1',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+
+    ports:
+      - "127.0.0.1:8070:8070"
+
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - KAFKA_HOST=${PREDICT_W_KF_HOST}
+      - KAFKA_PORT=${PREDICT_W_KF_PORT}
+      - KAFKA_USERNAME=${PREDICT_W_KF_USERNAME}
+      - KAFKA_PASSWORD=${PREDICT_W_KF_PASSWORD}
+
+    volumes:
+      - ./predict-worker:/app
+      - sm_hf_cache:/root/.cache/huggingface # Кэш моделей HF
+
+    networks:
+      - nginx-network # Доступ к sm-redis и sm-backend
+
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  nginx-network:
+    external: true
+
+volumes:
+  sm_hf_cache:
