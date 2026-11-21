@@ -29,7 +29,7 @@ services:
       - KAFKA_PASSWORD=${TAGS_W_KF_PASSWORD}
 
     volumes:
-      - ./llm-worker:/app
+      - ./tags-worker:/app
       - sm_hf_cache:/root/.cache/huggingface # Кэш моделей HF
 
     networks:
