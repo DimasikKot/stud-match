@@ -71,7 +71,7 @@ jobs:
             all_build:
               - '.github/workflows/build.yaml'
               - '.env.example'
-              - 'rpi5.docker-compose.yaml'
+              - 's.rpi5.docker-compose.yaml'
 
   lint-frontend:
     runs-on: ubuntu-latest
@@ -180,7 +180,7 @@ jobs:
             cd ${{ secrets.PROJECT_PATH }}
             git pull origin main
 
-            COMPOSE="docker compose -f rpi5.docker-compose.yaml"
+            COMPOSE="docker compose -f s.rpi5.docker-compose.yaml"
 
             # ---------- Postgres: точечный реинит init-скриптов ----------
             # Запускаем все *.sql начиная с первого изменённого — drop+create внутри файлов идемпотентны
@@ -378,7 +378,7 @@ jobs:
             git reset --hard "$TARGET"
             echo "=== Now at: $(git rev-parse --short HEAD) ==="
 
-            COMPOSE="docker compose -f rpi5.docker-compose.yaml"
+            COMPOSE="docker compose -f s.rpi5.docker-compose.yaml"
 
             # ---------- postgres_reinit — восстановление из бэкапа ----------
             if [ "$POSTGRES_REINIT" = "true" ]; then
