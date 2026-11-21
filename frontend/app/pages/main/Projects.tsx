@@ -3,14 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Header } from "@/shared/components/Header";
 import { InfoCard } from "@/shared/components/InfoCard";
 import { InfoCardBig } from "@/shared/components/InfoCardBig";
-import { TextUI } from "@/shared/components/TextUI";
 
-export function Home() {
+export function Projects() {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header title="Главная" />
+      <Header title="Список проектов" />
 
       {/* Центральная область */}
       <div className="flex-1 flex m-6 justify-center">
@@ -40,11 +39,6 @@ export function Home() {
             description="-"
           />
         </div>
-      </div>
-
-      {/* Футер */}
-      <div className="text-center py-6">
-        <TextUI variant="desc">СтудПодбор © 2026</TextUI>
       </div>
     </div>
   );

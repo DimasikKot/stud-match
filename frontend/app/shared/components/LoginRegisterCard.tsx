@@ -1,5 +1,4 @@
 import React from "react";
-import logo from "@/shared/images/logo.svg";
 
 import { TextUI } from "@/shared/components/TextUI";
 import { ButtonUI } from "@/shared/components/ButtonUI";
@@ -35,10 +34,6 @@ export function LoginRegisterCard({
   return (
     <div className="w-full max-w-200 mx-auto">
       <div className="bg-white rounded-3xl p-8 shadow-xl border border-gray-300">
-        <div className="flex justify-start mb-6">
-          <img src={logo} alt="Logo" className="w-12 h-12" />
-        </div>
-
         <div className="flex gap-12">
           <div className="flex-1">
             <TextUI variant="title" className="text-left mb-2">
