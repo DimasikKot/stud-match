@@ -1,11 +1,11 @@
 # gtx1650ti
 
 services:
-  sm-llm-worker:
-    container_name: sm-llm-worker
+  sm-tags-worker:
+    container_name: sm-tags-worker
     build:
-      context: ./llm-worker # Папка, содержащая файлы контейнера
-      dockerfile: gtx1650ti.llm-worker.Dockerfile
+      context: ./tags-worker # Папка, содержащая файлы контейнера
+      dockerfile: gtx1650ti.tags-worker.Dockerfile
     restart: always
     healthcheck:
       test:
@@ -23,10 +23,10 @@ services:
 
     environment:
       - HF_TOKEN=${HF_TOKEN}
-      - KAFKA_HOST=${LLM_KF_HOST}
-      - KAFKA_PORT=${LLM_KF_PORT}
-      - KAFKA_USERNAME=${LLM_KF_USERNAME}
-      - KAFKA_PASSWORD=${LLM_KF_PASSWORD}
+      - KAFKA_HOST=${TAGS_W_KF_HOST}
+      - KAFKA_PORT=${TAGS_W_KF_PORT}
+      - KAFKA_USERNAME=${TAGS_W_KF_USERNAME}
+      - KAFKA_PASSWORD=${TAGS_W_KF_PASSWORD}
 
     volumes:
       - ./llm-worker:/app

@@ -63,35 +63,73 @@
 # распределяются между ними, а не дублируются.
 # ----------------------------------------------------------------------------
 
-user backend        Bk9fT2wQpLxZm4Rv
-user llm_worker_1   Wkr1a8Kd2nPq5Xs
-user llm_worker_2   Wkr2b7Jc3mQr6Yt
-user llm_worker_3   Wkr3c6Ld4nRs7Zu
 
-topic llm.tasks     3
-topic llm.results   1
+
+user backend_1        Bk1fT2wQpLxZm4R
+
+user tags_worker_1    Tg1a8Kd2nPsq5Xs
+user tags_worker_2    Tg2b7Jac3mQr6Yt
+user tags_worker_3    Tg3c6Ld4nRsf7Zu
+
+user predict_worker_1 Pd1wX9mK3vQj7Lr
+user predict_worker_2 Pd2x8nL4wsRk8Ms
+user predict_worker_3 Pd3y9oM5exSl9Nt
+
+
+
+topic llm.tasks_tags      3
+topic llm.tasks_predict   3
+topic llm.results_tags    1
+topic llm.results_predict 1
+
+
 
 # --- backend ---
-acl User:backend topic llm.tasks Write,Describe
-acl User:backend topic llm.results Read,Describe
-acl User:backend group sm-backend-llm-results Read,Describe
-acl User:backend cluster - Describe
+acl User:backend_1 topic llm.tasks_tags Write,Describe
+acl User:backend_1 topic llm.tasks_predict Write,Describe
+acl User:backend_1 topic llm.results_tags Read,Describe
+acl User:backend_1 topic llm.results_predict Read,Describe
+acl User:backend_1 group sm-backend-tags Read,Describe
+acl User:backend_1 group sm-backend-predict Read,Describe
+acl User:backend_1 cluster - Describe
 
-# --- llm_worker_1 / _2 / _3 (одинаковые права, общая group sm-llm-worker) ---
-acl User:llm_worker_1 topic llm.tasks Read,Describe
-acl User:llm_worker_1 topic llm.results Write,Describe
-acl User:llm_worker_1 group sm-llm-worker Read,Describe
-acl User:llm_worker_1 cluster - Describe
 
-acl User:llm_worker_2 topic llm.tasks Read,Describe
-acl User:llm_worker_2 topic llm.results Write,Describe
-acl User:llm_worker_2 group sm-llm-worker Read,Describe
-acl User:llm_worker_2 cluster - Describe
 
-acl User:llm_worker_3 topic llm.tasks Read,Describe
-acl User:llm_worker_3 topic llm.results Write,Describe
-acl User:llm_worker_3 group sm-llm-worker Read,Describe
-acl User:llm_worker_3 cluster - Describe
+# --- tags_worker_1 / _2 / _3 (одинаковые права, общая group sm-tags-workers) ---
+acl User:tags_worker_1 topic llm.tasks_tags Read,Describe
+acl User:tags_worker_1 topic llm.results_tags Write,Describe
+acl User:tags_worker_1 group sm-tags-workers Read,Describe
+acl User:tags_worker_1 cluster - Describe
+
+acl User:tags_worker_2 topic llm.tasks_tags Read,Describe
+acl User:tags_worker_2 topic llm.results_tags Write,Describe
+acl User:tags_worker_2 group sm-tags-workers Read,Describe
+acl User:tags_worker_2 cluster - Describe
+
+acl User:tags_worker_3 topic llm.tasks_tags Read,Describe
+acl User:tags_worker_3 topic llm.results_tags Write,Describe
+acl User:tags_worker_3 group sm-tags-workers Read,Describe
+acl User:tags_worker_3 cluster - Describe
+
+
+
+# --- predict_worker_1 / _2 / _3 (одинаковые права, общая group sm-predict-workers) ---
+acl User:predict_worker_1 topic llm.tasks_predict Read,Describe
+acl User:predict_worker_1 topic llm.results_predict Write,Describe
+acl User:predict_worker_1 group sm-predict-workers Read,Describe
+acl User:predict_worker_1 cluster - Describe
+
+acl User:predict_worker_2 topic llm.tasks_predict Read,Describe
+acl User:predict_worker_2 topic llm.results_predict Write,Describe
+acl User:predict_worker_2 group sm-predict-workers Read,Describe
+acl User:predict_worker_2 cluster - Describe
+
+acl User:predict_worker_3 topic llm.tasks_predict Read,Describe
+acl User:predict_worker_3 topic llm.results_predict Write,Describe
+acl User:predict_worker_3 group sm-predict-workers Read,Describe
+acl User:predict_worker_3 cluster - Describe
+
+
 
 # ----------------------------------------------------------------------------
 # КАК ДОБАВИТЬ ЕЩЁ ОДНОГО ВОРКЕРА (llm_worker_4)
