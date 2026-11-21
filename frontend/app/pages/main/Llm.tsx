@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-import { Header } from "@/shared/components/Header";
 import { ButtonUI } from "@/shared/components/ButtonUI";
 import { CheckboxUI } from "@/shared/components/CheckboxUI";
 import { TextField } from "@/shared/components/TextField";
@@ -88,10 +87,8 @@ export function Llm() {
   const { thinking, answer } = splitThinking(output);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header title="Нейросеть" />
-
-      <div className="max-w-6xl mx-auto m-6 mb-20 w-full flex flex-col gap-6">
+    <div className="min-h-screen">
+      <div className="max-w-6xl mx-auto p-6 mb-20 w-full flex flex-col gap-6">
         {/* Запрос */}
         <div className="bg-white border border-gray-300 rounded-3xl p-6 flex flex-col gap-4">
           <TextUI variant="title">Запрос к нейросети</TextUI>

@@ -24,6 +24,7 @@ const UserIcon = ({ username }: { username: string }) => (
   </div>
 );
 
+/** @deprecated */
 export function Header({
   title,
   className,

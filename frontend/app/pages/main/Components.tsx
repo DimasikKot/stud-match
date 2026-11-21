@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-import { Header } from "@/shared/components/Header";
 import { ButtonPage } from "@/shared/components/ButtonPage";
 import { TextUI } from "@/shared/components/TextUI";
 import { ButtonUI } from "@/shared/components/ButtonUI";
@@ -22,8 +21,6 @@ export function Components() {
 
   return (
     <>
-      <Header title="Компоненты" />
-
       <div className="max-w-6xl mx-auto m-6 mb-80 bg-white">
         <ButtonPage onClick={() => navigate("/")} />
 

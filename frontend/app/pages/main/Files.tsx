@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-import { Header } from "@/shared/components/Header";
 import { ButtonPage } from "@/shared/components/ButtonPage";
 import { ButtonUI } from "@/shared/components/ButtonUI";
 import { TextUI } from "@/shared/components/TextUI";
@@ -81,10 +80,8 @@ export function Files() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header title="Файлы" />
-
-      <div className="max-w-6xl mx-auto m-6 mb-20 w-full">
+    <div className="min-h-screen">
+      <div className="max-w-6xl mx-auto p-6 mb-20 w-full">
         <ButtonPage
           onClick={() => window.scrollTo({ top: 0 })}
           isLoading={isLoading}

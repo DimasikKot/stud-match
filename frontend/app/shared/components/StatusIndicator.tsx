@@ -2,7 +2,7 @@ export const StatusIndicator = ({
   status,
   className = "",
 }: {
-  status: boolean;
+  status?: boolean;
   className?: string;
 }) => (
   <div

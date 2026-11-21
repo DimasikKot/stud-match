@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 
-import { Header } from "@/shared/components/Header";
 import { InfoCard } from "@/shared/components/InfoCard";
 import { InfoCardBig } from "@/shared/components/InfoCardBig";
 
@@ -8,13 +7,9 @@ export function Projects() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header title="Список проектов" />
-
-      {/* Центральная область */}
-      <div className="flex-1 flex m-6 justify-center">
+    <div className="min-h-screen">
+      <div className="flex p-6 justify-center">
         <div className="max-w-6xl w-full flex flex-col md:flex-row gap-8 items-center justify-center">
-          {/* Левая карточка */}
           <InfoCard
             icon="rocket_launch"
             iconClassName="bg-emerald-100 text-emerald-600"
@@ -22,7 +17,6 @@ export function Projects() {
             description="+ + +"
           />
 
-          {/* Центральная */}
           <InfoCardBig
             icon="auto_awesome"
             title="Распределения"
@@ -31,7 +25,6 @@ export function Projects() {
             onClick={() => navigate("/distribution")}
           />
 
-          {/* Правая карточка */}
           <InfoCard
             icon="bolt"
             iconClassName="bg-blue-100 text-blue-600"

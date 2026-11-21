@@ -7,6 +7,7 @@ import {
 import "material-icons/iconfont/material-icons.css";
 
 import { ToasterUI } from "@/shared/components/ToasterUI";
+import { MainLayout } from "@/shared/components/MainLayout";
 import { PrivateRoute } from "@/shared/components/PrivateRoute";
 
 import { Projects } from "@/pages/main/Projects";
@@ -22,12 +23,14 @@ export function App() {
 
       <div className="bg-white">
         <Routes>
-          <Route path="/" element={<Navigate to="/projects" replace />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="*" element={<NotFound />} />
-          <Route path="/components" element={<Components />} />
-          <Route path="/files" element={<Files />} />
-          <Route path="/llm" element={<Llm />} />
+          <Route element={<MainLayout />}>
+            <Route path="*" element={<NotFound />} />
+            <Route path="/" element={<Navigate to="/projects" replace />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/components" element={<Components />} />
+            <Route path="/files" element={<Files />} />
+            <Route path="/llm" element={<Llm />} />
+          </Route>
 
           {/* <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} /> */}

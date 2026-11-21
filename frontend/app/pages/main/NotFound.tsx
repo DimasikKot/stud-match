@@ -1,16 +1,12 @@
 import { ButtonUI } from "@/shared/components/ButtonUI";
-import { Header } from "@/shared/components/Header";
+import { useNavigate } from "react-router-dom";
 
 export function NotFound() {
-  return (
-    <>
-      <Header title="Страница не найдена" />
+  const navigate = useNavigate();
 
-      <div className="max-w-6xl mx-auto m-6 items-center flex flex-col bg-white">
-        <ButtonUI onClick={() => (window.location.href = "/projects")}>
-          К списку проектов
-        </ButtonUI>
-      </div>
-    </>
+  return (
+    <div className="max-w-6xl mx-auto p-6 items-center flex flex-col bg-white">
+      <ButtonUI onClick={() => navigate("/files")}>К списку проектов</ButtonUI>
+    </div>
   );
 }
