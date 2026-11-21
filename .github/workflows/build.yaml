@@ -241,7 +241,7 @@ jobs:
             if [ "$ALL_BUILD" = "true" ]; then
               echo "=== [all_build] Full rebuild & restart ==="
               $COMPOSE up -d --build
-              docker system prune --volumes --force
+              docker system prune --force
               exit 0
             fi
 
@@ -275,7 +275,7 @@ jobs:
               $COMPOSE up -d --no-deps --force-recreate sm-kafka
             fi
 
-            docker system prune --volumes --force
+            docker system prune --force
             echo "=== DEPLOY DONE ==="
         env:
           FRONTEND_BUILD: ${{ needs.detect-changes.outputs.frontend_build }}
@@ -431,7 +431,7 @@ jobs:
               $COMPOSE up -d --no-deps --force-recreate sm-kafka
             fi
 
-            docker system prune --volumes --force
+            docker system prune --force
             echo "=== ROLLBACK DONE ==="
         env:
           PREV_SHA: ${{ needs.build_deploy.outputs.prev_sha }}
