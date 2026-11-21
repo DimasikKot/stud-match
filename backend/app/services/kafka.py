@@ -6,8 +6,21 @@ from kafka import KafkaConsumer, KafkaProducer
 
 from app.core.config import settings
 
-TASKS_TOPIC = "llm.tasks"
-RESULTS_TOPIC = "llm.results"
+
+# Воркеры Kafka: "tags" и "predict". Топики и группы настраиваются
+# через KAFKA_<WORKER>_TASKS_TOPIC / KAFKA_<WORKER>_RESULTS_TOPIC /
+# KAFKA_<WORKER>_RESULTS_GROUP_ID в .env.
+def tasks_topic(worker: str = "tags") -> str:
+    return getattr(settings, f"KAFKA_{worker.upper()}_TASKS_TOPIC")
+
+
+def results_topic(worker: str = "tags") -> str:
+    return getattr(settings, f"KAFKA_{worker.upper()}_RESULTS_TOPIC")
+
+
+def results_group_id(worker: str = "tags") -> str:
+    return getattr(settings, f"KAFKA_{worker.upper()}_RESULTS_GROUP_ID")
+
 
 # TLS-порты: 8092 — SASL_SSL снаружи (внутренний 8292 — SASL_PLAINTEXT, 8290 — PLAINTEXT localhost)
 TLS_PORTS = (8092,)
@@ -83,10 +96,10 @@ def produce(topic: str, payload: dict) -> None:
     get_producer().send(topic, value=payload).get(timeout=10)
 
 
-def results_consumer() -> KafkaConsumer:
+def results_consumer(worker: str = "tags") -> KafkaConsumer:
     return KafkaConsumer(
-        RESULTS_TOPIC,
-        group_id=settings.KAFKA_RESULTS_GROUP_ID,
+        results_topic(worker),
+        group_id=results_group_id(worker),
         auto_offset_reset="earliest",
         enable_auto_commit=True,
         value_deserializer=lambda raw: json.loads(raw.decode()),

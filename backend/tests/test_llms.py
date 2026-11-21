@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.models.db import FileDB, LLMRequestDB, LLMRequestFileDB
 from app.services import file as file_service
 from app.services import kafka as kafka_service
-from app.services import llm as llm_service
+from app.services import tags as tags_service
 
 
 @pytest.fixture()
@@ -66,7 +66,7 @@ def test_task_lifecycle(llm_client, produced, file_id, db_session):
 
     # В Kafka ушла задача с готовым prompt (файл уже прочитан бэкендом)
     topic, message = produced[0]
-    assert topic == kafka_service.TASKS_TOPIC
+    assert topic == kafka_service.tasks_topic("tags")
     assert message["task_id"] == task_id
     assert "content of notes.txt" in message["prompt"]
     assert "Что в файле?" in message["prompt"]
@@ -75,10 +75,10 @@ def test_task_lifecycle(llm_client, produced, file_id, db_session):
     assert llm_client.get(f"/llms/tasks/{task_id}").json()["status"] == "queued"
 
     # llm-worker присылает running, затем результат
-    llm_service.apply_result(db_session, {"task_id": task_id, "status": "running"})
+    tags_service.apply_result(db_session, {"task_id": task_id, "status": "running"})
     assert llm_client.get(f"/llms/tasks/{task_id}").json()["status"] == "running"
 
-    llm_service.apply_result(db_session, {"task_id": task_id, "result": "Привет"})
+    tags_service.apply_result(db_session, {"task_id": task_id, "result": "Привет"})
     task = llm_client.get(f"/llms/tasks/{task_id}").json()
     assert task == {
         "task_id": task_id,
@@ -98,7 +98,7 @@ def test_task_lifecycle(llm_client, produced, file_id, db_session):
 
 def test_error_result(llm_client, db_session):
     task_id = llm_client.post("/llms/tasks", json={"prompt": "hi"}).json()["task_id"]
-    llm_service.apply_result(db_session, {"task_id": task_id, "error": "CUDA OOM"})
+    tags_service.apply_result(db_session, {"task_id": task_id, "error": "CUDA OOM"})
     task = llm_client.get(f"/llms/tasks/{task_id}").json()
     assert task["status"] == "error"
     assert task["error"] == "CUDA OOM"

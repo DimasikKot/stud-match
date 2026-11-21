@@ -6,17 +6,26 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
 from app.api.v1.endpoints import api_router
-from app.services import llm as llm_service
+from app.services import predict as predict_service
+from app.services import tags as tags_service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    consumer_thread = threading.Thread(
-        target=llm_service.results_consumer_loop,
-        daemon=True,
-        name="kafka-llm-results",
-    )
-    consumer_thread.start()
+    consumer_threads = [
+        threading.Thread(
+            target=tags_service.results_consumer_loop,
+            daemon=True,
+            name="kafka-tags-results",
+        ),
+        threading.Thread(
+            target=predict_service.results_consumer_loop,
+            daemon=True,
+            name="kafka-predict-results",
+        ),
+    ]
+    for thread in consumer_threads:
+        thread.start()
     yield
 
 

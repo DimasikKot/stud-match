@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.db import LLMRequestDB, LLMRequestFileDB, UserDB
-from app.services import llm as llm_service
+from app.services import tags as tags_service
 from app.services.security_deps import get_optional_user
 
 router: APIRouter = APIRouter(prefix="/llms", tags=["LLMs"])
@@ -98,7 +98,7 @@ def create_task(
 ):
     """Ставит запрос к нейросети в очередь Kafka и сохраняет его в БД.
     Файлы передаются по id из БД."""
-    request_db = llm_service.create_llm_task(
+    request_db = tags_service.create_llm_task(
         db,
         prompt=request.prompt,
         file_ids=request.file_ids,

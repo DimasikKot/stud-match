@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 from app.models.db import FileDB
 from app.services import file as file_service
-from app.services import llm as llm_service
+from app.services import tags as tags_service
 
 
 def make_pdf(text: str) -> bytes:
@@ -58,18 +58,18 @@ def stored(monkeypatch):
 
 
 def test_pdf_text(stored):
-    text = llm_service.read_file_text(stored("doc.PDF", make_pdf("Hello PDF")), 1000)
+    text = tags_service.read_file_text(stored("doc.PDF", make_pdf("Hello PDF")), 1000)
     assert "Hello PDF" in text
 
 
 def test_docx_text(stored):
-    text = llm_service.read_file_text(stored("Задание 4.docx", make_docx()), 1000)
+    text = tags_service.read_file_text(stored("Задание 4.docx", make_docx()), 1000)
     assert "Задание 4" in text
     assert "Вариант | 7" in text
 
 
 def test_document_text_is_truncated(stored):
-    assert llm_service.read_file_text(stored("a.docx", make_docx()), 5) == "Задан"
+    assert tags_service.read_file_text(stored("a.docx", make_docx()), 5) == "Задан"
 
 
 @pytest.mark.parametrize(
@@ -82,5 +82,5 @@ def test_document_text_is_truncated(stored):
 )
 def test_unsupported_files(stored, name, data):
     with pytest.raises(HTTPException) as exc:
-        llm_service.read_file_text(stored(name, data), 1000)
+        tags_service.read_file_text(stored(name, data), 1000)
     assert exc.value.status_code == 415

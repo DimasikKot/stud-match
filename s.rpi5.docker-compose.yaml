@@ -90,7 +90,12 @@ services:
       - KAFKA_PORT=${KF_PORT}
       - KAFKA_USERNAME=${KF_USERNAME}
       - KAFKA_PASSWORD=${KF_PASSWORD}
-      - KAFKA_RESULTS_GROUP_ID=${KAFKA_RESULTS_GROUP_ID:-sm-backend-llm-results}
+      - KAFKA_TAGS_TASKS_TOPIC=${KF_TAGS_TASKS_TOPIC:-llm.tasks_tags}
+      - KAFKA_TAGS_RESULTS_TOPIC=${KF_TAGS_RESULTS_TOPIC:-llm.results_tags}
+      - KAFKA_TAGS_RESULTS_GROUP_ID=${KF_TAGS_RESULTS_GROUP_ID:-sm-backend-tags}
+      - KAFKA_PREDICT_TASKS_TOPIC=${KF_PREDICT_TASKS_TOPIC:-llm.tasks_predict}
+      - KAFKA_PREDICT_RESULTS_TOPIC=${KF_PREDICT_RESULTS_TOPIC:-llm.results_predict}
+      - KAFKA_PREDICT_RESULTS_GROUP_ID=${KF_PREDICT_RESULTS_GROUP_ID:-sm-backend-predict}
 
     deploy:
       resources:

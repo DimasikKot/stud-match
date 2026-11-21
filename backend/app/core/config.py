@@ -41,7 +41,14 @@ class _Settings(BaseSettings):
     KAFKA_SASL_MECHANISM: str = "PLAIN"
     KAFKA_SSL_CA_FILE: str = ""
     KAFKA_SSL_CHECK_HOSTNAME: bool = False
-    KAFKA_RESULTS_GROUP_ID: str = "sm-backend-llm-results"
+
+    # Топики и consumer groups Kafka для tags-worker и predict-worker
+    KAFKA_TAGS_TASKS_TOPIC: str = "llm.tasks_tags"
+    KAFKA_TAGS_RESULTS_TOPIC: str = "llm.results_tags"
+    KAFKA_TAGS_RESULTS_GROUP_ID: str = "sm-backend-tags"
+    KAFKA_PREDICT_TASKS_TOPIC: str = "llm.tasks_predict"
+    KAFKA_PREDICT_RESULTS_TOPIC: str = "llm.results_predict"
+    KAFKA_PREDICT_RESULTS_GROUP_ID: str = "sm-backend-predict"
 
     LLM_MAX_FILES_CHARS: int = 12000  # ~8k токенов контекста влезает в 4 ГБ VRAM
 

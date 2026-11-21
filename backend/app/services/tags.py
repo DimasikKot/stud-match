@@ -41,7 +41,7 @@ def create_llm_task(
     max_new_tokens: int,
     user_id: int | None,
 ) -> LLMRequestDB:
-    """Сохраняет задачу в БД и отправляет её в Kafka для llm-worker."""
+    """Сохраняет задачу в БД и отправляет её в Kafka для tags-worker."""
     task_id = uuid.uuid4().hex
     full_prompt = build_task_prompt(db, file_ids, prompt)
 
@@ -64,7 +64,7 @@ def create_llm_task(
 
     try:
         kafka_service.produce(
-            kafka_service.TASKS_TOPIC,
+            kafka_service.tasks_topic("tags"),
             {
                 "task_id": task_id,
                 "prompt": full_prompt,
@@ -90,7 +90,7 @@ def update_request(db: Session, task_id: str, **fields) -> None:
 
 
 def apply_result(db: Session, payload: dict) -> None:
-    """Применяет сообщение llm-worker из топика llm.results к задаче в БД."""
+    """Применяет сообщение tags-worker из топика llm.results_tags к задаче в БД."""
     task_id = payload.get("task_id")
     request_db = (
         db.query(LLMRequestDB).filter(LLMRequestDB.task_id == task_id).first()
@@ -114,11 +114,11 @@ def apply_result(db: Session, payload: dict) -> None:
 
 
 def results_consumer_loop() -> None:
-    """Фоновый поток: читает llm.results и обновляет статусы задач в БД."""
+    """Фоновый поток: читает llm.results_tags и обновляет статусы задач в БД."""
     while True:
         consumer = None
         try:
-            consumer = kafka_service.results_consumer()
+            consumer = kafka_service.results_consumer("tags")
             for message in consumer:
                 db = SessionLocal()
                 try:
