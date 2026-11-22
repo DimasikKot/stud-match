@@ -47,7 +47,7 @@ def test_backend(client):
 
 
 def test_postgres_unhealthy_reports_error(client):
-    # SQLite в тестах не знает version()/pg_database_size — проверяем ветку ошибки
+    # SQLite в тестах не знает version()/pg_database_size - проверяем ветку ошибки
     body = client.get("/healths/postgres").json()
     assert body["success"] is False
     assert body["metrics"]["error"]

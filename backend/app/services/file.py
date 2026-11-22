@@ -95,7 +95,7 @@ def fetch_files(db: Session) -> list[FileDB]:
 
 
 def get_file_object(file_db: FileDB) -> dict:
-    """Возвращает ответ S3 get_object (содержит Body — StreamingBody)."""
+    """Возвращает ответ S3 get_object (содержит Body - StreamingBody)."""
     try:
         return s3_client.get_object(
             Bucket=settings.RUSTFS_BUCKET,

@@ -241,8 +241,8 @@ services:
   #     - KAFKA_SASL_ENABLED_MECHANISMS=PLAIN
   #     - KAFKA_OPTS=-Djava.security.auth.login.config=/etc/kafka/jaas.conf
   #     - KAFKA_AUTHORIZER_CLASS_NAME=org.apache.kafka.metadata.authorizer.StandardAuthorizer
-  #     - KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true # PLAINTEXT localhost — для provisioning/healthcheck
-  #     - KAFKA_SUPER_USERS=User:ANONYMOUS # только PLAINTEXT 127.0.0.1 внутри контейнера — provisioning всегда имеет права
+  #     - KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true # PLAINTEXT localhost - для provisioning/healthcheck
+  #     - KAFKA_SUPER_USERS=User:ANONYMOUS # только PLAINTEXT 127.0.0.1 внутри контейнера - provisioning всегда имеет права
   #     - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
   #     - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
   #     - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1

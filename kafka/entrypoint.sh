@@ -6,7 +6,7 @@
 #     /etc/kafka/auth.conf (SASL/PLAIN, один механизм для всех клиентов).
 #  3. Запускает Apache Kafka (KRaft) в фоне.
 #  4. Когда брокер поднялся, применяет topic/acl-директивы auth.conf.
-#     Все операции идемпотентны — конфиг применяется при каждом старте.
+#     Все операции идемпотентны - конфиг применяется при каждом старте.
 set -uo pipefail
 
 SSL_DIR=/etc/kafka/ssl
@@ -66,7 +66,7 @@ done
 if [ "$ready" != 1 ]; then
   echo "sm-kafka: брокер не поднялся за 180s, применение auth.conf пропущено" >&2
 elif [ ! -f "$CONF" ]; then
-  echo "sm-kafka: $CONF не найден — скопируйте kafka/auth.conf.example в kafka/auth.conf" >&2
+  echo "sm-kafka: $CONF не найден - скопируйте kafka/auth.conf.example в kafka/auth.conf" >&2
 else
   echo "sm-kafka: применяю $CONF (topic/acl; user уже в jaas.conf)"
   while read -r directive f1 f2 f3 f4; do

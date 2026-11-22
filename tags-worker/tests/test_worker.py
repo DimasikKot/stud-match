@@ -80,7 +80,7 @@ def llm(monkeypatch):
 def client():
     return TestClient(
         main.app
-    )  # без `with` — lifespan (загрузка модели) не запускается
+    )  # без `with` - lifespan (загрузка модели) не запускается
 
 
 def test_health(client, llm):

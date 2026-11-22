@@ -155,7 +155,7 @@ describe("getCurrentUser", () => {
 });
 
 // ============================================================
-// INTERCEPTOR — refresh flow
+// INTERCEPTOR - refresh flow
 // ============================================================
 
 describe("axios interceptor: refresh flow", () => {
@@ -199,8 +199,8 @@ describe("axios interceptor: refresh flow", () => {
     expect(JSON.parse(calls[1].data)).toEqual(body);
   });
 
-  test("если refresh упал — ошибка пробрасывается, цикла нет", async () => {
-    // replyOnce(200) — tripwire: если баг вернёт retry, счётчик станет 2 и тест упадёт
+  test("если refresh упал - ошибка пробрасывается, цикла нет", async () => {
+    // replyOnce(200) - tripwire: если баг вернёт retry, счётчик станет 2 и тест упадёт
     mock
       .onPost("/protected/resource")
       .replyOnce(401)
@@ -220,7 +220,7 @@ describe("axios interceptor: refresh flow", () => {
     ).toHaveLength(1);
   });
 
-  test("если после успешного refresh retry снова 401 — не рефрешим второй раз", async () => {
+  test("если после успешного refresh retry снова 401 - не рефрешим второй раз", async () => {
     mock.onPost("/protected/resource").reply(401); // всегда 401
     mock.onPost("/users/refresh").reply(200, { access_token: "new" });
 
@@ -235,7 +235,7 @@ describe("axios interceptor: refresh flow", () => {
     ).toHaveLength(2); // original + 1 retry
   });
 
-  test("401 на самом /users/refresh — не пытаемся рефрешить refresh (no loop)", async () => {
+  test("401 на самом /users/refresh - не пытаемся рефрешить refresh (no loop)", async () => {
     mock.onPost("/users/refresh").reply(401);
 
     await expect(api.post("/users/refresh")).rejects.toBeTruthy();

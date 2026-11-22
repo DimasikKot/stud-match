@@ -1,6 +1,5 @@
 import api, { errorValidate } from "@/shared/api/axios";
 
-// ===== Типы =====
 export interface UserRequest {
   email: string;
   password: string;
@@ -33,7 +32,7 @@ export const loginUser = async (
 ): Promise<UserResponse> => {
   try {
     const { data } = await api.post<UserResponse>("/users/login", payload);
-    return data; // access_token в теле можно игнорировать — он уже в httpOnly-куке
+    return data;
   } catch (error) {
     errorValidate(error);
     throw error;

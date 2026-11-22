@@ -1,6 +1,5 @@
 import api, { errorValidate } from "@/shared/api/axios";
 
-// ===== Типы =====
 export interface FileResponse {
   id: number;
   name: string;

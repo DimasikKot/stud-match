@@ -61,7 +61,7 @@ export function Llm() {
       });
       setStatus(task.status);
 
-      // Стриминга нет — опрашиваем статус до завершения задачи
+      // Стриминга нет - опрашиваем статус до завершения задачи
       while (!controller.signal.aborted) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         if (controller.signal.aborted) break;

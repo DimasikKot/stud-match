@@ -22,7 +22,7 @@ def results_group_id(worker: str = "tags") -> str:
     return getattr(settings, f"KAFKA_{worker.upper()}_RESULTS_GROUP_ID")
 
 
-# TLS-порты: 8092 — SASL_SSL снаружи (внутренний 8292 — SASL_PLAINTEXT, 8290 — PLAINTEXT localhost)
+# TLS-порты: 8092 - SASL_SSL снаружи (внутренний 8292 - SASL_PLAINTEXT, 8290 - PLAINTEXT localhost)
 TLS_PORTS = (8092,)
 SASL_PROTOCOLS = ("SASL_SSL", "SASL_PLAINTEXT")
 SSL_PROTOCOLS = ("SSL", "SASL_SSL")
@@ -48,7 +48,7 @@ def _ssl_context() -> ssl.SSLContext:
         context.check_hostname = settings.KAFKA_SSL_CHECK_HOSTNAME
         return context
 
-    # Самоподписанный сертификат без CA — поведение как раньше (только для локальной разработки)
+    # Самоподписанный сертификат без CA - поведение как раньше (только для локальной разработки)
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE

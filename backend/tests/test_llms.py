@@ -71,7 +71,7 @@ def test_task_lifecycle(llm_client, produced, file_id, db_session):
     assert "content of notes.txt" in message["prompt"]
     assert "Что в файле?" in message["prompt"]
 
-    # Статус задачи — из БД
+    # Статус задачи - из БД
     assert llm_client.get(f"/llms/tasks/{task_id}").json()["status"] == "queued"
 
     # llm-worker присылает running, затем результат

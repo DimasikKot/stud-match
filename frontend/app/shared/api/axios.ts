@@ -5,7 +5,7 @@ const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL ?? "https://localhost/backend/api/v1";
 
 // Создаём инстанс Axios
-// withCredentials: true — access_token и refresh_token живут в httpOnly-куках,
+// withCredentials: true - access_token и refresh_token живут в httpOnly-куках,
 // браузер сам приложит их к каждому запросу. JS к ним доступа не имеет (XSS-safe).
 const api = axios.create({
   baseURL: BACKEND_URL,
@@ -25,9 +25,9 @@ const processQueue = (ok: boolean) => {
 };
 
 // На эти эндпоинты не вешаем refresh-retry:
-// - /users/refresh — чтобы не было рекурсии
-// - /users/login, /users/register — 401 = неверные креды, refresh не поможет
-// - /users/logout — нечего рефрешить
+// - /users/refresh - чтобы не было рекурсии
+// - /users/login, /users/register - 401 = неверные креды, refresh не поможет
+// - /users/logout - нечего рефрешить
 const REFRESH_WHITELIST = [
   "/users/refresh",
   "/users/login",
@@ -43,7 +43,7 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as RetryConfig | undefined;
 
-    // Не 401, нет конфига, уже ретраили или whitelisted — просто пробрасываем
+    // Не 401, нет конфига, уже ретраили или whitelisted - просто пробрасываем
     if (
       error.response?.status !== 401 ||
       !original ||
@@ -53,7 +53,7 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Пока идёт refresh — ставим параллельные запросы в очередь,
+    // Пока идёт refresh - ставим параллельные запросы в очередь,
     // чтобы не дёргать /users/refresh несколько раз одновременно
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
@@ -72,14 +72,13 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      // refresh_token берётся из httpOnly-куки автоматически
       await api.post("/users/refresh");
       processQueue(true);
       return api(original);
     } catch (refreshError) {
       processQueue(false);
       toast.error("Сессия истекла, войдите заново");
-      // window.location.href = "/login";
+      window.location.href = "/login";
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
@@ -106,7 +105,7 @@ export const errorValidate = (error: unknown) => {
       else if (detail?.msg) {
         error_text = detail.msg;
       }
-      // Иначе — строковое представление
+      // Иначе - строковое представление
       else {
         error_text = String(detail);
       }

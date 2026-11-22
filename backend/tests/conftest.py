@@ -1,6 +1,6 @@
 import os
 
-# Дефолт "rustfs host" — невалидный endpoint для boto3, ломает импорт app.services.file
+# Дефолт "rustfs host" - невалидный endpoint для boto3, ломает импорт app.services.file
 os.environ.setdefault("RUSTFS_URL", "http://localhost:9000")
 
 import pytest  # noqa: E402
@@ -42,7 +42,7 @@ def db_session(engine):
 
 @pytest.fixture()
 def fake_redis():
-    # decode_responses=True — код сравнивает redis.get(...) с sub из JWT (str)
+    # decode_responses=True - код сравнивает redis.get(...) с sub из JWT (str)
     return fakeredis.FakeRedis(decode_responses=True)
 
 
@@ -122,7 +122,7 @@ def make_client(db_session, fake_redis):
     """Собирает TestClient с нужными роутерами и подменёнными БД/Redis."""
 
     def _make(*routers, user: UserDB | None = None) -> TestClient:
-        """user — от чьего имени выполняются запросы (None — аноним)."""
+        """user - от чьего имени выполняются запросы (None - аноним)."""
         app = FastAPI()
         for router in routers:
             app.include_router(router)

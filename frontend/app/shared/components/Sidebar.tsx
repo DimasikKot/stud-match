@@ -57,7 +57,7 @@ const SvgIcon = ({
 
 const formatPrimitive = (value: unknown): string => {
   if (value === null) return "null";
-  if (value === undefined) return "—";
+  if (value === undefined) return "-";
   if (Array.isArray(value)) return JSON.stringify(value);
   return String(value);
 };

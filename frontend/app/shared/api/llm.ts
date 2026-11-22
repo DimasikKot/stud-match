@@ -1,6 +1,5 @@
 import api, { errorValidate } from "@/shared/api/axios";
 
-// ===== Типы =====
 export type LLMTaskStatus = "queued" | "running" | "done" | "error";
 
 export interface LLMTaskCreate {
@@ -41,7 +40,6 @@ export const fetchLLMTask = async (
   }
 };
 
-// Делит ответ Qwen на рассуждения (<think>...</think>) и сам ответ
 export const splitThinking = (
   text: string,
 ): { thinking: string; answer: string } => {

@@ -99,7 +99,7 @@ def get_optional_user(
     try:
         return db.query(UserDB).filter(UserDB.id == int(payload["sub"])).first()
     except SQLAlchemyError:
-        # БД недоступна — считаем запрос анонимным (например, для /healths)
+        # БД недоступна - считаем запрос анонимным (например, для /healths)
         db.rollback()
         return None
 

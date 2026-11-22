@@ -169,7 +169,7 @@ async def _rustfs_health() -> HealthResponse:
     """
     Проверка здоровья RustFS:
     1. HTTP-пинг /health (liveness/readiness, без аутентификации)
-    2. Опционально — проверка доступа к S3 API через boto3 (head_bucket)
+    2. Опционально - проверка доступа к S3 API через boto3 (head_bucket)
     """
     start_time = time.perf_counter()
     endpoint = settings.RUSTFS_URL
@@ -296,7 +296,7 @@ def _kafka_health() -> HealthResponse:
 
 
 def _visible(health: HealthResponse, user: UserDB | None) -> HealthResponse:
-    """Статус доступен всем, метрики — только администратору."""
+    """Статус доступен всем, метрики - только администратору."""
     if user is None or user.role != ROLE_ADMIN:
         health.metrics = None
     return health

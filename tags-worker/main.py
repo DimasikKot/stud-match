@@ -37,7 +37,7 @@ KAFKA_SSL_CHECK_HOSTNAME = (
 TASKS_TOPIC = "llm.tasks"
 RESULTS_TOPIC = "llm.results"
 CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP", "sm-llm-worker")
-# TLS-порты: 8092 — SASL_SSL снаружи (внутренний 8292 — SASL_PLAINTEXT, 8290 — PLAINTEXT localhost)
+# TLS-порты: 8092 - SASL_SSL снаружи (внутренний 8292 - SASL_PLAINTEXT, 8290 - PLAINTEXT localhost)
 KAFKA_TLS_PORTS = (8092,)
 KAFKA_SASL_PROTOCOLS = ("SASL_SSL", "SASL_PLAINTEXT")
 KAFKA_SSL_PROTOCOLS = ("SSL", "SASL_SSL")
@@ -58,7 +58,7 @@ def _ssl_context() -> ssl.SSLContext:
         context.check_hostname = KAFKA_SSL_CHECK_HOSTNAME
         return context
 
-    # Самоподписанный сертификат без CA — поведение как раньше (только для локальной разработки)
+    # Самоподписанный сертификат без CA - поведение как раньше (только для локальной разработки)
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE

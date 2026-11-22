@@ -5,7 +5,7 @@ from app.services import kafka as kafka_service
 
 def results_consumer_loop() -> None:
     """Фоновый поток: читает результаты predict-worker из топика
-    llm.results_predict. Пока только логирует сообщения — логика
+    llm.results_predict. Пока только логирует сообщения - логика
     обработки и таблица в БД для predict-задач ещё не добавлены."""
     while True:
         consumer = None
