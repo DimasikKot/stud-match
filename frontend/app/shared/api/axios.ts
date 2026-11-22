@@ -13,7 +13,7 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// ===== Автообновление access-токена с очередью =====
+// Автообновление access-токена с очередью
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean };
 
 let isRefreshing = false;
@@ -25,9 +25,9 @@ const processQueue = (ok: boolean) => {
 };
 
 // На эти эндпоинты не вешаем refresh-retry:
-// - /users/refresh - чтобы не было рекурсии
-// - /users/login, /users/register - 401 = неверные креды, refresh не поможет
-// - /users/logout - нечего рефрешить
+// /users/refresh - чтобы не было рекурсии
+// /users/login, /users/register - 401 = неверные креды, refresh не поможет
+// /users/logout - нечего рефрешить
 const REFRESH_WHITELIST = [
   "/users/refresh",
   "/users/login",

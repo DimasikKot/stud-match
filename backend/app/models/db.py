@@ -1,10 +1,9 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import (
-    BigInteger,
     Boolean,
     Integer,
     String,
@@ -200,6 +199,9 @@ class StudentFilesBD(Base):
     )
 
 
+TaskStatus = Literal["queued", "running", "done", "error"]
+
+
 class LLMRequestDB(Base):
     __tablename__ = "llm_requests"
 
@@ -230,7 +232,7 @@ class LLMRequestDB(Base):
         Integer,
         nullable=False,
     )
-    status: Mapped[str] = mapped_column(
+    status: Mapped[TaskStatus] = mapped_column(
         String(20),
         nullable=False,
         default="queued",

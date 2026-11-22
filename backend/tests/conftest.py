@@ -13,8 +13,9 @@ import fakeredis
 
 from app.core.database import Base, get_db
 from app.models.db import ROLE_ADMIN, ROLE_TEACHER, UserDB
-from app.services.security import hash_password
-from app.services.security_deps import get_current_user, get_optional_user, get_redis
+from app.services.auth import hash_password
+from app.services.get_user import get_current_user, get_optional_user
+from app.services.get_redis import get_redis
 from app.api.v1.routers.users import router as users_router  # подправь путь
 
 

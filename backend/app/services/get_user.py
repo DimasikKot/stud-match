@@ -2,49 +2,9 @@ from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyCookie
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from redis import Redis
 from app.core.database import get_db
 from app.models.db import ROLE_ADMIN, UserDB
-from app.services.security import decode_access_token
-from app.core.config import settings
-
-
-def get_redis() -> Redis:
-    use_tls = settings.REDIS_PORT == 6150
-
-    redis_kwargs = {
-        "host": settings.REDIS_HOST,
-        "port": settings.REDIS_PORT,
-        "password": settings.REDIS_PASSWORD,
-        "decode_responses": True,
-        "socket_timeout": 15.0,
-    }
-
-    if use_tls:
-        redis_kwargs.update({"ssl": True, "ssl_cert_reqs": "none"})
-
-    return Redis(**redis_kwargs)
-
-
-import redis.asyncio as aioredis
-
-
-def get_async_redis() -> aioredis.Redis:
-    use_tls = settings.REDIS_PORT == 6150
-
-    redis_kwargs = {
-        "host": settings.REDIS_HOST,
-        "port": settings.REDIS_PORT,
-        "password": settings.REDIS_PASSWORD,
-        "decode_responses": True,
-        "socket_timeout": 15.0,
-    }
-
-    if use_tls:
-        redis_kwargs.update({"ssl": True, "ssl_cert_reqs": "none"})
-
-    return aioredis.Redis(**redis_kwargs)
-
+from app.services.auth import decode_access_token
 
 access_cookie_scheme = APIKeyCookie(
     name="access_token",

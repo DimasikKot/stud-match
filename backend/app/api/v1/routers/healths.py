@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.db import ROLE_ADMIN, UserDB
-from app.services.security_deps import get_async_redis, get_optional_user
+from app.services.get_user import get_optional_user
+from app.services.get_redis import get_async_redis
 
 import redis.asyncio as aioredis
 

@@ -3,7 +3,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from app.api.v1.routers import healths
-from app.services.security_deps import get_async_redis
+from app.services.get_user import get_async_redis
 
 
 class FakeAsyncRedis:

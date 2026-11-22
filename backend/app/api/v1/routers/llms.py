@@ -1,18 +1,17 @@
 from datetime import datetime
-from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.db import LLMRequestDB, LLMRequestFileDB, UserDB
+from app.models.db import LLMRequestDB, LLMRequestFileDB, UserDB, TaskStatus
 from app.services import tags as tags_service
-from app.services.security_deps import get_optional_user
+from app.services.get_user import get_optional_user
 
 router: APIRouter = APIRouter(prefix="/llms", tags=["LLMs"])
 
-TaskStatus = Literal["queued", "running", "done", "error"]
+
 PENDING_STATUSES = ("queued", "running")
 
 
@@ -85,9 +84,6 @@ def _file_ids_by_request(db: Session, request_ids: list[int]) -> dict[int, list[
     for request_id, file_id in rows:
         result.setdefault(request_id, []).append(file_id)
     return result
-
-
-# ===== Для фронтенда =====
 
 
 @router.post("/tasks", response_model=LLMTaskResponse)

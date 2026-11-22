@@ -18,7 +18,7 @@ from app.services.student import (
     update_student_by_id,
     SortType,
 )
-from app.services.security_deps import require_admin
+from app.services.get_user import require_admin
 
 router = APIRouter(
     prefix="/students", tags=["Students"], dependencies=[Depends(require_admin)]

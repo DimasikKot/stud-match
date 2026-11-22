@@ -183,7 +183,7 @@ jobs:
             COMPOSE="docker compose -f s.rpi5.docker-compose.yaml"
 
             # ---------- Postgres: точечный реинит init-скриптов ----------
-            # Запускаем все *.sql начиная с первого изменённого — drop+create внутри файлов идемпотентны
+            # Запускаем все *.sql начиная с первого изменённого - drop+create внутри файлов идемпотентны
             if [ "$POSTGRES_REINIT" = "true" ]; then
               # Бэкап data -> data_old (только на остановленном postgres, иначе копия может быть битой)
               $COMPOSE stop sm-postgres
@@ -255,13 +255,13 @@ jobs:
             fi
 
             # ---------- Postgres: только pg_hba.conf (перезапуск) ----------
-            # Если сработал reinit — этот блок пропускаем (reinit всё равно пересоздаст)
+            # Если сработал reinit - этот блок пропускаем (reinit всё равно пересоздаст)
             if [ "$POSTGRES_BUILD" = "true" ] && [ "$POSTGRES_REINIT" != "true" ]; then
               echo "=== [postgres] Reload pg_hba.conf ==="
               $COMPOSE up -d --no-deps --force-recreate sm-postgres
             fi
 
-            # ---------- Kafka: entrypoint/auth.conf.example — пересоздание sm-kafka ----------
+            # ---------- Kafka: entrypoint/auth.conf.example - пересоздание sm-kafka ----------
             if [ "$KAFKA_DEPLOY" = "true" ]; then
               echo "=== [kafka] Restart sm-kafka (entrypoint + auth.conf) ==="
               $COMPOSE up -d --no-deps --force-recreate sm-kafka
@@ -378,7 +378,7 @@ jobs:
 
             COMPOSE="docker compose -f s.rpi5.docker-compose.yaml"
 
-            # ---------- postgres_reinit — восстановление из бэкапа ----------
+            # ---------- postgres_reinit - восстановление из бэкапа ----------
             if [ "$POSTGRES_REINIT" = "true" ]; then
               if [ -d ./postgres/data_old ]; then
                 echo "=== [rollback:postgres] Restore from backup ==="
@@ -388,11 +388,11 @@ jobs:
                 $COMPOSE up -d sm-postgres
                 echo "=== [rollback:postgres] Data restored from ./postgres/data_old ==="
               else
-                echo "::warning::./postgres/data_old not found — reinit never ran or backup was already consumed, DB data left intact"
+                echo "::warning::./postgres/data_old not found - reinit never ran or backup was already consumed, DB data left intact"
               fi
             fi
 
-            # ---------- frontend / backend — пересборка образов ----------
+            # ---------- frontend / backend - пересборка образов ----------
             BUILD_SERVICES=""
             [ "$FRONTEND_BUILD" = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-frontend"
             [ "$BACKEND_BUILD"  = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-backend"
@@ -403,25 +403,25 @@ jobs:
               $COMPOSE up -d --no-deps $BUILD_SERVICES
             fi
 
-            # ---------- nginx — пересоздать контейнер ----------
+            # ---------- nginx - пересоздать контейнер ----------
             if [ "$NGINX_BUILD" = "true" ]; then
               echo "=== [rollback:nginx] ==="
               $COMPOSE up -d --no-deps --force-recreate nginx
             fi
 
-            # ---------- postgres — перезапуск (pg_hba.conf) ----------
+            # ---------- postgres - перезапуск (pg_hba.conf) ----------
             if [ "$POSTGRES_BUILD" = "true" ] && [ "$POSTGRES_REINIT" != "true" ]; then
               echo "=== [rollback:postgres] ==="
               $COMPOSE up -d --no-deps --force-recreate sm-postgres
             fi
 
-            # ---------- kafka — пересоздание sm-kafka ----------
+            # ---------- kafka - пересоздание sm-kafka ----------
             if [ "$KAFKA_DEPLOY" = "true" ]; then
               echo "=== [rollback:kafka] ==="
               $COMPOSE up -d --no-deps --force-recreate sm-kafka
             fi
 
-            # ---------- all_build — полный пересбор ----------
+            # ---------- all_build - полный пересбор ----------
             if [ "$ALL_BUILD" = "true" ]; then
               echo "=== [rollback:all_build] ==="
               $COMPOSE up -d --build

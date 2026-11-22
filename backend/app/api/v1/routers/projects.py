@@ -18,9 +18,7 @@ from app.services.project import (
     delete_project_by_id,
 )
 from app.core.database import get_db
-from app.services.security_deps import (
-    get_current_user,
-)
+from app.services.get_user import get_current_user
 from app.models.db import UserDB
 
 router = APIRouter(prefix="/projects", tags=["Projects"])

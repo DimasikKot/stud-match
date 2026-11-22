@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.db import UserDB
-from app.services.security import (
+from app.services.auth import (
     create_access_token,
     create_refresh_token,
     decode_refresh_token,

@@ -31,10 +31,6 @@ afterEach(() => {
   mock.restore();
 });
 
-// ============================================================
-// USERS API
-// ============================================================
-
 describe("registerUser", () => {
   test("успешная регистрация возвращает { id, email }", async () => {
     mock.onPost("/users/register").reply(201, { id: 1, email: "a@a.a" });
@@ -153,10 +149,6 @@ describe("getCurrentUser", () => {
     );
   });
 });
-
-// ============================================================
-// INTERCEPTOR - refresh flow
-// ============================================================
 
 describe("axios interceptor: refresh flow", () => {
   test("401 на защищённом эндпоинте → 1 refresh + retry → 200", async () => {
