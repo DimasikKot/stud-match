@@ -131,7 +131,7 @@ export function Files() {
                       <TextUI variant="normal" maxLines={1}>
                         {file.name}
                       </TextUI>
-                      <TextUI variant="desc" isSpan>
+                      <TextUI variant="desc" span>
                         {formatSize(file.size)}
                       </TextUI>
                     </div>

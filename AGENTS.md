@@ -5,3 +5,4 @@ All:
 Frontend:
 Используй только компоненты из shared/components: TextUI, ButtonUI, IconUI, CheckboxUI, TextField, StatusIndicator.
 Взаимодействует с бекендом через REST API, авторизация через куки.
+Иконки используй из https://mui.com/material-ui/material-icons/

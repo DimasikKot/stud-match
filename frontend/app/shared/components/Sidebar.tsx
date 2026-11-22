@@ -11,32 +11,10 @@ import {
 } from "@/shared/api/healths";
 import { getCurrentUser, logoutUser } from "@/shared/api/users";
 import { StatusIndicator } from "@/shared/components/StatusIndicator";
-import barsIcon from "@/shared/images/bars-solid-full.svg";
-import logoutIcon from "@/shared/images/right-from-bracket-solid-full.svg";
 import userIcon from "@/shared/images/circle-user-regular-full.svg";
-
-type HealthKey = "backend" | "postgres" | "redis" | "rustfs" | "kafka";
-
-const NAV_ITEMS: {
-  to: string;
-  label: string;
-  icon: string;
-  adminOnly?: boolean;
-}[] = [
-  { to: "/projects", label: "Проекты", icon: "dashboard" },
-  { to: "/files", label: "Файлы", icon: "folder_open", adminOnly: true },
-  { to: "/llm", label: "Нейросеть", icon: "smart_toy", adminOnly: true },
-  { to: "/register", label: "Регистрация", icon: "person", adminOnly: true },
-  { to: "/components", label: "Компоненты", icon: "widgets", adminOnly: true },
-];
-
-const HEALTH_ITEMS: { key: HealthKey; label: string }[] = [
-  { key: "backend", label: "Backend" },
-  { key: "postgres", label: "Postgres" },
-  { key: "redis", label: "Redis" },
-  { key: "rustfs", label: "RustFS" },
-  { key: "kafka", label: "Kafka" },
-];
+import { HEALTH_ITEMS, NAV_ITEMS, type HealthKey } from "../constants/sidebar";
+import { TextUI } from "./TextUI";
+import { IconUI } from "./IconUI";
 
 const SvgIcon = ({
   src,
@@ -157,8 +135,8 @@ export function Sidebar({
   };
 
   const iconButtonClass = collapsed
-    ? "flex h-5 w-5 items-center justify-center text-[#8FCBEA] transition-colors hover:text-white"
-    : "flex h-9 w-9 items-center justify-center rounded-xl text-[#8FCBEA] transition-colors hover:text-white";
+    ? "flex h-5 w-5 text-[#8FCBEA] transition-colors hover:text-white"
+    : "flex h-9 w-9 rounded-xl text-[#8FCBEA] transition-colors hover:text-white";
   const displayName = username ?? "Гость";
   const nameParts =
     username
@@ -186,24 +164,22 @@ export function Sidebar({
             collapsed ? "-mx-2 gap-4 flex-col" : "-m-2 justify-between"
           }`}
         >
-          <button
-            type="button"
+          <IconUI
+            size="28px"
+            icon="menu"
+            color="#8FCBEA"
             onClick={onToggle}
             title={collapsed ? "Развернуть меню" : "Свернуть меню"}
-            aria-label={collapsed ? "Развернуть меню" : "Свернуть меню"}
             className={iconButtonClass}
-          >
-            <SvgIcon src={barsIcon} className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
+          />
+          <IconUI
+            size="28px"
+            icon="logout"
+            color="#8FCBEA"
             onClick={handleLogout}
             title="Выйти"
-            aria-label="Выйти"
             className={iconButtonClass}
-          >
-            <SvgIcon src={logoutIcon} className="h-7 w-7" />
-          </button>
+          />
         </div>
 
         <div className="mt-4 flex flex-col items-center gap-1.5">
@@ -216,7 +192,9 @@ export function Sidebar({
               collapsed ? "whitespace-nowrap" : "w-full truncate"
             }`}
           >
-            {collapsed ? shortName : displayName}
+            <TextUI variant="normal">
+              {collapsed ? shortName : displayName}
+            </TextUI>
           </div>
         </div>
       </div>
@@ -229,9 +207,10 @@ export function Sidebar({
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) =>
-                  `relative flex h-12.5 w-full items-center text-sm font-medium ${
-                    collapsed ? "justify-center px-0" : "gap-3 px-6"
-                  } ${index > 0 ? "border-t border-white/10" : ""} ${
+                  `relative flex h-12.5 w-full items-center text-sm font-medium
+                  ${collapsed ? "justify-center px-0" : "gap-3 px-6"}
+                  ${index > 0 ? "border-t border-white/10" : ""}
+                  ${
                     isActive
                       ? "bg-[#f98941] text-white"
                       : "text-white/90 hover:text-white"
@@ -243,17 +222,12 @@ export function Sidebar({
                     {isActive && (
                       <span className="absolute left-0 top-0 h-full w-1 bg-[#CE6327]" />
                     )}
-                    <span
-                      className="material-icons leading-none text-white"
-                      style={{ fontSize: "20px", lineHeight: 1 }}
-                    >
-                      {item.icon}
-                    </span>
-                    <span
-                      className={collapsed ? "hidden" : "block font-semibold"}
+                    <IconUI size="20px" icon={item.icon} />
+                    <TextUI
+                      className={`${collapsed ? "hidden" : "block font-semibold"} ${item.adminOnly ? "text-red-100" : "text-white"}`}
                     >
                       {item.label}
-                    </span>
+                    </TextUI>
                   </>
                 )}
               </NavLink>
@@ -268,9 +242,7 @@ export function Sidebar({
             collapsed ? "hidden" : "hidden lg:block"
           } border-t border-white/10 px-6 py-3`}
         >
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-white/70">
-            Система
-          </div>
+          <TextUI variant="subtitle">Система</TextUI>
           <div className="flex flex-col gap-1.5">
             {HEALTH_ITEMS.map((item) => {
               const status = health[item.key];
@@ -281,7 +253,9 @@ export function Sidebar({
                   title={formatMetrics(status?.metrics)}
                 >
                   <StatusIndicator status={status?.success} />
-                  <span className="text-xs text-white/90">{item.label}</span>
+                  <TextUI variant="normal" className="text-white/90">
+                    {item.label}
+                  </TextUI>
                 </div>
               );
             })}
@@ -294,7 +268,7 @@ export function Sidebar({
           collapsed ? "hidden" : "block"
         }`}
       >
-        <p>
+        <TextUI variant="label">
           GitHub:{" "}
           <a
             href="https://github.com/DimasikKot/stud-match"
@@ -304,7 +278,7 @@ export function Sidebar({
           >
             DimasikKot/stud-match
           </a>
-        </p>
+        </TextUI>
       </div>
     </aside>
   );

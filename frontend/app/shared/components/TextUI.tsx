@@ -3,8 +3,8 @@ export const TextUI = ({
   className = "",
   maxLines = 3,
   isSelectable = false,
-  isSpan = false,
-  hoverText,
+  span = false,
+  title,
   children,
 }: {
   variant?:
@@ -19,20 +19,20 @@ export const TextUI = ({
   className?: string;
   maxLines?: number;
   isSelectable?: boolean;
-  isSpan?: boolean;
-  hoverText?: string;
+  span?: boolean;
+  title?: string;
   children: React.ReactNode;
 }) =>
-  isSpan ? (
+  span ? (
     <span
-      title={hoverText}
+      title={title}
       className={`leading-relaxed
         ${isSelectable ? "select-text" : "select-none"}
         ${
           {
             desc: "text-gray-600 text-sm font-normal",
             link: "text-blue-600 hover:text-blue-800 text-sm font-medium",
-            label: "text-gray-700 text-sm font-medium",
+            label: "text-sm font-medium",
             error: "text-red-600 text-sm font-medium",
             normal: "text-base font-medium",
             subtitle: "text-lg font-medium",
@@ -46,14 +46,14 @@ export const TextUI = ({
     </span>
   ) : (
     <p
-      title={hoverText}
+      title={title}
       className={`leading-relaxed
         ${isSelectable ? "select-text" : "select-none"}
         ${
           {
             desc: "text-gray-600 text-sm font-normal",
             link: "text-blue-600 hover:text-blue-800 text-sm font-normal",
-            label: "text-gray-700 text-sm font-medium",
+            label: "text-sm font-medium",
             error: "text-red-600 text-sm font-medium",
             normal: "text-base font-medium",
             subtitle: "text-base font-bold",

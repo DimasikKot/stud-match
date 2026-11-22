@@ -6,6 +6,7 @@ export const ButtonUI = ({
   },
   variant = "primary",
   className = "",
+  title,
   disabled = false,
   hidden = false,
   children,
@@ -13,6 +14,7 @@ export const ButtonUI = ({
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   variant?: "primary" | "secondary" | "link" | "icon";
   className?: string;
+  title?: string;
   disabled?: boolean;
   hidden?: boolean;
   children: React.ReactNode;
@@ -35,6 +37,7 @@ export const ButtonUI = ({
         }[variant]
       } ${!disabled ? "cursor-pointer" : ""} ${className}`}
     >
+      {title && <span className="sr-only">{title}</span>}
       {children}
     </button>
   );
