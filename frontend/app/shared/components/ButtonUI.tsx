@@ -25,14 +25,13 @@ export const ButtonUI = ({
         event.preventDefault(); // Отменяем дефолтное поведение
       }}
       disabled={disabled}
-      className={`h-min w-max duration-200 select-none transition-colors items-center justify-center
-        rounded-full flex
+      className={`h-min duration-200 select-none transition-colors items-center justify-center flex
       ${
         {
-          primary: `${!disabled ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-600 hover:bg-gray-600"} px-4 py-2 text-white rounded-full shadow-lg font-medium`,
-          secondary: `${!disabled ? "text-blue-600 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} px-4 py-2 font-medium`,
-          icon: `${!disabled ? "text-blue-600 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} p-2 -m-2 font-medium`,
-          link: `${!disabled ? "text-blue-600 hover:text-blue-800" : "text-gray-600 hover:text-gray-600"} p-1 -m-1 font-normal`,
+          primary: `${!disabled ? "bg-blue-700 hover:bg-blue-800" : "bg-gray-600 hover:bg-gray-600"} px-4 py-2 text-white shadow-lg font-medium`,
+          secondary: `${!disabled ? "text-blue-700 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} px-4 py-2 font-medium`,
+          icon: `${!disabled ? "text-blue-700 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} p-2 -m-2 font-medium`,
+          link: `${!disabled ? "text-blue-700 hover:text-blue-800" : "text-gray-600 hover:text-gray-600"} p-1 -m-1 font-normal`,
         }[variant]
       } ${!disabled ? "cursor-pointer" : ""} ${className}`}
     >

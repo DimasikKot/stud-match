@@ -2,7 +2,7 @@ import { Toaster } from "react-hot-toast";
 
 export const ToasterUI = () => (
   <Toaster
-    position="top-left"
+    position="top-right"
     gutter={8}
     toastOptions={{
       duration: 3000,

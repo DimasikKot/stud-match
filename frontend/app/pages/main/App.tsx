@@ -16,6 +16,9 @@ import { Components } from "@/pages/main/Components";
 import { Files } from "@/pages/main/Files";
 import { Llm } from "@/pages/main/Llm";
 
+import { Login } from "@/pages/main/Login";
+import { Register } from "@/pages/main/Register";
+
 export function App() {
   return (
     <Router>
@@ -23,20 +26,20 @@ export function App() {
 
       <div className="bg-white">
         <Routes>
-          <Route element={<MainLayout />}>
-            <Route path="*" element={<NotFound />} />
-            <Route path="/" element={<Navigate to="/projects" replace />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/components" element={<Components />} />
-            <Route path="/files" element={<Files />} />
-            <Route path="/llm" element={<Llm />} />
-          </Route>
-
-          {/* <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} /> */}
+          <Route path="/login" element={<Login />} />
 
           {/* Защищенные маршруты, пересылает на страницу `/login` */}
-          <Route element={<PrivateRoute />}></Route>
+          <Route element={<PrivateRoute />}>
+            <Route element={<MainLayout />}>
+              <Route path="*" element={<NotFound />} />
+              <Route path="/" element={<Navigate to="/projects" replace />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/components" element={<Components />} />
+              <Route path="/files" element={<Files />} />
+              <Route path="/llm" element={<Llm />} />
+              <Route path="/register" element={<Register />} />
+            </Route>
+          </Route>
         </Routes>
       </div>
     </Router>

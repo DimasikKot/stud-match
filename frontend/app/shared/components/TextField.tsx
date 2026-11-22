@@ -47,7 +47,7 @@ export const TextField = ({
       placeholder={placeholder}
       disabled={disabled}
       className={`
-        w-full px-3 py-3 rounded-lg
+        w-full px-3 py-1.5
         bg-white
         border border-gray-300
         focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300
@@ -73,7 +73,7 @@ export const TextField = ({
       disabled={disabled}
       type={type}
       className={`
-      w-full px-3 py-3 rounded-lg
+      w-full px-3 py-1.5
       bg-white
       border border-gray-300
       focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300

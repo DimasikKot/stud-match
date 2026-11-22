@@ -1,22 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import toast from "react-hot-toast";
 
 import { ButtonPage } from "@/shared/components/ButtonPage";
 import { TextUI } from "@/shared/components/TextUI";
 import { ButtonUI } from "@/shared/components/ButtonUI";
 import { StatusIndicator } from "@/shared/components/StatusIndicator";
-import { InfoCard } from "@/shared/components/InfoCard";
-import { InfoCardBig } from "@/shared/components/InfoCardBig";
 import { TextField } from "@/shared/components/TextField";
-import { PageNavigate } from "@/shared/components/PageNavigate";
-import { LoginRegisterCard } from "@/shared/components/LoginRegisterCard";
 import { CheckboxUI } from "@/shared/components/CheckboxUI";
 
 export function Components() {
   const navigate = useNavigate();
   const [textValue, setTextValue] = useState("");
-  const [currentPage, setCurrentPage] = useState("1");
   const [checkboxValue, setCheckboxValue] = useState(false);
 
   return (
@@ -42,9 +36,6 @@ export function Components() {
               </div>
               <div className="bg-white p-6 rounded-3xl border border-gray-200">
                 <TextUI variant="title">title (заголовок)</TextUI>
-              </div>
-              <div className="bg-white p-6 rounded-3xl border border-gray-200">
-                <TextUI variant="logo">logo (логотип)</TextUI>
               </div>
               <div className="bg-white p-6 rounded-3xl border border-gray-200">
                 <TextUI variant="header">header (большой заголовок)</TextUI>
@@ -113,49 +104,6 @@ export function Components() {
             </div>
           </div>
 
-          {/* InfoCard */}
-          <div>
-            <TextUI variant="header" className="mb-6">
-              InfoCard
-            </TextUI>
-            <div className="flex flex-wrap gap-6">
-              <InfoCard
-                icon="info"
-                title="Информация"
-                description="Это стандартная информационная карточка"
-              />
-              <InfoCard
-                icon="check_circle"
-                iconClassName="bg-green-100 text-green-600"
-                title="Успешно"
-                description="Операция выполнена успешно"
-              />
-            </div>
-          </div>
-
-          {/* InfoCardBig */}
-          <div>
-            <TextUI variant="header" className="mb-6">
-              InfoCardBig
-            </TextUI>
-            <div className="flex flex-wrap gap-8">
-              <InfoCardBig
-                icon="add_circle"
-                title="Новый проект"
-                description="Создайте новый проект для разметки данных"
-                buttonText="Создать проект"
-                onClick={() => toast.success("Создание проекта")}
-              />
-              <InfoCardBig
-                icon="upload_file"
-                title="Загрузка файлов"
-                description="Загрузите датасет для дальнейшей работы"
-                buttonText="Загрузить файлы"
-                onClick={() => toast.success("Загрузка файлов")}
-              />
-            </div>
-          </div>
-
           {/* TextField */}
           <div>
             <TextUI variant="header" className="mb-6">
@@ -186,54 +134,6 @@ export function Components() {
                 />
               </div>
             </div>
-          </div>
-
-          {/* PageNavigate */}
-          <div>
-            <TextUI variant="header" className="mb-6">
-              PageNavigate
-            </TextUI>
-            <PageNavigate
-              currentPage={parseInt(currentPage)}
-              totalPages={5}
-              onBack={() =>
-                setCurrentPage((prev) =>
-                  String(Math.max(1, parseInt(prev) - 1)),
-                )
-              }
-              onNext={() =>
-                setCurrentPage((prev) =>
-                  String(Math.min(5, parseInt(prev) + 1)),
-                )
-              }
-            />
-          </div>
-
-          {/* LoginRegisterCard */}
-          <div>
-            <TextUI variant="header" className="mb-6">
-              LoginRegisterCard
-            </TextUI>
-            <LoginRegisterCard
-              title="Вход в аккаунт"
-              subtitle="Введите данные для входа в систему"
-              buttonText="Войти"
-              onButtonClick={() => toast.success("Попытка входа")}
-              descriptionLink={{
-                text: "Нет аккаунта? Зарегистрироваться",
-                onClick: () => toast.success("Переход на регистрацию"),
-              }}
-            >
-              <div className="space-y-4">
-                <TextField value="" setValue={() => {}} placeholder="Email" />
-                <TextField
-                  value=""
-                  setValue={() => {}}
-                  placeholder="Пароль"
-                  type="password"
-                />
-              </div>
-            </LoginRegisterCard>
           </div>
         </div>
       </div>

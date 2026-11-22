@@ -9,7 +9,7 @@ import {
   fetchKafkaHealth,
   type GetHealthResponse,
 } from "@/shared/api/healths";
-import { logoutUser } from "@/shared/api/users";
+import { getCurrentUser, logoutUser } from "@/shared/api/users";
 import { StatusIndicator } from "@/shared/components/StatusIndicator";
 import barsIcon from "@/shared/images/bars-solid-full.svg";
 import logoutIcon from "@/shared/images/right-from-bracket-solid-full.svg";
@@ -95,16 +95,20 @@ export function Sidebar({
   const [health, setHealth] = useState<
     Partial<Record<HealthKey, GetHealthResponse>>
   >({});
-  const [username, setUsername] = useState(() =>
-    localStorage.getItem("username"),
-  );
-  const [hasSession, setHasSession] = useState(
-    () =>
-      Boolean(localStorage.getItem("username")) ||
-      Boolean(localStorage.getItem("access_token")),
-  );
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
+    const loadUser = async () => {
+      try {
+        await getCurrentUser();
+        setUsername(sessionStorage.getItem("username"));
+      } catch {
+        setUsername(null);
+      }
+    };
+
+    void loadUser();
+
     const load = async (
       key: HealthKey,
       request: () => Promise<GetHealthResponse | undefined>,
@@ -123,20 +127,17 @@ export function Sidebar({
   }, []);
 
   const handleLogout = async () => {
-    if (hasSession) {
-      try {
-        await logoutUser();
-      } catch {
-        // сессия уже могла истечь
-      }
+    try {
+      await logoutUser();
+    } catch {
+      // сессия уже могла истечь
     }
 
-    localStorage.removeItem("username");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
     setUsername(null);
-    setHasSession(false);
-    navigate("/projects");
+    sessionStorage.removeItem("username");
+    sessionStorage.removeItem("email");
+    sessionStorage.removeItem("role");
+    navigate("/login");
   };
 
   const iconButtonClass = collapsed
@@ -149,6 +150,7 @@ export function Sidebar({
       .trim()
       .split(/[\s._-]+/)
       .filter(Boolean) ?? [];
+
   const shortName = nameParts.length
     ? `${nameParts
         .slice(0, 2)

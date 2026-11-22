@@ -15,7 +15,6 @@ export const TextUI = ({
     | "normal"
     | "subtitle"
     | "title"
-    | "logo"
     | "header";
   className?: string;
   maxLines?: number;
@@ -37,8 +36,7 @@ export const TextUI = ({
             error: "text-red-600 text-sm font-medium",
             normal: "text-base font-medium",
             subtitle: "text-lg font-medium",
-            title: "text-xl font-bold",
-            logo: "text-2xl font-bold",
+            title: "text-2xl font-light",
             header: "text-3xl font-bold",
           }[variant]
         }
@@ -59,8 +57,7 @@ export const TextUI = ({
             error: "text-red-600 text-sm font-medium",
             normal: "text-base font-medium",
             subtitle: "text-base font-bold",
-            title: "text-xl font-bold",
-            logo: "text-2xl font-bold",
+            title: "text-2xl font-light",
             header: "text-3xl font-bold",
           }[variant]
         }

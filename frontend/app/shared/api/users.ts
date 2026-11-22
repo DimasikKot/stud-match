@@ -9,11 +9,7 @@ export interface UserRequest {
 export interface UserResponse {
   id: number;
   email: string;
-}
-
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
+  role: string;
 }
 
 export interface MessageResponse {
@@ -34,19 +30,14 @@ export const registerUser = async (
 
 export const loginUser = async (
   payload: UserRequest,
-): Promise<TokenResponse> => {
+): Promise<UserResponse> => {
   try {
-    const { data } = await api.post<TokenResponse>("/users/login", payload);
+    const { data } = await api.post<UserResponse>("/users/login", payload);
     return data; // access_token в теле можно игнорировать — он уже в httpOnly-куке
   } catch (error) {
     errorValidate(error);
     throw error;
   }
-};
-
-export const refreshTokens = async (): Promise<TokenResponse> => {
-  const { data } = await api.post<TokenResponse>("/users/refresh");
-  return data;
 };
 
 export const logoutUser = async (): Promise<MessageResponse> => {
@@ -62,6 +53,9 @@ export const logoutUser = async (): Promise<MessageResponse> => {
 export const getCurrentUser = async (): Promise<UserResponse> => {
   try {
     const { data } = await api.get<UserResponse>("/users/me");
+    sessionStorage.setItem("username", data.email);
+    sessionStorage.setItem("email", data.email);
+    sessionStorage.setItem("role", data.role);
     return data;
   } catch (error) {
     errorValidate(error);

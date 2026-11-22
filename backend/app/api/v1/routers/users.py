@@ -9,6 +9,7 @@ from fastapi import (
 )
 from redis import Redis
 from sqlalchemy.orm import Session
+from urllib3 import HTTPResponse
 
 from app.core.database import get_db
 from app.services import user as user_service
@@ -44,11 +45,6 @@ class UserListResponse(BaseModel):
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str = Field(min_length=1)
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
 
 
 ACCESS_COOKIE = "access_token"
@@ -105,7 +101,7 @@ def list_users(db: Session = Depends(get_db)):
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=UserResponse)
 def login(
     response: Response,
     user_in: UserRequest,
@@ -119,10 +115,10 @@ def login(
     # Устанавливаем куки
     _set_auth_cookies(response, access_token, refresh_token)
 
-    return TokenResponse(access_token=access_token)
+    return UserResponse.model_validate(user)
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh")
 def refresh_tokens(
     response: Response,
     refresh_token: str | None = Security(refresh_cookie_scheme),
@@ -136,7 +132,7 @@ def refresh_tokens(
     # Устанавливаем новые куки
     _set_auth_cookies(response, access_token, new_refresh_token)
 
-    return TokenResponse(access_token=access_token)
+    return HTTPResponse(body="Token refreshed", status=200)
 
 
 @router.post("/logout")
