@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.db import ROLE_ADMIN, UserDB
-from app.services.get_user import get_optional_user
+from app.services.get_user import require_admin
 from app.services.get_redis import get_async_redis
 
 import redis.asyncio as aioredis
@@ -296,39 +296,46 @@ def _kafka_health() -> HealthResponse:
             client.close()
 
 
-def _visible(health: HealthResponse, user: UserDB | None) -> HealthResponse:
-    """Статус доступен всем, метрики - только администратору."""
-    if user is None or user.role != ROLE_ADMIN:
-        health.metrics = None
-    return health
+@router.get(
+    "/backend",
+    response_model=HealthResponse,
+    dependencies=[Depends(require_admin)],
+)
+async def get_backend_health():
+    return await _backend_health()
 
 
-@router.get("/backend", response_model=HealthResponse)
-async def get_backend_health(user: UserDB | None = Depends(get_optional_user)):
-    return _visible(await _backend_health(), user)
+@router.get(
+    "/postgres",
+    response_model=HealthResponse,
+    dependencies=[Depends(require_admin)],
+)
+def get_postgres_health(db: Session = Depends(get_db)):
+    return _postgres_health(db)
 
 
-@router.get("/postgres", response_model=HealthResponse)
-def get_postgres_health(
-    db: Session = Depends(get_db),
-    user: UserDB | None = Depends(get_optional_user),
-):
-    return _visible(_postgres_health(db), user)
+@router.get(
+    "/redis",
+    response_model=HealthResponse,
+    dependencies=[Depends(require_admin)],
+)
+async def get_redis_health(redis: aioredis.Redis = Depends(get_async_redis)):
+    return await _redis_health(redis)
 
 
-@router.get("/redis", response_model=HealthResponse)
-async def get_redis_health(
-    redis: aioredis.Redis = Depends(get_async_redis),
-    user: UserDB | None = Depends(get_optional_user),
-):
-    return _visible(await _redis_health(redis), user)
+@router.get(
+    "/rustfs",
+    response_model=HealthResponse,
+    dependencies=[Depends(require_admin)],
+)
+async def get_rustfs_health():
+    return await _rustfs_health()
 
 
-@router.get("/rustfs", response_model=HealthResponse)
-async def get_rustfs_health(user: UserDB | None = Depends(get_optional_user)):
-    return _visible(await _rustfs_health(), user)
-
-
-@router.get("/kafka", response_model=HealthResponse)
-def get_kafka_health(user: UserDB | None = Depends(get_optional_user)):
-    return _visible(_kafka_health(), user)
+@router.get(
+    "/kafka",
+    response_model=HealthResponse,
+    dependencies=[Depends(require_admin)],
+)
+def get_kafka_health():
+    return _kafka_health()

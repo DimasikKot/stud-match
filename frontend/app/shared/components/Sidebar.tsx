@@ -17,11 +17,17 @@ import userIcon from "@/shared/images/circle-user-regular-full.svg";
 
 type HealthKey = "backend" | "postgres" | "redis" | "rustfs" | "kafka";
 
-const NAV_ITEMS = [
+const NAV_ITEMS: {
+  to: string;
+  label: string;
+  icon: string;
+  adminOnly?: boolean;
+}[] = [
   { to: "/projects", label: "Проекты", icon: "dashboard" },
-  { to: "/files", label: "Файлы", icon: "folder_open" },
-  { to: "/llm", label: "Нейросеть", icon: "smart_toy" },
-  { to: "/components", label: "Компоненты", icon: "widgets" },
+  { to: "/files", label: "Файлы", icon: "folder_open", adminOnly: true },
+  { to: "/llm", label: "Нейросеть", icon: "smart_toy", adminOnly: true },
+  { to: "/register", label: "Регистрация", icon: "person", adminOnly: true },
+  { to: "/components", label: "Компоненты", icon: "widgets", adminOnly: true },
 ];
 
 const HEALTH_ITEMS: { key: HealthKey; label: string }[] = [
@@ -96,18 +102,19 @@ export function Sidebar({
     Partial<Record<HealthKey, GetHealthResponse>>
   >({});
   const [username, setUsername] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
       try {
-        await getCurrentUser();
+        const user = await getCurrentUser();
         setUsername(sessionStorage.getItem("username"));
+        setIsAdmin(user.role === "admin");
       } catch {
         setUsername(null);
+        setIsAdmin(false);
       }
     };
-
-    void loadUser();
 
     const load = async (
       key: HealthKey,
@@ -119,11 +126,20 @@ export function Sidebar({
       }
     };
 
-    void load("backend", fetchBackendHealth);
-    void load("postgres", fetchPostgresHealth);
-    void load("redis", fetchRedisHealth);
-    void load("rustfs", fetchRustfsHealth);
-    void load("kafka", fetchKafkaHealth);
+    const loadAll = async () => {
+      await loadUser();
+      if (sessionStorage.getItem("role") !== "admin") {
+        return;
+      }
+
+      void load("backend", fetchBackendHealth);
+      void load("postgres", fetchPostgresHealth);
+      void load("redis", fetchRedisHealth);
+      void load("rustfs", fetchRustfsHealth);
+      void load("kafka", fetchKafkaHealth);
+    };
+
+    void loadAll();
   }, []);
 
   const handleLogout = async () => {
@@ -177,7 +193,7 @@ export function Sidebar({
             aria-label={collapsed ? "Развернуть меню" : "Свернуть меню"}
             className={iconButtonClass}
           >
-            <SvgIcon src={barsIcon} className="h-6 w-6" />
+            <SvgIcon src={barsIcon} className="h-7 w-7" />
           </button>
           <button
             type="button"
@@ -186,7 +202,7 @@ export function Sidebar({
             aria-label="Выйти"
             className={iconButtonClass}
           >
-            <SvgIcon src={logoutIcon} className="h-6 w-6" />
+            <SvgIcon src={logoutIcon} className="h-7 w-7" />
           </button>
         </div>
 
@@ -207,67 +223,71 @@ export function Sidebar({
 
       <nav className="flex-1 overflow-y-auto">
         <div className="flex flex-col">
-          {NAV_ITEMS.map((item, index) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `relative flex h-12.5 w-full items-center text-sm font-medium ${
-                  collapsed ? "justify-center px-0" : "gap-3 px-6"
-                } ${index > 0 ? "border-t border-white/10" : ""} ${
-                  isActive
-                    ? "bg-[#f98941] text-white"
-                    : "text-white/90 hover:text-white"
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <span className="absolute left-0 top-0 h-full w-1 bg-[#CE6327]" />
-                  )}
-                  <span
-                    className="material-icons leading-none text-white"
-                    style={{ fontSize: "20px", lineHeight: 1 }}
-                  >
-                    {item.icon}
-                  </span>
-                  <span
-                    className={collapsed ? "hidden" : "block font-semibold"}
-                  >
-                    {item.label}
-                  </span>
-                </>
-              )}
-            </NavLink>
-          ))}
+          {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map(
+            (item, index) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `relative flex h-12.5 w-full items-center text-sm font-medium ${
+                    collapsed ? "justify-center px-0" : "gap-3 px-6"
+                  } ${index > 0 ? "border-t border-white/10" : ""} ${
+                    isActive
+                      ? "bg-[#f98941] text-white"
+                      : "text-white/90 hover:text-white"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="absolute left-0 top-0 h-full w-1 bg-[#CE6327]" />
+                    )}
+                    <span
+                      className="material-icons leading-none text-white"
+                      style={{ fontSize: "20px", lineHeight: 1 }}
+                    >
+                      {item.icon}
+                    </span>
+                    <span
+                      className={collapsed ? "hidden" : "block font-semibold"}
+                    >
+                      {item.label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            ),
+          )}
         </div>
       </nav>
 
-      <div
-        className={`${
-          collapsed ? "hidden" : "hidden lg:block"
-        } border-t border-white/10 px-4 py-3`}
-      >
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-white/70">
-          Система
+      {isAdmin && (
+        <div
+          className={`${
+            collapsed ? "hidden" : "hidden lg:block"
+          } border-t border-white/10 px-6 py-3`}
+        >
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-white/70">
+            Система
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {HEALTH_ITEMS.map((item) => {
+              const status = health[item.key];
+              return (
+                <div
+                  key={item.key}
+                  className="flex items-center gap-2"
+                  title={formatMetrics(status?.metrics)}
+                >
+                  <StatusIndicator status={status?.success} />
+                  <span className="text-xs text-white/90">{item.label}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex flex-col gap-1.5">
-          {HEALTH_ITEMS.map((item) => {
-            const status = health[item.key];
-            return (
-              <div
-                key={item.key}
-                className="flex items-center gap-2"
-                title={formatMetrics(status?.metrics)}
-              >
-                <StatusIndicator status={status?.success} />
-                <span className="text-xs text-white/90">{item.label}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       <div
         className={`px-6 py-3 text-xs text-white/90 ${

@@ -78,7 +78,7 @@ api.interceptors.response.use(
     } catch (refreshError) {
       processQueue(false);
       toast.error("Сессия истекла, войдите заново");
-      window.location.href = "/login";
+      // window.location.href = "/login";
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

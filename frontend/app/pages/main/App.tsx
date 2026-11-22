@@ -9,6 +9,7 @@ import "material-icons/iconfont/material-icons.css";
 import { ToasterUI } from "@/shared/components/ToasterUI";
 import { MainLayout } from "@/shared/components/MainLayout";
 import { PrivateRoute } from "@/shared/components/PrivateRoute";
+import { AdminRoute } from "@/shared/components/AdminRoute";
 
 import { Projects } from "@/pages/main/Projects";
 import { NotFound } from "@/pages/main/NotFound";
@@ -34,10 +35,12 @@ export function App() {
               <Route path="*" element={<NotFound />} />
               <Route path="/" element={<Navigate to="/projects" replace />} />
               <Route path="/projects" element={<Projects />} />
-              <Route path="/components" element={<Components />} />
-              <Route path="/files" element={<Files />} />
-              <Route path="/llm" element={<Llm />} />
-              <Route path="/register" element={<Register />} />
+              <Route element={<AdminRoute />}>
+                <Route path="/components" element={<Components />} />
+                <Route path="/files" element={<Files />} />
+                <Route path="/llm" element={<Llm />} />
+                <Route path="/register" element={<Register />} />
+              </Route>
             </Route>
           </Route>
         </Routes>

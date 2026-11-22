@@ -297,10 +297,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Login as admin
+        run: |
+          LOGIN_URL="https://stud-match.mooo.com/backend/api/v1/users/login"
+          resp=$(curl -s -w $'\n%{http_code}' --max-time 20 -fk \
+            -c "$RUNNER_TEMP/cookies.txt" \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"${{ secrets.ADMIN_EMAIL }}\",\"password\":\"${{ secrets.ADMIN_PASSWORD }}\"}" \
+            "$LOGIN_URL")
+
+          code=$(printf '%s' "$resp" | tail -n1)
+          body=$(printf '%s' "$resp" | sed '$d')
+
+          echo "login status=$code"
+          echo "$body"
+
+          if [ "$code" != "200" ] && [ "$code" != "201" ]; then
+            echo "::error::login failed (status=$code)"
+            exit 1
+          fi
+
+          if [ ! -s "$RUNNER_TEMP/cookies.txt" ]; then
+            echo "::error::no cookies saved"
+            exit 1
+          fi
+
       - name: Check backend + dependencies health (via nginx)
         run: |
           BASE="https://stud-match.mooo.com/backend/api/v1/healths"
-          MAX_ATTEMPTS=15      # ~2.5 минуты с паузой 10с
+          COOKIES="$RUNNER_TEMP/cookies.txt"
+          MAX_ATTEMPTS=15
           DELAY=10
 
           for ep in backend postgres redis rustfs kafka; do
@@ -310,7 +336,9 @@ jobs:
             success="false"
 
             for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
-              resp=$(curl -s -w $'\n%{http_code}' --max-time 15 -fk "$BASE/$ep" || printf '\n000')
+              resp=$(curl -s -w $'\n%{http_code}' --max-time 15 -fk \
+                -b "$COOKIES" \
+                "$BASE/$ep" || printf '\n000')
               code=$(printf '%s' "$resp" | tail -n1)
               body=$(printf '%s' "$resp" | sed '$d')
               success=$(printf '%s' "$body" | jq -r '.success // false' 2>/dev/null || echo "false")
@@ -321,6 +349,16 @@ jobs:
                 ep_ok=1
                 break
               fi
+
+              # если сессия протухла/не принята — перелогиниться и попробовать ещё
+              if [ "$code" = "401" ] || [ "$code" = "403" ]; then
+                echo "$ep got $code, re-login..."
+                curl -s -fk -c "$COOKIES" \
+                  -H 'Content-Type: application/json' \
+                  -d "{\"username\":\"${{ secrets.ADMIN_USERNAME }}\",\"password\":\"${{ secrets.ADMIN_PASSWORD }}\"}" \
+                  "https://stud-match.mooo.com/backend/api/v1/auth/login" >/dev/null || true
+              fi
+
               sleep "$DELAY"
             done
 
