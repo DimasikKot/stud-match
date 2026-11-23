@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from fastapi import (
     APIRouter,
@@ -22,12 +22,12 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 class UserRequest(BaseModel):
     fullname: str
-    email: str
+    email: EmailStr
     password: str
 
 
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
