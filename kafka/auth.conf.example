@@ -72,10 +72,10 @@ user worker_distribution_3  Db3password
 
 
 topic tags.tasks            3
-topic tags.results          1
+topic tags.results          3
 
 topic distribution.tasks    3
-topic distribution.results  1
+topic distribution.results  3
 
 
 

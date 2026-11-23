@@ -186,6 +186,14 @@ jobs:
             # ---------- Postgres: точечный реинит init-скриптов ----------
             # Запускаем все *.sql начиная с первого изменённого - drop+create внутри файлов идемпотентны
             if [ "$POSTGRES_REINIT" = "true" ]; then
+              # Полный сброс data если менялся первый init скрипт 01_*.sql
+              FULL_RESET=false
+              if [ -n "$PREV_SHA" ]; then
+                CHANGED_SQL=$(git diff --name-only --diff-filter=AM "$PREV_SHA"..HEAD -- 'postgres/init/*.sql')
+                echo "$CHANGED_SQL" | grep -q 'postgres/init/01_' && FULL_RESET=true
+              fi
+              echo "=== [postgres] FULL_RESET=$FULL_RESET ==="
+
               # Бэкап data -> data_old (только на остановленном postgres, иначе копия может быть битой)
               $COMPOSE stop sm-postgres
               if [ -d ./postgres/data ]; then
@@ -198,6 +206,16 @@ jobs:
               else
                 echo "No ./postgres/data to backup (fresh install?)"
               fi
+
+              if [ "$FULL_RESET" = "true" ]; then
+                echo "=== [postgres] Wiping ./postgres/data contents ==="
+                if [ -d ./postgres/data ]; then
+                  sudo find ./postgres/data -mindepth 1 -delete
+                else
+                  sudo mkdir -p ./postgres/data
+                fi
+              fi
+
               $COMPOSE up -d sm-postgres
 
               # Ждём готовности postgres
@@ -206,6 +224,15 @@ jobs:
                 [ "$i" = "30" ] && { echo "::error::postgres not ready"; exit 1; }
                 sleep 2
               done
+
+              # При полном сбросе дожидаемся конца initdb фазы
+              if [ "$FULL_RESET" = "true" ]; then
+                for i in $(seq 1 60); do
+                  docker logs sm-postgres 2>&1 | grep -q "init process complete" && break
+                  [ "$i" = "60" ] && { echo "::error::postgres initdb not complete"; exit 1; }
+                  sleep 2
+                done
+              fi
 
               FIRST=""
               if [ -n "$PREV_SHA" ]; then
