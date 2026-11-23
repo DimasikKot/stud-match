@@ -165,7 +165,7 @@ export function Sidebar({
           }`}
         >
           <IconUI
-            size="28px"
+            size="24px"
             icon="menu"
             color="#8FCBEA"
             onClick={onToggle}
@@ -173,7 +173,7 @@ export function Sidebar({
             className={iconButtonClass}
           />
           <IconUI
-            size="28px"
+            size="24px"
             icon="logout"
             color="#8FCBEA"
             onClick={handleLogout}
