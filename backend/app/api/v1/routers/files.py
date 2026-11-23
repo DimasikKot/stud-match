@@ -27,9 +27,10 @@ class FileResponse(BaseModel):
 
     id: int
     name: str
-    object_key: str
-    path: str
     size: int
+    rustfs_object_key: str
+    rustfs_bucket: str
+    status: str
     created_at: datetime
     updated_at: datetime
 

@@ -113,9 +113,7 @@ export const errorValidate = (error: unknown) => {
       error_text = `Ошибка ${error.message}`;
     }
 
-    if (error.response?.status === 200) {
-      toast.error(error_text);
-    }
+    toast.error(error_text);
   }
 };
 
