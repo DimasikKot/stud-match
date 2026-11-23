@@ -1,0 +1,114 @@
+// --- ENUMS ---
+
+Enum user_role {
+  admin
+  teacher
+}
+
+Enum file_status {
+  not_extracted      // не извлечены признаки
+  queued             // в очереди на извлечение
+  extracting         // извлекаются признаки
+  extracted          // извлечены признаки
+  applied            // учтён при формировании профиля студента (для пропуске при создании профиля)
+}
+
+Enum distribution_status {
+  not_started        // не запускался
+  queued             // в очереди на распределение
+  distributing       // распределяются
+  distributed        // распределен
+}
+
+// --- TABLES ---
+
+Table users {
+  id SERIAL [pk, increment]
+  fullname VARCHAR(255) [not null]
+  email VARCHAR(255) [unique, not null]
+  hashed_password VARCHAR(255) [not null]
+  role user_role [not null, default: 'teacher']
+  skills_vector JSONB [not null, default: '{}'] // меняет админ
+
+  // сортировка, отображать когда были последние изменения
+  updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table files {
+  id SERIAL [pk, increment]
+  name VARCHAR(255) [not null]
+  size INT [not null]
+  rustfs_object_key VARCHAR(255) [not null]
+  rustfs_bucket VARCHAR(255) [not null]
+  status file_status [not null, default: 'not_extracted']
+  skills_vector JSONB [not null, default: '{}']
+
+  // Когда выполнена работа, указывает препод, для коэффициента занчимости
+  work_date TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table skills {
+  id SERIAL [pk, increment]
+  name VARCHAR(255) [not null] // Для вывода преподаватедю варинатов признаков
+}
+
+Table students {
+  id SERIAL [pk, increment]
+  fullname VARCHAR(255) [not null]
+  skills_vector JSONB [not null, default: '{}']
+}
+
+Table student_files {
+  file_id INT [not null]
+  student_id INT [not null]
+
+  Indexes {
+    (file_id, student_id) [pk]
+    student_id [name: "student_files_student_id_idx"]
+  }
+}
+
+Table projects {
+  id SERIAL [pk, increment]
+  user_id INT [not null] // Преподаватель, создавший проект
+  name VARCHAR(255) [not null]
+  description TEXT [not null]
+  constraints_vector JSONB [not null, default: '{}'] // ограничения
+  skills_vector JSONB [not null, default: '{}']
+  updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`] // сортировка
+
+  Indexes {
+    user_id [name: "projects_user_id_idx"]
+  }
+}
+
+Table distributions {
+  id SERIAL [pk, increment]
+  user_id INT [not null] // Преподаватель, запустивший распределение
+  name VARCHAR(255) [not null]
+  status distribution_status [not null, default: 'not_started']
+  
+  // Списки сущностей, выбранных для распределения
+  selected_project_ids JSONB [not null, default: '[]']
+  selected_student_ids JSONB [not null, default: '[]']
+  selected_teacher_ids JSONB [not null, default: '[]']
+  
+  // Результат: массив преподавателей -> проекты -> студенты
+  // JSONB который хранит массив словарей преподавателей, 
+  // каждый препод хранит массив словарей проектов,
+  // каждый проект хранит массив ФИО подобранных студентов и вектора их признаков
+  result JSONB [not null, default: '{}'] 
+  updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`] // сортировка
+
+  Indexes {
+    user_id [name: "distributions_user_id_idx"]
+  }
+}
+
+// --- RELATIONSHIPS ---
+
+Ref: users.id < projects.user_id [delete: cascade]
+Ref: users.id < distributions.user_id [delete: cascade]
+
+Ref: files.id < student_files.file_id [delete: cascade]
+Ref: students.id < student_files.student_id [delete: cascade]

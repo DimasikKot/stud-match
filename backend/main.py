@@ -7,17 +7,18 @@ from fastapi.openapi.utils import get_openapi
 
 from app.api.v1.endpoints import api_router
 from app.services import predict as predict_service
-from app.services import tags as tags_service
+
+# from app.services import tags as tags_service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     consumer_threads = [
-        threading.Thread(
-            target=tags_service.results_consumer_loop,
-            daemon=True,
-            name="kafka-tags-results",
-        ),
+        # threading.Thread(
+        #     target=tags_service.results_consumer_loop,
+        #     daemon=True,
+        #     name="kafka-tags-results",
+        # ),
         threading.Thread(
             target=predict_service.results_consumer_loop,
             daemon=True,

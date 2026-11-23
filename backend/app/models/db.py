@@ -1,21 +1,48 @@
+import enum
 from datetime import datetime
-from typing import Any, Literal
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.sql import func
-from sqlalchemy.dialects.postgresql import JSONB
+from typing import Any
+
 from sqlalchemy import (
-    Boolean,
+    Enum,
+    ForeignKey,
     Integer,
     String,
     Text,
     TIMESTAMP,
-    ForeignKey,
 )
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql import func
 
 from app.core.database import Base
 
-ROLE_ADMIN = "admin"
-ROLE_TEACHER = "teacher"
+
+class UserRole(str, enum.Enum):
+    ADMIN = "admin"
+    TEACHER = "teacher"
+
+
+class FileStatus(str, enum.Enum):
+    NOT_EXTRACTED = "not_extracted"
+    QUEUED = "queued"
+    EXTRACTING = "extracting"
+    EXTRACTED = "extracted"
+    APPLIED = "applied"
+
+
+class DistributionStatus(str, enum.Enum):
+    NOT_STARTED = "not_started"
+    QUEUED = "queued"
+    DISTRIBUTING = "distributing"
+    DISTRIBUTED = "distributed"
+
+
+ROLE_ADMIN = UserRole.ADMIN
+ROLE_TEACHER = UserRole.TEACHER
+
+
+def _enum_values(enum_cls: type[enum.Enum]) -> list[str]:
+    return [member.value for member in enum_cls]
 
 
 class UserDB(Base):
@@ -25,6 +52,10 @@ class UserDB(Base):
         Integer,
         primary_key=True,
         index=True,
+    )
+    fullname: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
     )
     email: Mapped[str] = mapped_column(
         String(255),
@@ -36,16 +67,16 @@ class UserDB(Base):
         String(255),
         nullable=False,
     )
-    role: Mapped[str] = mapped_column(
-        String(20),
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole, name="user_role", values_callable=_enum_values),
         nullable=False,
-        default=ROLE_TEACHER,
-        server_default=ROLE_TEACHER,
+        default=UserRole.TEACHER,
+        server_default=UserRole.TEACHER.value,
     )
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
+    skills_vector: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
         nullable=False,
-        server_default=func.now(),
+        server_default="{}",
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
@@ -64,25 +95,79 @@ class FileDB(Base):
         String(255),
         nullable=False,
     )
-    object_key: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-    )
-    path: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-    )
     size: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
     )
-    created_at: Mapped[datetime] = mapped_column(
+    rustfs_object_key: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    rustfs_bucket: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    status: Mapped[FileStatus] = mapped_column(
+        Enum(FileStatus, name="file_status", values_callable=_enum_values),
+        nullable=False,
+        default=FileStatus.NOT_EXTRACTED,
+        server_default=FileStatus.NOT_EXTRACTED.value,
+    )
+    skills_vector: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default="{}",
+    )
+    work_date: Mapped[datetime] = mapped_column(
         TIMESTAMP,
         nullable=False,
         server_default=func.now(),
     )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
+
+
+class SkillDB(Base):
+    __tablename__ = "skills"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+
+class StudentDB(Base):
+    __tablename__ = "students"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+    fullname: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    skills_vector: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default="{}",
+    )
+
+
+class StudentFilesDB(Base):
+    __tablename__ = "student_files"
+
+    file_id: Mapped[int] = mapped_column(
+        ForeignKey("files.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    student_id: Mapped[int] = mapped_column(
+        ForeignKey("students.id", ondelete="CASCADE"),
+        primary_key=True,
     )
 
 
@@ -98,35 +183,6 @@ class ProjectDB(Base):
         Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-    )
-    name: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-    )
-    description: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-    )
-    skills_vector: Mapped[dict[str, Any]] = mapped_column(
-        JSONB,
-        nullable=False,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
-        server_default=func.now(),
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
-    )
-
-
-class StudentDB(Base):
-    __tablename__ = "students"
-
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True,
         index=True,
     )
     name: Mapped[str] = mapped_column(
@@ -134,136 +190,70 @@ class StudentDB(Base):
         nullable=False,
     )
     description: Mapped[str] = mapped_column(
-        String(255),
+        Text,
         nullable=False,
+    )
+    constraints_vector: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default="{}",
     )
     skills_vector: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
-        server_default=func.now(),
+        server_default="{}",
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
 
-class TeacherDB(Base):
-    __tablename__ = "teachers"
+class DistributionDB(Base):
+    __tablename__ = "distributions"
 
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
         index=True,
     )
-    user_id: Mapped[int | None] = mapped_column(
+    user_id: Mapped[int] = mapped_column(
+        Integer,
         ForeignKey("users.id", ondelete="CASCADE"),
-        unique=True,
-        nullable=True,
+        nullable=False,
+        index=True,
     )
     name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
-    description: Mapped[str] = mapped_column(
-        String(255),
+    status: Mapped[DistributionStatus] = mapped_column(
+        Enum(
+            DistributionStatus, name="distribution_status", values_callable=_enum_values
+        ),
         nullable=False,
+        default=DistributionStatus.NOT_STARTED,
+        server_default=DistributionStatus.NOT_STARTED.value,
     )
-    skills_vector: Mapped[dict[str, Any]] = mapped_column(
+    selected_project_ids: Mapped[list[int]] = mapped_column(
         JSONB,
         nullable=False,
+        server_default="[]",
     )
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
+    selected_student_ids: Mapped[list[int]] = mapped_column(
+        JSONB,
         nullable=False,
-        server_default=func.now(),
+        server_default="[]",
+    )
+    selected_teacher_ids: Mapped[list[int]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default="[]",
+    )
+    result: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default="{}",
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
-    )
-
-
-class StudentFilesBD(Base):
-    __tablename__ = "student_files"
-
-    file_id: Mapped[int] = mapped_column(
-        ForeignKey("files.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    student_id: Mapped[int] = mapped_column(
-        ForeignKey("students.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-
-
-TaskStatus = Literal["queued", "running", "done", "error"]
-
-
-class LLMRequestDB(Base):
-    __tablename__ = "llm_requests"
-
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
-    task_id: Mapped[str] = mapped_column(
-        String(32),
-        unique=True,
-        nullable=False,
-    )
-    user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
-    prompt: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-    )
-    enable_thinking: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-    )
-    max_new_tokens: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-    status: Mapped[TaskStatus] = mapped_column(
-        String(20),
-        nullable=False,
-        default="queued",
-        server_default="queued",
-    )
-    result: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-    error: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
-        server_default=func.now(),
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
-    )
-
-
-class LLMRequestFileDB(Base):
-    __tablename__ = "llm_request_files"
-
-    request_id: Mapped[int] = mapped_column(
-        ForeignKey("llm_requests.id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    file_id: Mapped[int] = mapped_column(
-        ForeignKey("files.id", ondelete="CASCADE"),
-        primary_key=True,
     )

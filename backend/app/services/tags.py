@@ -33,7 +33,7 @@ def build_task_prompt(db: Session, file_ids: list[int], prompt: str) -> str:
     return build_prompt(prompt, files)
 
 
-def create_llm_task(
+def create_kafka_tags_task(
     db: Session,
     prompt: str,
     file_ids: list[int],
@@ -64,7 +64,8 @@ def create_llm_task(
 
     try:
         kafka_service.produce(
-            kafka_service.tasks_topic("tags"),
+            # TODO: откправка в кафку для tags-worker
+            kafka_service.tasks_topic("tags"),  # снести эту функцию в kafka_service
             {
                 "task_id": task_id,
                 "prompt": full_prompt,

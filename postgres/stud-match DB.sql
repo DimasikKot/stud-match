@@ -98,6 +98,8 @@ CREATE INDEX "student_files_student_id_idx" ON "student_files" ("student_id");
 
 CREATE INDEX "projects_user_id_idx" ON "projects" ("user_id");
 
+CREATE INDEX "distributions_user_id_idx" ON "distributions" ("user_id");
+
 ALTER TABLE "projects" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "distributions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

@@ -1,13 +1,22 @@
--- Реинит: сбрасываем таблицу перед созданием (скрипт идемпотентен)
 DROP TABLE IF EXISTS files CASCADE;
+DROP TYPE IF EXISTS file_status CASCADE;
+
+CREATE TYPE file_status AS ENUM (
+  'not_extracted',
+  'queued',
+  'extracting',
+  'extracted',
+  'applied'
+);
 
 CREATE TABLE
   files (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    object_key VARCHAR(255) NOT NULL,
-    path VARCHAR(255) NOT NULL,
     size INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    rustfs_object_key VARCHAR(255) NOT NULL,
+    rustfs_bucket VARCHAR(255) NOT NULL,
+    status file_status NOT NULL DEFAULT 'not_extracted',
+    skills_vector JSONB NOT NULL DEFAULT '{}',
+    work_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );

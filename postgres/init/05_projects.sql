@@ -1,4 +1,3 @@
--- Реинит: сбрасываем таблицу перед созданием (скрипт идемпотентен)
 DROP TABLE IF EXISTS projects CASCADE;
 
 CREATE TABLE
@@ -6,9 +5,10 @@ CREATE TABLE
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
-    skills_vector JSONB DEFAULT '{}' NOT NULL,
     description TEXT NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    constraints_vector JSONB NOT NULL DEFAULT '{}',
+    skills_vector JSONB NOT NULL DEFAULT '{}',
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
 CREATE INDEX projects_user_id_idx ON projects (user_id);

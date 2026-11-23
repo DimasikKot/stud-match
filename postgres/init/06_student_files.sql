@@ -1,4 +1,3 @@
--- Реинит: сбрасываем таблицу перед созданием (скрипт идемпотентен)
 DROP TABLE IF EXISTS student_files CASCADE;
 
 CREATE TABLE
