@@ -31,18 +31,17 @@ class _Settings(BaseSettings):
     RUSTFS_SECRET_KEY: str = "password"
     RUSTFS_REGION: str = "ru-central1"
 
-    KAFKA_HOST: str = "kafka host"
-    KAFKA_PORT: int = 9900
-    KAFKA_USERNAME: str = ""
-    KAFKA_PASSWORD: str = ""
-
     # PLAINTEXT | SSL | SASL_SSL | SASL_PLAINTEXT; пусто = авто по порту
     KAFKA_SECURITY_PROTOCOL: str = ""
     KAFKA_SASL_MECHANISM: str = "PLAIN"
     KAFKA_SSL_CA_FILE: str = ""
     KAFKA_SSL_CHECK_HOSTNAME: bool = False
 
-    # Топики и consumer groups Kafka для tags-worker и predict-worker
+    KAFKA_HOST: str = "kafka host"
+    KAFKA_PORT: int = 9900
+    KAFKA_USERNAME: str = ""
+    KAFKA_PASSWORD: str = ""
+
     KAFKA_TAGS_TASKS_TOPIC: str = ""
     KAFKA_TAGS_RESULTS_TOPIC: str = ""
     KAFKA_TAGS_CONSUMER_GROUP: str = ""
