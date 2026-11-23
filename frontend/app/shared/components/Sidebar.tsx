@@ -222,7 +222,11 @@ export function Sidebar({
                     {isActive && (
                       <span className="absolute left-0 top-0 h-full w-1 bg-[#CE6327]" />
                     )}
-                    <IconUI size="20px" icon={item.icon} />
+                    <IconUI
+                      size="20px"
+                      icon={item.icon}
+                      color={item.adminOnly ? "red-300" : "white"}
+                    />
                     <TextUI
                       className={`${collapsed ? "hidden" : "block font-semibold"} ${item.adminOnly ? "text-red-100" : "text-white"}`}
                     >

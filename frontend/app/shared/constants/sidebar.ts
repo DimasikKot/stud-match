@@ -8,8 +8,13 @@ export const NAV_ITEMS: {
   { to: "/students", label: "Студенты", icon: "school" }, // + просмотр студентов
   { to: "/teachers", label: "Преподаватели", icon: "group" }, // + создание и редактирование для админа
   { to: "/matches", label: "Распределения", icon: "account_tree_outlined" }, // + создание и запуск
-  { to: "/files", label: "Файлы студентов", icon: "folder_open" }, // + загрузка и удаление для админа
   { to: "/profile", label: "Профиль", icon: "person" }, // редактирование профиля
+  {
+    to: "/files",
+    label: "Файлы студентов",
+    icon: "folder_open",
+    adminOnly: true,
+  }, // + загрузка и удаление для админа
   { to: "/components", label: "Компоненты", icon: "code", adminOnly: true },
 ];
 

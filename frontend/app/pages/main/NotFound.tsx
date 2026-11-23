@@ -6,7 +6,9 @@ export function NotFound() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 items-center flex flex-col bg-white">
-      <ButtonUI onClick={() => navigate("/files")}>К списку проектов</ButtonUI>
+      <ButtonUI onClick={() => navigate("/projects")}>
+        К списку проектов
+      </ButtonUI>
     </div>
   );
 }
