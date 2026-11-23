@@ -178,7 +178,8 @@ jobs:
           script: |
             set -e
             cd ${{ vars.PROJECT_PATH }}
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
 
             COMPOSE="docker compose -f s.rpi5.docker-compose.yaml"
 
