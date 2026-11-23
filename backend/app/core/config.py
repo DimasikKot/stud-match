@@ -43,14 +43,12 @@ class _Settings(BaseSettings):
     KAFKA_SSL_CHECK_HOSTNAME: bool = False
 
     # Топики и consumer groups Kafka для tags-worker и predict-worker
-    KAFKA_TAGS_TASKS_TOPIC: str = "llm.tasks_tags"
-    KAFKA_TAGS_RESULTS_TOPIC: str = "llm.results_tags"
-    KAFKA_TAGS_RESULTS_GROUP_ID: str = "sm-backend-tags"
-    KAFKA_PREDICT_TASKS_TOPIC: str = "llm.tasks_predict"
-    KAFKA_PREDICT_RESULTS_TOPIC: str = "llm.results_predict"
-    KAFKA_PREDICT_RESULTS_GROUP_ID: str = "sm-backend-predict"
-
-    LLM_MAX_FILES_CHARS: int = 12000  # ~8k токенов контекста влезает в 4 ГБ VRAM
+    KAFKA_TAGS_TASKS_TOPIC: str = ""
+    KAFKA_TAGS_RESULTS_TOPIC: str = ""
+    KAFKA_TAGS_CONSUMER_GROUP: str = ""
+    KAFKA_DIST_TASKS_TOPIC: str = ""
+    KAFKA_DIST_RESULTS_TOPIC: str = ""
+    KAFKA_DIST_CONSUMER_GROUP: str = ""
 
     @property
     def DATABASE_URL(self) -> str:

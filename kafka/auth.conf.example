@@ -1,6 +1,7 @@
 # ============================================================================
 #  Kafka auth.conf - пользователи, топики и права доступа (ACL)
 # ============================================================================
+#
 # Этот файл читается kafka/entrypoint.sh при КАЖДОМ старте контейнера sm-kafka:
 #   - user   → генерирует JAAS-конфиг с SASL/PLAIN пользователями;
 #   - topic  → создаёт топики (если нет - создаёт, если есть - пропускает);
@@ -53,109 +54,88 @@
 #           ClusterAction     действия уровня кластера
 #
 # ----------------------------------------------------------------------------
-# ТЕКУЩАЯ СХЕМА: 1 backend + 3 llm-worker
-# ----------------------------------------------------------------------------
-# backend пишет задачи в llm.tasks и читает результаты из llm.results
-# (его consumer group - sm-backend-llm-results).
-# Каждый llm-worker читает llm.tasks и пишет результаты в llm.results.
-# Все воркеры делят ОДНУ consumer group sm-llm-worker - задачи
-# распределяются между ними, а не дублируются.
-# ----------------------------------------------------------------------------
 
 
 
-user backend_1        Bk1fT2wQpLxZm4R
+user backend_1              Bk1password
+user backend_2              Bk2password
+user backend_3              Bk3password
 
-user worker_tags_1    Tg1a8Kd2nPsq5Xs
-user worker_tags_2    Tg2b7Jac3mQr6Yt
-user worker_tags_3    Tg3c6Ld4nRsf7Zu
+user worker_tags_1          Tg1password
+user worker_tags_2          Tg2password
+user worker_tags_3          Tg3password
 
-user worker_distribution_1  Db1wX9mK3vQj7Lr
-user worker_distribution_2  Db2x8nL4wsRk8Ms
-user worker_distribution_3  Db3y9oM5exSl9Nt
-
-topic llm.tasks_tags            3
-topic llm.tasks_distribution    3
-topic llm.results_tags          1
-topic llm.results_distribution  1
+user worker_distribution_1  Db1password
+user worker_distribution_2  Db2password
+user worker_distribution_3  Db3password
 
 
 
-# --- backend ---
-acl User:backend_1 topic llm.tasks_tags Write,Describe
-acl User:backend_1 topic llm.tasks_distribution Write,Describe
-acl User:backend_1 topic llm.results_tags Read,Describe
-acl User:backend_1 topic llm.results_distribution Read,Describe
+topic tags.tasks            3
+topic tags.results          1
+
+topic distribution.tasks    3
+topic distribution.results  1
+
+
+
+# --- backend_1 / _2 / _3 (одинаковые права, общие группы sm-backend-*) ---
+acl User:backend_1 topic tags.tasks Write,Describe
+acl User:backend_1 topic tags.results Read,Describe
 acl User:backend_1 group sm-backend-tags Read,Describe
-acl User:backend_1 group sm-backend-predict Read,Describe
+acl User:backend_1 topic distribution.tasks Write,Describe
+acl User:backend_1 topic distribution.results Read,Describe
+acl User:backend_1 group sm-backend-distribution Read,Describe
 acl User:backend_1 cluster - Describe
 
+acl User:backend_2 topic tags.tasks Write,Describe
+acl User:backend_2 topic tags.results Read,Describe
+acl User:backend_2 group sm-backend-tags Read,Describe
+acl User:backend_2 topic distribution.tasks Write,Describe
+acl User:backend_2 topic distribution.results Read,Describe
+acl User:backend_2 group sm-backend-distribution Read,Describe
+acl User:backend_2 cluster - Describe
+
+acl User:backend_3 topic tags.tasks Write,Describe
+acl User:backend_3 topic tags.results Read,Describe
+acl User:backend_3 group sm-backend-tags Read,Describe
+acl User:backend_3 topic distribution.tasks Write,Describe
+acl User:backend_3 topic distribution.results Read,Describe
+acl User:backend_3 group sm-backend-distribution Read,Describe
+acl User:backend_3 cluster - Describe
 
 
-# --- worker_tags_1 / _2 / _3 (одинаковые права, общая group sm-workers-tags) ---
-acl User:worker_tags_1 topic llm.tasks_tags Read,Describe
-acl User:worker_tags_1 topic llm.results_tags Write,Describe
+
+# --- worker_tags_1 / _2 / _3 (одинаковые права, общая группа sm-workers-tags) ---
+acl User:worker_tags_1 topic tags.tasks Read,Describe
+acl User:worker_tags_1 topic tags.results Write,Describe
 acl User:worker_tags_1 group sm-workers-tags Read,Describe
 acl User:worker_tags_1 cluster - Describe
 
-acl User:worker_tags_2 topic llm.tasks_tags Read,Describe
-acl User:worker_tags_2 topic llm.results_tags Write,Describe
+acl User:worker_tags_2 topic tags.tasks Read,Describe
+acl User:worker_tags_2 topic tags.results Write,Describe
 acl User:worker_tags_2 group sm-workers-tags Read,Describe
 acl User:worker_tags_2 cluster - Describe
 
-acl User:worker_tags_3 topic llm.tasks_tags Read,Describe
-acl User:worker_tags_3 topic llm.results_tags Write,Describe
+acl User:worker_tags_3 topic tags.tasks Read,Describe
+acl User:worker_tags_3 topic tags.results Write,Describe
 acl User:worker_tags_3 group sm-workers-tags Read,Describe
 acl User:worker_tags_3 cluster - Describe
 
 
 
-# --- worker_distribution_1 / _2 / _3 (одинаковые права, общая group sm-workers-distribution) ---
-acl User:worker_distribution_1 topic llm.tasks_distribution Read,Describe
-acl User:worker_distribution_1 topic llm.results_distribution Write,Describe
+# --- worker_distribution_1 / _2 / _3 (одинаковые права, общая группа sm-workers-distribution) ---
+acl User:worker_distribution_1 topic distribution.tasks Read,Describe
+acl User:worker_distribution_1 topic distribution.results Write,Describe
 acl User:worker_distribution_1 group sm-workers-distribution Read,Describe
 acl User:worker_distribution_1 cluster - Describe
 
-acl User:worker_distribution_2 topic llm.tasks_distribution Read,Describe
-acl User:worker_distribution_2 topic llm.results_distribution Write,Describe
+acl User:worker_distribution_2 topic distribution.tasks Read,Describe
+acl User:worker_distribution_2 topic distribution.results Write,Describe
 acl User:worker_distribution_2 group sm-workers-distribution Read,Describe
 acl User:worker_distribution_2 cluster - Describe
 
-acl User:worker_distribution_3 topic llm.tasks_distribution Read,Describe
-acl User:worker_distribution_3 topic llm.results_distribution Write,Describe
+acl User:worker_distribution_3 topic distribution.tasks Read,Describe
+acl User:worker_distribution_3 topic distribution.results Write,Describe
 acl User:worker_distribution_3 group sm-workers-distribution Read,Describe
 acl User:worker_distribution_3 cluster - Describe
-
-
-
-# ----------------------------------------------------------------------------
-# КАК ДОБАВИТЬ ЕЩЁ ОДНОГО ВОРКЕРА (llm_worker_4)
-# ----------------------------------------------------------------------------
-# 1) Добавь пользователя:
-#      user llm_worker_4  <пароль>
-# 2) Выдай ему те же права, что у остальных воркеров (общая group
-#    sm-llm-worker - каждая задача достаётся только одному воркеру):
-#      acl User:llm_worker_4 topic llm.tasks Read,Describe
-#      acl User:llm_worker_4 topic llm.results Write,Describe
-#      acl User:llm_worker_4 group sm-llm-worker Read,Describe
-#      acl User:llm_worker_4 cluster - Describe
-# 3) На машине воркера в .env пропиши:
-#      LLM_KF_USERNAME="llm_worker_4"
-#      LLM_KF_PASSWORD="<тот же пароль>"
-# 4) docker compose restart sm-kafka  →  перезапусти воркер.
-#
-# ----------------------------------------------------------------------------
-# КАК ДОБАВИТЬ НОВЫЙ ТОПИК
-# ----------------------------------------------------------------------------
-# 1) Добавь строку:
-#      topic my.topic 1
-# 2) Выдай права на него нужным пользователям:
-#      acl User:backend topic my.topic Write,Describe
-#      acl User:llm_worker_1 topic my.topic Read,Describe
-# 3) docker compose restart sm-kafka.
-#
-# ВНИМАНИЕ: права (ACL) проверяются только для ресурсов, на которые ACL
-# уже выданы. Если на ресурс нет ни одного ACL - доступ есть у любого
-# авторизованного пользователя (KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true).
-# Чтобы ограничить ресурс - просто выдай на него ACL только нужным User:.
-# ============================================================================
