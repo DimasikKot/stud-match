@@ -1,11 +1,11 @@
 # gtx1650ti
 
 services:
-  sm-tags-worker:
-    container_name: sm-tags-worker
+  sm-worker-distribution:
+    container_name: sm-worker-distribution
     build:
-      context: ./tags-worker # Папка, содержащая файлы контейнера
-      dockerfile: tags-worker.gtx1650ti.Dockerfile
+      context: ./worker-distribution # Папка, содержащая файлы контейнера
+      dockerfile: worker-distribution.gtx1650ti.Dockerfile
     restart: always
     healthcheck:
       test:
@@ -23,13 +23,13 @@ services:
 
     environment:
       - HF_TOKEN=${HF_TOKEN}
-      - KAFKA_HOST=${TAGS_W_KF_HOST}
-      - KAFKA_PORT=${TAGS_W_KF_PORT}
-      - KAFKA_USERNAME=${TAGS_W_KF_USERNAME}
-      - KAFKA_PASSWORD=${TAGS_W_KF_PASSWORD}
+      - KAFKA_HOST=${PREDICT_W_KF_HOST}
+      - KAFKA_PORT=${PREDICT_W_KF_PORT}
+      - KAFKA_USERNAME=${PREDICT_W_KF_USERNAME}
+      - KAFKA_PASSWORD=${PREDICT_W_KF_PASSWORD}
 
     volumes:
-      - ./tags-worker:/app
+      - ./worker-distribution:/app
       - sm_hf_cache:/root/.cache/huggingface # Кэш моделей HF
 
     networks:
