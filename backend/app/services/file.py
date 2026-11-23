@@ -66,8 +66,8 @@ def upload_file(
 
     file_record = FileDB(
         name=filename,
-        object_key=object_key,
-        path=settings.RUSTFS_BUCKET,
+        rustfs_object_key=object_key,
+        rustfs_bucket=settings.RUSTFS_BUCKET,
         size=size,
     )
     try:
@@ -90,16 +90,16 @@ def fetch_file_by_id(db: Session, file_id: int) -> FileDB:
 
 
 def fetch_files(db: Session) -> list[FileDB]:
-    """Список всех файлов, отсортированный по дате создания (новые первыми)."""
-    return db.query(FileDB).order_by(FileDB.created_at.desc()).all()
+    """Список всех файлов, отсортированный по дате работы (новые первыми)."""
+    return db.query(FileDB).order_by(FileDB.work_date.desc()).all()
 
 
 def get_file_object(file_db: FileDB) -> dict:
     """Возвращает ответ S3 get_object (содержит Body - StreamingBody)."""
     try:
         return s3_client.get_object(
-            Bucket=settings.RUSTFS_BUCKET,
-            Key=file_db.object_key,
+            Bucket=file_db.rustfs_bucket,
+            Key=file_db.rustfs_object_key,
         )
     except ClientError as exc:
         code = str(exc.response.get("Error", {}).get("Code", ""))
@@ -117,7 +117,9 @@ def delete_file_by_id(db: Session, file_id: int) -> None:
     file_db = fetch_file_by_id(db, file_id)
 
     try:
-        s3_client.delete_object(Bucket=settings.RUSTFS_BUCKET, Key=file_db.object_key)
+        s3_client.delete_object(
+            Bucket=file_db.rustfs_bucket, Key=file_db.rustfs_object_key
+        )
     except ClientError as exc:
         raise HTTPException(status_code=502, detail=f"RustFS error: {exc}")
 

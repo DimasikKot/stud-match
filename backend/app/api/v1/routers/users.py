@@ -9,7 +9,6 @@ from fastapi import (
 )
 from redis import Redis
 from sqlalchemy.orm import Session
-from urllib3 import HTTPResponse
 
 from app.core.database import get_db
 from app.services import user as user_service
@@ -22,6 +21,12 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 
 class UserRequest(BaseModel):
+    fullname: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
     email: str
     password: str
 
@@ -30,8 +35,10 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    fullname: str
     email: str
     role: str
+    skills_vector: dict
 
 
 class UserListResponse(BaseModel):
@@ -87,7 +94,9 @@ def _clear_auth_cookies(response: Response) -> None:
 )
 def register(user_in: UserRequest, db: Session = Depends(get_db)):
     """Создаёт преподавателя. Доступно только администратору."""
-    return user_service.register_user(db, user_in.email, user_in.password)
+    return user_service.register_user(
+        db, user_in.fullname, user_in.email, user_in.password
+    )
 
 
 @router.get("/", response_model=UserListResponse, dependencies=[Depends(require_admin)])
@@ -100,7 +109,7 @@ def list_users(db: Session = Depends(get_db)):
 @router.post("/login", response_model=UserResponse)
 def login(
     response: Response,
-    user_in: UserRequest,
+    user_in: LoginRequest,
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ):
@@ -128,7 +137,7 @@ def refresh_tokens(
     # Устанавливаем новые куки
     _set_auth_cookies(response, access_token, new_refresh_token)
 
-    return HTTPResponse(body="Token refreshed", status=200)
+    return {"message": "Token refreshed"}
 
 
 @router.post("/logout")

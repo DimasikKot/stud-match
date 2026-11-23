@@ -16,7 +16,7 @@ from app.services.auth import (
 )
 
 
-def register_user(db: Session, email: str, password: str) -> UserDB:
+def register_user(db: Session, fullname: str, email: str, password: str) -> UserDB:
     existing = db.query(UserDB).filter(UserDB.email == email).first()
     if existing:
         raise HTTPException(
@@ -25,6 +25,7 @@ def register_user(db: Session, email: str, password: str) -> UserDB:
         )
 
     user = UserDB(
+        fullname=fullname,
         email=email,
         hashed_password=hash_password(password),
     )

@@ -1,6 +1,5 @@
 from typing import Any
 from pydantic import BaseModel, ConfigDict, field_validator
-from datetime import datetime
 from fastapi import (
     APIRouter,
     Depends,
@@ -26,25 +25,15 @@ router = APIRouter(
 
 
 class CreateStudentRequest(BaseModel):
-    name: str
-    description: str
+    fullname: str
     skills_vector: dict[str, Any]
 
-    @field_validator("name")
-    def validate_name(cls, value):
+    @field_validator("fullname")
+    def validate_fullname(cls, value):
         if len(value) > 255:
             raise HTTPException(
                 status_code=400,
-                detail="Имя студента не должно превышать 255 символов",
-            )
-        return value
-
-    @field_validator("description")
-    def validate_description(cls, value):
-        if len(value) > 1024:
-            raise HTTPException(
-                status_code=400,
-                detail="Описание студента не должно превышать 1024 символов",
+                detail="ФИО студента не должно превышать 255 символов",
             )
         return value
 
@@ -61,8 +50,8 @@ class CreateStudentRequest(BaseModel):
 class CreateStudentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    name: str
-    description: str
+    id: int
+    fullname: str
     skills_vector: dict[str, Any]
 
 
@@ -73,8 +62,7 @@ async def create_student(
 ):
     student = create_student_in_db(
         db=db,
-        name=studentrequest.name,
-        description=studentrequest.description,
+        fullname=studentrequest.fullname,
         skills_vector=studentrequest.skills_vector,
     )
     return student
@@ -84,7 +72,7 @@ class GetListStudentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    name: str
+    fullname: str
 
 
 class GetListStudentsResponse(BaseModel):
@@ -94,12 +82,12 @@ class GetListStudentsResponse(BaseModel):
 @router.get("/", response_model=GetListStudentsResponse)
 async def get_all_students(
     sort: SortType | None = Query(
-        "created_at_desc",
-        description="Сортировка: name_asc, name_desc, created_at_asc, created_at_desc, updated_at_asc, updated_at_desc",
+        None,
+        description="Сортировка: fullname_asc, fullname_desc",
     ),
     search: str | None = Query(
         None,
-        description="Поиск по названию проекта",
+        description="Поиск по ФИО студента",
     ),
     db: Session = Depends(get_db),
 ):
@@ -113,11 +101,8 @@ class GetStudentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    name: str
-    description: str
+    fullname: str
     skills_vector: dict[str, Any]
-    created_at: datetime
-    updated_at: datetime
 
 
 @router.get("/{student_id}", response_model=GetStudentResponse)
@@ -148,8 +133,7 @@ async def update_student(
     student = update_student_by_id(
         student_id=student_id,
         db=db,
-        new_name=studentrequest.name,
-        new_description=studentrequest.description,
+        new_fullname=studentrequest.fullname,
         new_skills_vector=studentrequest.skills_vector,
     )
     return student

@@ -27,7 +27,8 @@ router = APIRouter(prefix="/projects", tags=["Projects"])
 class CreateProjectRequest(BaseModel):
     name: str
     description: str
-    skills_vector: dict[str, Any]
+    constraints_vector: dict[str, Any] = {}
+    skills_vector: dict[str, Any] = {}
 
     @field_validator("name")
     def validate_name(cls, value):
@@ -47,6 +48,15 @@ class CreateProjectRequest(BaseModel):
             )
         return value
 
+    @field_validator("constraints_vector")
+    def validate_constraints_vector(cls, value):
+        if len(value) > 20000:
+            raise HTTPException(
+                status_code=400,
+                detail="Вектор ограничений не должен превышать 20000 символов",
+            )
+        return value
+
     @field_validator("skills_vector")
     def validate_skills_vector(cls, value):
         if len(value) > 20000:
@@ -60,9 +70,12 @@ class CreateProjectRequest(BaseModel):
 class CreateProjectResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: int
     name: str
     description: str
+    constraints_vector: dict[str, Any]
     skills_vector: dict[str, Any]
+    updated_at: datetime
 
 
 @router.post("/", response_model=CreateProjectResponse)
@@ -76,6 +89,7 @@ async def post_create_project(
         db=db,
         name=projectrequest.name,
         description=projectrequest.description,
+        constraints_vector=projectrequest.constraints_vector,
         skills_vector=projectrequest.skills_vector,
     )
     return project
@@ -95,8 +109,8 @@ class GetListProjectsResponse(BaseModel):
 @router.get("/", response_model=GetListProjectsResponse)
 async def get_list_projects(
     sort: SortType | None = Query(
-        "created_at_desc",
-        description="Сортировка: name_asc, name_desc, created_at_asc, created_at_desc, updated_at_asc, updated_at_desc",
+        None,
+        description="Сортировка: name_asc, name_desc, updated_at_asc, updated_at_desc",
     ),
     search: str | None = Query(
         None,
@@ -119,8 +133,8 @@ class GetProjectResponse(BaseModel):
     id: int
     name: str
     description: str
+    constraints_vector: dict[str, Any]
     skills_vector: dict[str, Any]
-    created_at: datetime
     updated_at: datetime
 
 
@@ -156,6 +170,7 @@ async def patch_update_project(
         db=db,
         new_name=projectrequest.name,
         new_description=projectrequest.description,
+        new_constraints_vector=projectrequest.constraints_vector,
         new_skills_vector=projectrequest.skills_vector,
     )
 

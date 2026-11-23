@@ -26,8 +26,6 @@ def is_owner_of_project(project_id: int, user_id: int, db: Session) -> None:
 SortType = Literal[
     "name_asc",
     "name_desc",
-    "created_at_asc",
-    "created_at_desc",
     "updated_at_asc",
     "updated_at_desc",
 ]
@@ -38,10 +36,15 @@ def create_project(
     db: Session,
     name: str,
     description: str,
+    constraints_vector: dict[str, Any],
     skills_vector: dict[str, Any],
 ) -> ProjectDB:
     project_db: ProjectDB = ProjectDB(
-        name=name, user_id=user_id, description=description, skills_vector=skills_vector
+        name=name,
+        user_id=user_id,
+        description=description,
+        constraints_vector=constraints_vector,
+        skills_vector=skills_vector,
     )
     user = db.query(UserDB).filter(UserDB.id == user_id).first()
     if user is None:
@@ -74,14 +77,12 @@ def fetch_projects_by_user_id(
         projects_db = projects_db.order_by(ProjectDB.name.asc())
     elif sort == "name_desc":
         projects_db = projects_db.order_by(ProjectDB.name.desc())
-    elif sort == "created_at_asc":
-        projects_db = projects_db.order_by(ProjectDB.created_at.asc())
-    elif sort == "created_at_desc":
-        projects_db = projects_db.order_by(ProjectDB.created_at.desc())
     elif sort == "updated_at_asc":
         projects_db = projects_db.order_by(ProjectDB.updated_at.asc())
     elif sort == "updated_at_desc":
         projects_db = projects_db.order_by(ProjectDB.updated_at.desc())
+    else:
+        projects_db = projects_db.order_by(ProjectDB.id.desc())
 
     return projects_db.all()
 
@@ -103,6 +104,7 @@ def update_project_by_id(
     db: Session,
     new_name: str | None,
     new_description: str | None,
+    new_constraints_vector: dict[str, Any] | None,
     new_skills_vector: dict[str, Any] | None,
 ) -> ProjectDB:
     project_db = fetch_project_db_by_id(project_id=project_id, user_id=user_id, db=db)
@@ -112,6 +114,9 @@ def update_project_by_id(
 
     if new_description is not None:
         project_db.description = new_description
+
+    if new_constraints_vector is not None:
+        project_db.constraints_vector = new_constraints_vector
 
     if new_skills_vector is not None:
         project_db.skills_vector = new_skills_vector

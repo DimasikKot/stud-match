@@ -31,8 +31,8 @@ class FileResponse(BaseModel):
     rustfs_object_key: str
     rustfs_bucket: str
     status: str
-    created_at: datetime
-    updated_at: datetime
+    skills_vector: dict
+    work_date: datetime
 
 
 class FileListResponse(BaseModel):
