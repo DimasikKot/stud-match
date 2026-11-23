@@ -239,13 +239,13 @@ jobs:
             fi
 
             # ---------- Точечные сборки frontend / backend ----------
-            if [ "$FRONTEND_BUILD" = "true" ]; then
+            if [ "$FRONTEND_BUILD" = "true" && "$ALL_BUILD" != "true" ]; then
               echo "=== [build] sm-frontend ==="
               $COMPOSE build sm-frontend
               $COMPOSE up -d --no-deps sm-frontend
             fi
 
-            if [ "$BACKEND_BUILD" = "true" ]; then
+            if [ "$BACKEND_BUILD" = "true" && "$ALL_BUILD" != "true" ]; then
               echo "=== [build] sm-backend ==="
               $COMPOSE build sm-backend
               $COMPOSE up -d --no-deps sm-backend
