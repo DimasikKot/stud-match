@@ -2,22 +2,42 @@ from fastapi.testclient import TestClient
 
 
 class TestRegister:
-    def test_success(self, client):
-        resp = client.post(
+    def test_success(self, admin_client):
+        resp = admin_client.post(
             "/users/register",
             json={"email": "a@b.com", "password": "pw"},
         )
         assert resp.status_code == 201
         body = resp.json()
         assert body["email"] == "a@b.com"
+        assert body["role"] == "teacher"
         assert isinstance(body["id"], int)
 
-    def test_duplicate_email(self, client):
+    def test_duplicate_email(self, admin_client):
         payload = {"email": "a@b.com", "password": "pw"}
-        client.post("/users/register", json=payload)
-        resp = client.post("/users/register", json=payload)
+        admin_client.post("/users/register", json=payload)
+        resp = admin_client.post("/users/register", json=payload)
         assert resp.status_code == 400
         assert "already registered" in resp.json()["detail"]
+
+    def test_requires_admin(self, auth_client):
+        payload = {"email": "a@b.com", "password": "pw"}
+        assert auth_client.post("/users/register", json=payload).status_code == 403
+        auth_client.cookies.clear()
+        assert auth_client.post("/users/register", json=payload).status_code == 401
+
+
+class TestList:
+    def test_admin_sees_all_users(self, admin_client, teacher):
+        resp = admin_client.get("/users/")
+        assert resp.status_code == 200
+        assert [(u["email"], u["role"]) for u in resp.json()["data"]] == [
+            ("admin@example.com", "admin"),
+            ("teacher@example.com", "teacher"),
+        ]
+
+    def test_teacher_forbidden(self, auth_client):
+        assert auth_client.get("/users/").status_code == 403
 
 
 class TestLogin:
@@ -54,6 +74,32 @@ class TestMe:
         resp = auth_client.get("/users/me")
         assert resp.status_code == 200
         assert resp.json()["email"] == registered_user["email"]
+        assert resp.json()["role"] == "teacher"
+
+
+class TestChangePassword:
+    def test_success(self, auth_client, registered_user):
+        resp = auth_client.patch(
+            "/users/me/password",
+            json={"old_password": registered_user["password"], "new_password": "new"},
+        )
+        assert resp.status_code == 200
+        creds = {"email": registered_user["email"], "password": "new"}
+        assert auth_client.post("/users/login", json=creds).status_code == 200
+        assert auth_client.post("/users/login", json=registered_user).status_code == 401
+
+    def test_wrong_old_password(self, auth_client):
+        resp = auth_client.patch(
+            "/users/me/password",
+            json={"old_password": "wrong", "new_password": "new"},
+        )
+        assert resp.status_code == 400
+
+    def test_requires_auth(self, client):
+        resp = client.patch(
+            "/users/me/password", json={"old_password": "a", "new_password": "b"}
+        )
+        assert resp.status_code == 401
 
 
 class TestRefresh:

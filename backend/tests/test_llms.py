@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app.api.v1.routers.llms import router as llms_router
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.db import FileDB
+from app.models.db import FileDB, LLMRequestDB, LLMRequestFileDB
 from app.services import file as file_service
 from app.services import llm as llm_service
 from app.services.security_deps import get_async_redis, get_redis
@@ -57,7 +57,7 @@ def file_id(db_session):
     return file_db.id
 
 
-def test_task_full_cycle(llm_client, sync_redis, file_id):
+def test_task_full_cycle(llm_client, sync_redis, file_id, db_session):
     resp = llm_client.post(
         "/llms/tasks",
         json={
@@ -101,6 +101,14 @@ def test_task_full_cycle(llm_client, sync_redis, file_id):
         "error": "",
     }
 
+    request_db = db_session.query(LLMRequestDB).filter_by(task_id=task_id).one()
+    assert request_db.prompt == "Что в файле?"
+    assert request_db.status == "done"
+    assert request_db.result == "Привет"
+    assert request_db.error is None
+    assert request_db.enable_thinking is False
+    assert [f.file_id for f in db_session.query(LLMRequestFileDB).all()] == [file_id]
+
 
 def test_worker_endpoints_require_token(llm_client):
     task_id = llm_client.post("/llms/tasks", json={"prompt": "hi"}).json()["task_id"]
@@ -113,7 +121,7 @@ def test_worker_endpoints_require_token(llm_client):
     assert resp.status_code == 401
 
 
-def test_error_result(llm_client):
+def test_error_result(llm_client, db_session):
     task_id = llm_client.post("/llms/tasks", json={"prompt": "hi"}).json()["task_id"]
     llm_client.post(
         f"/llms/tasks/{task_id}/result",
@@ -123,6 +131,9 @@ def test_error_result(llm_client):
     task = llm_client.get(f"/llms/tasks/{task_id}").json()
     assert task["status"] == "error"
     assert task["error"] == "CUDA OOM"
+    request_db = db_session.query(LLMRequestDB).filter_by(task_id=task_id).one()
+    assert (request_db.status, request_db.error) == ("error", "CUDA OOM")
+    assert request_db.result is None
 
 
 def test_unknown_file_and_task(llm_client):

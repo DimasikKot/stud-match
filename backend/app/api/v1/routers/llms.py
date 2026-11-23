@@ -12,8 +12,10 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.services import file as file_service
 from app.services import llm as llm_service
+from app.models.db import UserDB
 from app.services.security_deps import (
     get_async_redis,
+    get_optional_user,
     get_redis,
     verify_service_token,
 )
@@ -69,13 +71,24 @@ def create_task(
     request: LLMTaskCreate,
     db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
+    user: UserDB | None = Depends(get_optional_user),
 ):
-    """Ставит запрос к нейросети в очередь Redis. Файлы передаются по id из БД."""
+    """Ставит запрос к нейросети в очередь Redis и сохраняет его в БД.
+    Файлы передаются по id из БД."""
     for file_id in request.file_ids:
         file_service.fetch_file_by_id(db, file_id)
 
     task_id = llm_service.create_task(
         redis,
+        prompt=request.prompt,
+        file_ids=request.file_ids,
+        enable_thinking=request.enable_thinking,
+        max_new_tokens=request.max_new_tokens,
+    )
+    llm_service.save_request(
+        db,
+        task_id=task_id,
+        user_id=user.id if user else None,
         prompt=request.prompt,
         file_ids=request.file_ids,
         enable_thinking=request.enable_thinking,
@@ -167,6 +180,7 @@ def get_task_context(
         files.append((file_db.name, text))
 
     llm_service.update_task(redis, task_id, status="running")
+    llm_service.update_request(db, task_id, status="running")
     return LLMTaskContext(
         task_id=task_id,
         prompt=llm_service.build_prompt(task["prompt"], files),
@@ -183,14 +197,16 @@ def get_task_context(
 def save_task_result(
     task_id: str,
     request: LLMTaskResult,
+    db: Session = Depends(get_db),
     redis: Redis = Depends(get_redis),
 ):
-    """Сохраняет итоговый ответ (или ошибку) нейросети."""
+    """Сохраняет итоговый ответ (или ошибку) нейросети в Redis и БД."""
     llm_service.get_task(redis, task_id)
     if request.error:
         llm_service.update_task(redis, task_id, status="error", error=request.error)
+        llm_service.update_request(db, task_id, status="error", error=request.error)
     else:
-        llm_service.update_task(
-            redis, task_id, status="done", result=request.result or ""
-        )
+        result = request.result or ""
+        llm_service.update_task(redis, task_id, status="done", result=result)
+        llm_service.update_request(db, task_id, status="done", result=result)
     return _task_response(task_id, llm_service.get_task(redis, task_id))

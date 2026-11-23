@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.services.security_deps import get_async_redis
+from app.models.db import ROLE_ADMIN, UserDB
+from app.services.security_deps import get_async_redis, get_optional_user
 
 import redis.asyncio as aioredis
 
@@ -25,8 +26,7 @@ class HealthResponse(BaseModel):
     metrics: dict[str, Any] | None = None
 
 
-@router.get("/backend", response_model=HealthResponse)
-async def get_backend_health():
+async def _backend_health() -> HealthResponse:
     return HealthResponse(
         success=True,
         detail="Backend is healthy",
@@ -41,8 +41,7 @@ async def get_backend_health():
     )
 
 
-@router.get("/postgres", response_model=HealthResponse)
-def get_postgres_health(db: Session = Depends(get_db)):
+def _postgres_health(db: Session) -> HealthResponse:
     start_time = time.perf_counter()
 
     try:
@@ -123,8 +122,7 @@ def get_postgres_health(db: Session = Depends(get_db)):
         )
 
 
-@router.get("/redis", response_model=HealthResponse)
-async def get_redis_health(redis: aioredis.Redis = Depends(get_async_redis)):
+async def _redis_health(redis: aioredis.Redis) -> HealthResponse:
     use_tls = settings.REDIS_PORT == 6150
 
     start_time = time.perf_counter()
@@ -167,8 +165,7 @@ async def get_redis_health(redis: aioredis.Redis = Depends(get_async_redis)):
         await redis.aclose()
 
 
-@router.get("/rustfs", response_model=HealthResponse)
-async def get_rustfs_health():
+async def _rustfs_health() -> HealthResponse:
     """
     Проверка здоровья RustFS:
     1. HTTP-пинг /health (liveness/readiness, без аутентификации)
@@ -239,3 +236,36 @@ async def get_rustfs_health():
             detail="RustFS is not healthy",
             metrics=metrics,
         )
+
+
+def _visible(health: HealthResponse, user: UserDB | None) -> HealthResponse:
+    """Статус доступен всем, метрики — только администратору."""
+    if user is None or user.role != ROLE_ADMIN:
+        health.metrics = None
+    return health
+
+
+@router.get("/backend", response_model=HealthResponse)
+async def get_backend_health(user: UserDB | None = Depends(get_optional_user)):
+    return _visible(await _backend_health(), user)
+
+
+@router.get("/postgres", response_model=HealthResponse)
+def get_postgres_health(
+    db: Session = Depends(get_db),
+    user: UserDB | None = Depends(get_optional_user),
+):
+    return _visible(_postgres_health(db), user)
+
+
+@router.get("/redis", response_model=HealthResponse)
+async def get_redis_health(
+    redis: aioredis.Redis = Depends(get_async_redis),
+    user: UserDB | None = Depends(get_optional_user),
+):
+    return _visible(await _redis_health(redis), user)
+
+
+@router.get("/rustfs", response_model=HealthResponse)
+async def get_rustfs_health(user: UserDB | None = Depends(get_optional_user)):
+    return _visible(await _rustfs_health(), user)

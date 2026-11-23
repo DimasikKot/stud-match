@@ -94,5 +94,7 @@ def fetch_all_students(
 
 def delete_student_by_id(db: Session, student_id: int) -> None:
     student_db = fetch_student_db_by_id(db=db, student_id=student_id)
+    if student_db is None:
+        raise HTTPException(status_code=404, detail="студент не найден")
     db.delete(student_db)
     db.commit()

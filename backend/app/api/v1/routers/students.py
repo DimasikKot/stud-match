@@ -18,8 +18,11 @@ from app.services.student import (
     update_student_by_id,
     SortType,
 )
+from app.services.security_deps import require_admin
 
-router = APIRouter(prefix="/students", tags=["Students"])
+router = APIRouter(
+    prefix="/students", tags=["Students"], dependencies=[Depends(require_admin)]
+)
 
 
 class CreateStudentRequest(BaseModel):
@@ -123,6 +126,8 @@ async def get_student(
     db: Session = Depends(get_db),
 ):
     student = fetch_student_db_by_id(db=db, student_id=student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="студент не найден")
     return student
 
 

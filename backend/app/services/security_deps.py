@@ -2,10 +2,11 @@ import secrets
 
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyCookie, HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from redis import Redis
 from app.core.database import get_db
-from app.models.db import UserDB
+from app.models.db import ROLE_ADMIN, UserDB
 from app.services.security import decode_access_token
 from app.core.config import settings
 
@@ -106,4 +107,29 @@ def get_current_user(
             detail="User not found",
         )
 
+    return user
+
+
+def get_optional_user(
+    access_token: str | None = Security(access_cookie_scheme),
+    db: Session = Depends(get_db),
+) -> UserDB | None:
+    """Текущий пользователь или None для анонимного запроса."""
+    payload = decode_access_token(access_token) if access_token else None
+    if not payload:
+        return None
+    try:
+        return db.query(UserDB).filter(UserDB.id == int(payload["sub"])).first()
+    except SQLAlchemyError:
+        # БД недоступна — считаем запрос анонимным (например, для /healths)
+        db.rollback()
+        return None
+
+
+def require_admin(user: UserDB = Depends(get_current_user)) -> UserDB:
+    if user.role != ROLE_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Требуются права администратора",
+        )
     return user

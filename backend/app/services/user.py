@@ -34,6 +34,22 @@ def register_user(db: Session, email: str, password: str) -> UserDB:
     return user
 
 
+def fetch_users(db: Session) -> list[UserDB]:
+    return db.query(UserDB).order_by(UserDB.id).all()
+
+
+def change_password(
+    db: Session, user: UserDB, old_password: str, new_password: str
+) -> None:
+    if not verify_password(old_password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect password",
+        )
+    user.hashed_password = hash_password(new_password)
+    db.commit()
+
+
 def authenticate_user(db: Session, email: str, password: str) -> UserDB:
     user = db.query(UserDB).filter(UserDB.email == email).first()
     if not user or not verify_password(password, user.hashed_password):

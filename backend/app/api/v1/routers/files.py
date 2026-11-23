@@ -15,8 +15,11 @@ from starlette.concurrency import run_in_threadpool
 from app.core.database import get_db
 from app.models.db import FileDB
 from app.services import file as file_service
+from app.services.security_deps import require_admin
 
-router: APIRouter = APIRouter(prefix="/files", tags=["Files"])
+router: APIRouter = APIRouter(
+    prefix="/files", tags=["Files"], dependencies=[Depends(require_admin)]
+)
 
 
 class FileResponse(BaseModel):
