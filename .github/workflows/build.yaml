@@ -177,7 +177,7 @@ jobs:
           envs: FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,KAFKA_DEPLOY,ALL_BUILD,PREV_SHA
           script: |
             set -e
-            cd ${{ secrets.PROJECT_PATH }}
+            cd ${{ vars.PROJECT_PATH }}
             git pull origin main
 
             COMPOSE="docker compose -f s.rpi5.docker-compose.yaml"
@@ -407,7 +407,7 @@ jobs:
           port: 22
           envs: PREV_SHA,FRONTEND_BUILD,BACKEND_BUILD,NGINX_BUILD,POSTGRES_BUILD,POSTGRES_REINIT,KAFKA_DEPLOY,ALL_BUILD
           script: |
-            cd ${{ secrets.PROJECT_PATH }}
+            cd ${{ vars.PROJECT_PATH }}
             git fetch --tags --force
             TARGET=$(git rev-list -n1 deployed/last-success)
             echo "=== ROLLBACK to: $TARGET ==="
