@@ -7,37 +7,13 @@ from kafka import KafkaConsumer, KafkaProducer
 from app.core.config import settings
 
 
-# Воркеры Kafka: "tags" и "predict". Топики и группы настраиваются
-# через KAFKA_<WORKER>_TASKS_TOPIC / KAFKA_<WORKER>_RESULTS_TOPIC /
-# KAFKA_<WORKER>_RESULTS_GROUP_ID в .env.
-def tasks_topic(worker: str = "tags") -> str:
-    return getattr(settings, f"KAFKA_{worker.upper()}_TASKS_TOPIC")
-
-
-def results_topic(worker: str = "tags") -> str:
-    return getattr(settings, f"KAFKA_{worker.upper()}_RESULTS_TOPIC")
-
-
-def results_group_id(worker: str = "tags") -> str:
-    return getattr(settings, f"KAFKA_{worker.upper()}_RESULTS_GROUP_ID")
-
-
-# TLS-порты: 8092 - SASL_SSL снаружи (внутренний 8292 - SASL_PLAINTEXT, 8290 - PLAINTEXT localhost)
-TLS_PORTS = (8092,)
-SASL_PROTOCOLS = ("SASL_SSL", "SASL_PLAINTEXT")
-SSL_PROTOCOLS = ("SSL", "SASL_SSL")
-
-
 def security_protocol() -> str:
-    return _security_protocol()
-
-
-def _security_protocol() -> str:
     explicit = (settings.KAFKA_SECURITY_PROTOCOL or "").strip().upper()
     if explicit:
         return explicit
     if settings.KAFKA_USERNAME or settings.KAFKA_PASSWORD:
-        return "SASL_SSL" if settings.KAFKA_PORT in TLS_PORTS else "SASL_PLAINTEXT"
+        # TLS-порты: 8092 - SASL_SSL снаружи (внутренний 8292 - SASL_PLAINTEXT, 8290 - PLAINTEXT localhost)
+        return "SASL_SSL" if settings.KAFKA_PORT in (8092,) else "SASL_PLAINTEXT"
     return "SSL" if settings.KAFKA_PORT in (8092,) else "PLAINTEXT"
 
 
@@ -57,15 +33,15 @@ def _ssl_context() -> ssl.SSLContext:
 
 def connection_kwargs(**extra) -> dict:
     """Общие kwargs для KafkaProducer/KafkaConsumer/KafkaAdminClient."""
-    protocol = _security_protocol()
+    protocol = security_protocol()
     kwargs = {
         "bootstrap_servers": f"{settings.KAFKA_HOST}:{settings.KAFKA_PORT}",
         "api_version_auto_timeout_ms": 5000,
         "security_protocol": protocol,
     }
-    if protocol in SSL_PROTOCOLS:
+    if protocol in ("SSL", "SASL_SSL"):
         kwargs["ssl_context"] = _ssl_context()
-    if protocol in SASL_PROTOCOLS:
+    if protocol in ("SASL_SSL", "SASL_PLAINTEXT"):
         if not settings.KAFKA_USERNAME or not settings.KAFKA_PASSWORD:
             raise ValueError("KF_USERNAME/KF_PASSWORD обязательны для SASL")
         kwargs.update(
@@ -96,12 +72,12 @@ def produce(topic: str, payload: dict) -> None:
     get_producer().send(topic, value=payload).get(timeout=10)
 
 
-def results_consumer(worker: str = "tags") -> KafkaConsumer:
+def results_consumer(topic: str, group_id: str) -> KafkaConsumer:
     return KafkaConsumer(
-        results_topic(worker),
-        group_id=results_group_id(worker),
+        topic,
+        group_id=group_id,
         auto_offset_reset="earliest",
         enable_auto_commit=True,
-        value_deserializer=lambda raw: json.loads(raw.decode()),
+        value_deserializer=lambda raw: json.loads(raw.decode()),  # type: ignore
         **connection_kwargs(),
     )

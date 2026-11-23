@@ -10,7 +10,10 @@ def results_consumer_loop() -> None:
     while True:
         consumer = None
         try:
-            consumer = kafka_service.results_consumer("predict")
+            consumer = kafka_service.results_consumer(
+                kafka_service.settings.KAFKA_DIST_RESULTS_TOPIC,
+                kafka_service.settings.KAFKA_DIST_CONSUMER_GROUP,
+            )
             for message in consumer:
                 print(f"[kafka] predict result: {message.value}", flush=True)
         except Exception as exc:

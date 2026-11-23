@@ -35,9 +35,6 @@ services:
       - ./worker-tags:/app
       - sm_hf_cache:/root/.cache/huggingface # Кэш моделей HF
 
-    networks:
-      - nginx-network # Доступ к sm-redis и sm-backend
-
     deploy:
       resources:
         limits:

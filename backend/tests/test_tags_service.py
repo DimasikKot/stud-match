@@ -55,7 +55,7 @@ def test_create_llm_task(db_session, produced, monkeypatch):
     assert request_db.status == "queued"
     assert request_db.prompt == "вопрос"
     topic, message = produced[0]
-    assert topic == kafka_service.tasks_topic("tags")
+    assert topic == kafka_service.settings.KAFKA_TAGS_TASKS_TOPIC
     assert message["task_id"] == request_db.task_id
     assert message["enable_thinking"] is True
     assert message["max_new_tokens"] == 64

@@ -239,14 +239,16 @@ jobs:
             fi
 
             # ---------- Точечные сборки frontend / backend ----------
-            BUILD_SERVICES=""
-            [ "$FRONTEND_BUILD" = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-frontend"
-            [ "$BACKEND_BUILD"  = "true" ] && BUILD_SERVICES="$BUILD_SERVICES sm-backend"
+            if [ "$FRONTEND_BUILD" = "true" ]; then
+              echo "=== [build] sm-frontend ==="
+              $COMPOSE build sm-frontend
+              $COMPOSE up -d --no-deps sm-frontend
+            fi
 
-            if [ -n "$BUILD_SERVICES" ]; then
-              echo "=== [build] $BUILD_SERVICES ==="
-              $COMPOSE build $BUILD_SERVICES
-              $COMPOSE up -d --no-deps $BUILD_SERVICES
+            if [ "$BACKEND_BUILD" = "true" ]; then
+              echo "=== [build] sm-backend ==="
+              $COMPOSE build sm-backend
+              $COMPOSE up -d --no-deps sm-backend
             fi
 
             # ---------- Nginx: конфиг меняется на хосте, пересоздаём контейнер ----------
