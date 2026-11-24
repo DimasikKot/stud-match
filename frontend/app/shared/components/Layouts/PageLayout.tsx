@@ -10,12 +10,12 @@ export function PageLayout({
   className?: string;
 }) {
   return (
-    <div className="p-5 mb-80 w-fit">
-      <div className="mx-4">
-        <TextUI variant="header">{title}</TextUI>
-      </div>
+    <div className="p-5 pb-80 h-screen overflow-y-auto overflow-x-auto">
+      <TextUI variant="header" className="mx-4 mb-1">
+        {title}
+      </TextUI>
 
-      <div className={className}>{children}</div>
+      <div className={`${className}`}>{children}</div>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
 } from "@/shared/api/healths";
 import { getCurrentUser, logoutUser } from "@/shared/api/users";
 import { StatusUI } from "@/shared/components/UI/StatusUI";
+import { TooltipUI } from "@/shared/components/UI/TooltipUI";
 import userIcon from "@/shared/images/circle-user-regular-full.svg";
 import {
   HEALTH_ITEMS,
@@ -20,34 +21,6 @@ import {
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { IconUI } from "@/shared/components/UI/IconUI";
 import { IconSvgUI } from "@/shared/components/UI/IconSvgUI";
-
-const formatPrimitive = (value: unknown): string => {
-  if (value === null) return "null";
-  if (value === undefined) return "-";
-  if (Array.isArray(value)) return JSON.stringify(value);
-  return String(value);
-};
-
-const formatMetrics = (metrics?: Record<string, unknown> | null): string => {
-  if (!metrics || typeof metrics !== "object") return "";
-
-  const lines: string[] = [];
-
-  const walk = (value: Record<string, unknown>, depth: number) => {
-    for (const [key, item] of Object.entries(value)) {
-      const pad = "  ".repeat(depth);
-      if (item && typeof item === "object" && !Array.isArray(item)) {
-        lines.push(`${pad}${key}:`);
-        walk(item as Record<string, unknown>, depth + 1);
-      } else {
-        lines.push(`${pad}${key}: ${formatPrimitive(item)}`);
-      }
-    }
-  };
-
-  walk(metrics, 0);
-  return lines.join("\n");
-};
 
 export function Sidebar({
   collapsed,
@@ -61,17 +34,17 @@ export function Sidebar({
   const [health, setHealth] = useState<
     Partial<Record<HealthKey, GetHealthResponse>>
   >({});
-  const [username, setUsername] = useState<string | null>(null);
+  const [fullname, setFullname] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
       try {
         const user = await getCurrentUser();
-        setUsername(sessionStorage.getItem("fullname"));
+        setFullname(sessionStorage.getItem("fullname"));
         setIsAdmin(user.role === "admin");
       } catch {
-        setUsername(null);
+        setFullname(null);
         setIsAdmin(false);
       }
     };
@@ -109,19 +82,16 @@ export function Sidebar({
       // сессия уже могла истечь
     }
 
-    setUsername(null);
-    sessionStorage.removeItem("username");
+    setFullname(null);
+    sessionStorage.removeItem("fullname");
     sessionStorage.removeItem("email");
     sessionStorage.removeItem("role");
     navigate("/login");
   };
 
-  const iconButtonClass = collapsed
-    ? "flex h-5 w-5 text-[#8FCBEA] transition-colors hover:text-white"
-    : "flex h-9 w-9 rounded-xl text-[#8FCBEA] transition-colors hover:text-white";
-  const displayName = username ?? "Гость";
+  const displayName = fullname ?? "Гость";
   const nameParts =
-    username
+    fullname
       ?.replace(/@.*/, "")
       .trim()
       .split(/[\s._-]+/)
@@ -142,8 +112,8 @@ export function Sidebar({
     >
       <div className="px-6 py-6">
         <div
-          className={`flex items-center gap-2 ${
-            collapsed ? "-mx-2 gap-4 flex-col" : "-m-2 justify-between"
+          className={`flex items-center -mx-0.5 ${
+            collapsed ? "gap-3 flex-col" : "justify-between"
           }`}
         >
           <IconUI
@@ -151,7 +121,7 @@ export function Sidebar({
             size="24px"
             onClick={onToggle}
             title={collapsed ? "Развернуть меню" : "Свернуть меню"}
-            className={iconButtonClass}
+            className={`flex items-center justify-center text-[#8FCBEA] transition-colors hover:text-white`}
           />
 
           <IconUI
@@ -159,7 +129,7 @@ export function Sidebar({
             size="24px"
             onClick={handleLogout}
             title="Выйти"
-            className={iconButtonClass}
+            className={`flex items-center justify-center text-[#8FCBEA] transition-colors hover:text-white`}
           />
         </div>
 
@@ -181,7 +151,7 @@ export function Sidebar({
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto">
+      <nav className="flex-1">
         <div className="flex flex-col">
           {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map(
             (item, index) => (
@@ -202,20 +172,25 @@ export function Sidebar({
                 {({ isActive }) => (
                   <>
                     {isActive && (
-                      <span className="absolute left-0 top-0 h-full w-1 bg-[#CE6327]" />
+                      <div className="absolute left-0 top-0 h-full w-1 bg-[#CE6327]" />
                     )}
 
                     <IconUI
                       icon={item.icon}
                       size="20px"
-                      color={item.adminOnly ? "text-red-300" : "text-white"}
+                      color={`flex items-center justify-center ${item.adminOnly ? "text-red-300" : "text-white"}`}
                     />
 
-                    <TextUI
-                      className={`${collapsed ? "hidden" : "block font-semibold"} ${item.adminOnly ? "text-red-100" : "text-white"}`}
-                    >
-                      {item.label}
-                    </TextUI>
+                    {collapsed ? null : (
+                      <TextUI
+                        variant="normal"
+                        className={
+                          item.adminOnly ? "text-red-100" : "text-white"
+                        }
+                      >
+                        {item.label}
+                      </TextUI>
+                    )}
                   </>
                 )}
               </NavLink>
@@ -231,20 +206,19 @@ export function Sidebar({
           } border-t border-white/10 px-6 py-3`}
         >
           <TextUI variant="subtitle">Система</TextUI>
+
           <div className="flex flex-col gap-1.5">
             {HEALTH_ITEMS.map((item) => {
               const status = health[item.key];
               return (
-                <div
+                <TooltipUI
                   key={item.key}
-                  className="flex items-center gap-2"
-                  title={formatMetrics(status?.metrics)}
+                  content={status?.metrics}
+                  isJSON
+                  className="flex items-center gap-2 w-fit"
                 >
-                  <StatusUI status={status?.success} />
-                  <TextUI variant="normal" className="text-white/90">
-                    {item.label}
-                  </TextUI>
-                </div>
+                  <StatusUI status={status?.success} title={item.label} />
+                </TooltipUI>
               );
             })}
           </div>

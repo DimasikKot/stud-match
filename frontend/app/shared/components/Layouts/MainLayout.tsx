@@ -7,12 +7,14 @@ export function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="h-screen bg-white">
       <Sidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed((value) => !value)}
       />
-      <main className={`min-h-screen ${collapsed ? "pl-17" : "pl-68"}`}>
+      <main
+        className={`w-screen h-screen overflow-y-hidden overflow-x-hidden ${collapsed ? "pl-17" : "pl-68"}`}
+      >
         <Outlet />
       </main>
     </div>

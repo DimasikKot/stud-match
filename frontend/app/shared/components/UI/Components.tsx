@@ -22,15 +22,20 @@ const ComponentsDiv = ({
     <div>
       {title && <TextUI variant="header">{title}</TextUI>}
 
-      <div className="grid grid-cols-4 gap-4 bg-gray-50">
+      <div className="grid grid-cols-3 gap-4 bg-gray-300">
         <div className="flex flex-col bg-gray-100 gap-2">
-          <TextUI variant="title">Ширина w-full + flex justify-center</TextUI>
+          <TextUI variant="title">Без обертки</TextUI>
           {Children.map(children, (child) => (
-            <div className="bg-amber-100/70 flex justify-center w-full">
-              {child}
-            </div>
+            <div className="bg-amber-100/70">{child}</div>
           ))}
         </div>
+
+        {/* <div className="flex flex-col bg-gray-100 gap-2">
+          <TextUI variant="title">Ширина w-full (100%)</TextUI>
+          {Children.map(children, (child) => (
+            <div className="bg-amber-100/70 w-full">{child}</div>
+          ))}
+        </div> */}
 
         <div className="flex flex-col bg-gray-100 gap-2">
           <TextUI variant="title">Ширина w-fit (auto)</TextUI>
@@ -39,17 +44,12 @@ const ComponentsDiv = ({
           ))}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <TextUI variant="title">Без обертки</TextUI>
-          {Children.map(children, (child) => (
-            <div className="bg-amber-100/70">{child}</div>
-          ))}
-        </div>
-
         <div className="flex flex-col bg-gray-100 gap-2">
-          <TextUI variant="title">Ширина w-full (100%)</TextUI>
+          <TextUI variant="title">Ширина w-full + flex justify-center</TextUI>
           {Children.map(children, (child) => (
-            <div className="bg-amber-100/70 w-full">{child}</div>
+            <div className="bg-amber-100/70 flex justify-center w-full">
+              {child}
+            </div>
           ))}
         </div>
       </div>

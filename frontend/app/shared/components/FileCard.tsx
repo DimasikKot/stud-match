@@ -35,14 +35,14 @@ export const FileCard = ({
     >
       <div className="flex-1 h-full">
         <div className="flex flex-row justify-between gap-4">
-          <div className="flex w-full flex-row gap-2">
+          <div className="flex w-fit flex-row gap-2">
             <TextUI variant="title" maxLines={1} className="-mt-1">
               {file.name}
             </TextUI>
 
-            {/* <TextUI variant="desc" className="flex items-end mt-0.5 h-min w-26">
+            <TextUI variant="desc" className="flex items-end mt-0.5 h-min w-26">
               (id: {file.id})
-            </TextUI> */}
+            </TextUI>
           </div>
 
           <div
