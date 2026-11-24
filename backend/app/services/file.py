@@ -1,16 +1,17 @@
+import io
 import mimetypes
 import os
 import uuid
+import zipfile
 from typing import BinaryIO
 
 import boto3
+from app.core.config import settings
+from app.models.db import FileDB, StudentDB, StudentFilesDB, WorkZipDB
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-
-from app.core.config import settings
-from app.models.db import FileDB
 
 
 def create_s3_client():
@@ -38,49 +39,102 @@ def _delete_s3_object(object_key: str) -> None:
         pass
 
 
+def _get_or_create_student(db: Session, fullname: str) -> StudentDB:
+    student = db.query(StudentDB).filter(StudentDB.fullname == fullname).first()
+    if student is None:
+        student = StudentDB(fullname=fullname, skills_vector={})
+        db.add(student)
+        db.flush()
+    return student
+
+
 def upload_zip(
     db: Session,
     fileobj: BinaryIO,
     filename: str,
-    content_type: str,
-) -> FileDB:
-    """Загружает файл в RustFS/S3 и сохраняет запись о нём в БД."""
-    ext = os.path.splitext(filename)[1]
-    object_key = f"{uuid.uuid4()}{ext}"
+) -> list[FileDB]:
+    """Распаковывает zip-архив с работами студентов.
 
-    fileobj.seek(0, os.SEEK_END)
-    size = fileobj.tell()
+    Архив содержит папки вида "ФИО_идентификатор_...", внутри каждой
+    папки лежат файлы студента по одной работе (название работы - имя архива).
+    Каждый файл загружается в RustFS, для него создаётся запись в files,
+    студент создаётся при отсутствии и связывается с файлом в student_files.
+    """
+    if not filename.lower().endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Разрешены только zip-архивы")
+
     fileobj.seek(0)
-
     try:
-        s3_client.upload_fileobj(
-            fileobj,
-            settings.RUSTFS_BUCKET,
-            object_key,
-            ExtraArgs={"ContentType": content_type},
-        )
-    except ClientError as exc:
-        raise HTTPException(status_code=502, detail=f"RustFS error: {exc}")
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {exc}")
+        archive = zipfile.ZipFile(fileobj)
+    except zipfile.BadZipFile:
+        raise HTTPException(status_code=400, detail="Файл не является zip-архивом")
 
-    file_record = FileDB(
-        name=filename,
-        rustfs_object_key=object_key,
-        rustfs_bucket=settings.RUSTFS_BUCKET,
-        size=size,
-        work_name=zipname,
-    )
+    zip_record = WorkZipDB(name=filename)
+    db.add(zip_record)
+    db.flush()
+
+    uploaded_keys: list[str] = []
+    file_records: list[FileDB] = []
     try:
-        db.add(file_record)
+        with archive:
+            for info in archive.infolist():
+                if info.is_dir():
+                    continue
+                entry_name = info.filename.replace("\\", "/")
+                parts = entry_name.split("/")
+                if len(parts) < 2 or parts[0] == "__MACOSX":
+                    continue
+                base_name = parts[-1]
+                if not base_name:
+                    continue
+
+                folder_name = parts[0]
+                fullname = folder_name.split("_", 1)[0].strip() or folder_name
+                student = _get_or_create_student(db, fullname)
+
+                data = archive.read(info)
+                ext = os.path.splitext(base_name)[1]
+                object_key = f"{uuid.uuid4()}{ext}"
+                content_type, _ = mimetypes.guess_type(base_name)
+                s3_client.upload_fileobj(
+                    io.BytesIO(data),
+                    settings.RUSTFS_BUCKET,
+                    object_key,
+                    ExtraArgs={
+                        "ContentType": content_type or "application/octet-stream"
+                    },
+                )
+                uploaded_keys.append(object_key)
+
+                file_record = FileDB(
+                    name=base_name,
+                    rustfs_object_key=object_key,
+                    rustfs_bucket=settings.RUSTFS_BUCKET,
+                    size=info.file_size,
+                    work_zip_id=zip_record.id,
+                )
+                db.add(file_record)
+                db.flush()
+                file_records.append(file_record)
+                db.add(StudentFilesDB(file_id=file_record.id, student_id=student.id))
         db.commit()
-        db.refresh(file_record)
+    except ClientError as exc:
+        db.rollback()
+        for key in uploaded_keys:
+            _delete_s3_object(key)
+        raise HTTPException(status_code=502, detail=f"RustFS error: {exc}")
+    except HTTPException:
+        db.rollback()
+        for key in uploaded_keys:
+            _delete_s3_object(key)
+        raise
     except Exception as exc:
         db.rollback()
-        _delete_s3_object(object_key)
-        raise HTTPException(status_code=500, detail=f"DB error: {exc}")
+        for key in uploaded_keys:
+            _delete_s3_object(key)
+        raise HTTPException(status_code=500, detail=f"Upload failed: {exc}")
 
-    return file_record
+    return file_records
 
 
 def fetch_file_by_id(db: Session, file_id: int) -> FileDB:
@@ -92,7 +146,7 @@ def fetch_file_by_id(db: Session, file_id: int) -> FileDB:
 
 def fetch_files(db: Session) -> list[FileDB]:
     """Список всех файлов, отсортированный по дате работы (новые первыми)."""
-    return db.query(FileDB).order_by(FileDB.work_date.desc()).all()
+    return db.query(FileDB).all()
 
 
 def get_file_object(file_db: FileDB) -> dict:

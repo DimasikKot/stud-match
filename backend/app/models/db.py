@@ -2,19 +2,18 @@ import enum
 from datetime import datetime
 from typing import Any
 
+from app.core.database import Base
 from sqlalchemy import (
+    TIMESTAMP,
     Enum,
     ForeignKey,
     Integer,
     String,
     Text,
-    TIMESTAMP,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
-
-from app.core.database import Base
 
 
 class UserRole(str, enum.Enum):
@@ -142,11 +141,6 @@ class FileDB(Base):
         ForeignKey("work_zips.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-    )
-    work_date: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
-        nullable=False,
-        server_default=func.now(),
     )
 
 

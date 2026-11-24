@@ -39,8 +39,14 @@ export function Files() {
 
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
-    if (picked.length > 0) {
-      setSelected((prev) => [...prev, ...picked]);
+    const zips = picked.filter((file) =>
+      file.name.toLowerCase().endsWith(".zip"),
+    );
+    if (zips.length < picked.length) {
+      toast.error("Можно загружать только zip-архивы");
+    }
+    if (zips.length > 0) {
+      setSelected((prev) => [...prev, ...zips]);
     }
     e.target.value = "";
   };
@@ -90,6 +96,7 @@ export function Files() {
           ref={fileInputRef}
           type="file"
           multiple
+          accept=".zip,application/zip"
           className="hidden"
           onChange={handleSelect}
         />

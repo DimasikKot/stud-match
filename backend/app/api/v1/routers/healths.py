@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.db import ROLE_ADMIN, UserDB
 from app.services.get_user import require_admin
 from app.services.get_redis import get_async_redis
 
@@ -17,6 +16,9 @@ import httpx
 import boto3
 from botocore.exceptions import ClientError
 from botocore.config import Config
+
+from kafka import KafkaAdminClient
+from app.services import kafka as kafka_service
 
 router: APIRouter = APIRouter(prefix="/healths", tags=["Healths"])
 
@@ -96,7 +98,7 @@ def _postgres_health(db: Session) -> HealthResponse:
 
         return HealthResponse(
             success=True,
-            detail=f"PostgreSQL is healthy",
+            detail="PostgreSQL is healthy",
             metrics={
                 "server": f"{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}",
                 "auth": f"{settings.POSTGRES_USER}@{settings.POSTGRES_DB}",
@@ -240,9 +242,6 @@ async def _rustfs_health() -> HealthResponse:
 
 
 def _kafka_health() -> HealthResponse:
-    from kafka import KafkaAdminClient
-
-    from app.services import kafka as kafka_service
 
     start_time = time.perf_counter()
     bootstrap = f"{settings.KAFKA_HOST}:{settings.KAFKA_PORT}"

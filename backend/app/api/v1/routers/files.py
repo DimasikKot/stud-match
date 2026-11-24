@@ -1,6 +1,10 @@
 from datetime import datetime
 from urllib.parse import quote
 
+from app.core.database import get_db
+from app.models.db import FileDB
+from app.services import file as file_service
+from app.services.get_user import require_admin
 from fastapi import (
     APIRouter,
     Depends,
@@ -11,11 +15,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
-
-from app.core.database import get_db
-from app.models.db import FileDB
-from app.services import file as file_service
-from app.services.get_user import require_admin
 
 router: APIRouter = APIRouter(
     prefix="/files", tags=["Files"], dependencies=[Depends(require_admin)]
@@ -84,13 +83,12 @@ async def upload_files(
     try:
         results = []
         for file in files:
-            results.append(
+            results.extend(
                 await run_in_threadpool(
                     file_service.upload_zip,
                     db,
                     file.file,
                     file.filename or "file",
-                    file.content_type or "application/octet-stream",
                 )
             )
         return results
