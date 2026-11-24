@@ -1,3 +1,4 @@
+from datetime import datetime
 from urllib.parse import quote
 
 from app.core.database import get_db
@@ -7,8 +8,6 @@ from app.services.get_user import require_admin
 from fastapi import (
     APIRouter,
     Depends,
-    File,
-    UploadFile,
 )
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict
@@ -30,7 +29,8 @@ class FileResponse(BaseModel):
     rustfs_bucket: str
     status: str
     skills_vector: dict
-    work_zip_id: int
+    zip_id: int
+    work_date: datetime
 
 
 class FileListResponse(BaseModel):
@@ -71,29 +71,6 @@ async def _stream_file(file_db: FileDB, disposition: str) -> StreamingResponse:
         media_type=file_service.guess_content_type(file_db),
         headers=headers,
     )
-
-
-@router.post("/", response_model=list[FileResponse])
-async def upload_files(
-    files: list[UploadFile] = File(...),
-    db: Session = Depends(get_db),
-):
-    """Загружает один или несколько файлов (multipart/form-data, поле `files`)."""
-    try:
-        results = []
-        for file in files:
-            results.extend(
-                await run_in_threadpool(
-                    file_service.upload_zip,
-                    db,
-                    file.file,
-                    file.filename or "file",
-                )
-            )
-        return results
-    finally:
-        for file in files:
-            await file.close()
 
 
 @router.get("/", response_model=FileListResponse)

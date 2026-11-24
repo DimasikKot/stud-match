@@ -12,7 +12,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 
@@ -114,6 +114,9 @@ class ZipDB(Base):
         nullable=False,
         server_default=func.now(),
     )
+    files: Mapped[list["FileDB"]] = relationship(
+        back_populates="zip", cascade="all, delete-orphan"
+    )
 
 
 class FileDB(Base):
@@ -157,6 +160,11 @@ class FileDB(Base):
         nullable=False,
         index=True,
     )
+    zip: Mapped["ZipDB"] = relationship(back_populates="files")
+
+    @property
+    def work_date(self) -> datetime:
+        return self.zip.date if self.zip else None  # type: ignore[return-value]
 
 
 class SkillDB(Base):

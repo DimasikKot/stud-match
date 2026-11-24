@@ -1,4 +1,5 @@
 import api, { errorValidate } from "@/shared/api/axios";
+import type { ZipResponse } from "@/shared/api/zips";
 
 export const FileStatus = {
   NotExtracted: "not_extracted",
@@ -16,6 +17,7 @@ export interface FileResponse {
   rustfs_bucket: string;
   status: (typeof FileStatus)[keyof typeof FileStatus];
   skills_vector: Record<string, unknown>;
+  zip_id: number;
   work_date: string;
 }
 
@@ -38,7 +40,7 @@ const UPLOAD_BATCH_LIMIT = 20 * 1024 * 1024;
 export const uploadFiles = async (
   files: File[],
   onProgress?: (fileIndex: number, progress: number) => void,
-): Promise<FileResponse[]> => {
+): Promise<ZipResponse[]> => {
   const items = files.map((file, index) => ({ file, index }));
   items.sort((a, b) => a.file.size - b.file.size);
 
@@ -70,12 +72,12 @@ export const uploadFiles = async (
     batches.push(current);
   }
 
-  const results: FileResponse[] = [];
+  const results: ZipResponse[] = [];
   try {
     for (const batch of batches) {
       const formData = new FormData();
       batch.forEach(({ file }) => formData.append("files", file));
-      const { data } = await api.post<FileResponse[]>("/files/", formData, {
+      const { data } = await api.post<ZipResponse[]>("/zips/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (event) => {
           if (event.total) {

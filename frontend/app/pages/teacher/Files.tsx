@@ -70,8 +70,8 @@ export function Files() {
       );
       toast.success(
         uploaded.length === 1
-          ? "Файл загружен"
-          : `Загружено файлов: ${uploaded.length}`,
+          ? "Архив принят в обработку"
+          : `Архивов принято в обработку: ${uploaded.length}`,
       );
       setSelected([]);
       setUploadProgress({});
