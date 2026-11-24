@@ -9,7 +9,7 @@ export const InputUI = ({
   disabled = false,
   name = "input",
   type = "text",
-  className = "",
+  className: inputClassName = "",
   isArea = false,
   rows = 3,
 }: {
@@ -29,6 +29,15 @@ export const InputUI = ({
   isArea?: boolean;
   rows?: number;
 }) => {
+  const className = `
+    w-full px-3 py-1.5
+    bg-white
+    border border-gray-300
+    focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300
+    transition-colors duration-200
+    ${inputClassName}
+  `;
+
   return isArea ? (
     <textarea
       name={name}
@@ -46,14 +55,7 @@ export const InputUI = ({
       rows={rows}
       placeholder={placeholder}
       disabled={disabled}
-      className={`
-        w-full px-3 py-1.5
-        bg-white
-        border border-gray-300
-        focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300
-        transition-colors duration-200
-        ${className}
-      `}
+      className={className}
     />
   ) : (
     <input
@@ -72,14 +74,7 @@ export const InputUI = ({
       placeholder={placeholder}
       disabled={disabled}
       type={type}
-      className={`
-      w-full px-3 py-1.5
-      bg-white
-      border border-gray-300
-      focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300
-      transition-colors duration-200
-      ${className}
-    `}
+      className={className}
     />
   );
 };

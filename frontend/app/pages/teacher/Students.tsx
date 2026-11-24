@@ -1,3 +1,5 @@
+import { PageLayout } from "@/shared/components/Layouts/PageLayout";
+
 export default function Students() {
-  return <div>Students</div>;
+  return <PageLayout title="Студенты">Что-то</PageLayout>;
 }

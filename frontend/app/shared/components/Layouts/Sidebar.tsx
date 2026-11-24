@@ -10,11 +10,15 @@ import {
   type GetHealthResponse,
 } from "@/shared/api/healths";
 import { getCurrentUser, logoutUser } from "@/shared/api/users";
-import { StatusIndicator } from "@/shared/components/StatusIndicator";
+import { StatusUI } from "@/shared/components/UI/StatusUI";
 import userIcon from "@/shared/images/circle-user-regular-full.svg";
-import { HEALTH_ITEMS, NAV_ITEMS, type HealthKey } from "../constants/sidebar";
-import { TextUI } from "./UI/TextUI";
-import { IconUI } from "./UI/IconUI";
+import {
+  HEALTH_ITEMS,
+  NAV_ITEMS,
+  type HealthKey,
+} from "@/shared/constants/sidebar";
+import { TextUI } from "@/shared/components/UI/TextUI";
+import { IconUI } from "@/shared/components/UI/IconUI";
 
 const SvgIcon = ({
   src,
@@ -165,16 +169,17 @@ export function Sidebar({
           }`}
         >
           <IconUI
-            size="24px"
             icon="menu"
+            size="24px"
             color="#8FCBEA"
             onClick={onToggle}
             title={collapsed ? "Развернуть меню" : "Свернуть меню"}
             className={iconButtonClass}
           />
+
           <IconUI
-            size="24px"
             icon="logout"
+            size="24px"
             color="#8FCBEA"
             onClick={handleLogout}
             title="Выйти"
@@ -187,6 +192,7 @@ export function Sidebar({
             src={userIcon}
             className={`text-white ${collapsed ? "h-8 w-8" : "h-17 w-17"}`}
           />
+
           <div
             className={`text-center text-sm font-semibold ${
               collapsed ? "whitespace-nowrap" : "w-full truncate"
@@ -222,11 +228,12 @@ export function Sidebar({
                     {isActive && (
                       <span className="absolute left-0 top-0 h-full w-1 bg-[#CE6327]" />
                     )}
+
                     <IconUI
-                      size="20px"
                       icon={item.icon}
                       color={item.adminOnly ? "red-300" : "white"}
                     />
+
                     <TextUI
                       className={`${collapsed ? "hidden" : "block font-semibold"} ${item.adminOnly ? "text-red-100" : "text-white"}`}
                     >
@@ -256,7 +263,7 @@ export function Sidebar({
                   className="flex items-center gap-2"
                   title={formatMetrics(status?.metrics)}
                 >
-                  <StatusIndicator status={status?.success} />
+                  <StatusUI status={status?.success} />
                   <TextUI variant="normal" className="text-white/90">
                     {item.label}
                   </TextUI>

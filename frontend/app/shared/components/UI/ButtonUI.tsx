@@ -5,7 +5,7 @@ export const ButtonUI = ({
     toast.success("Кнопка без действия");
   },
   variant = "primary",
-  className = "",
+  className: buttonClassName = "",
   title,
   disabled = false,
   hidden = false,
@@ -18,26 +18,33 @@ export const ButtonUI = ({
   disabled?: boolean;
   hidden?: boolean;
   children: React.ReactNode;
-}) =>
-  !hidden && (
-    <button
-      onClick={(event) => {
-        event.stopPropagation(); // Останавливаем всплытие
-        onClick?.(event);
-        event.preventDefault(); // Отменяем дефолтное поведение
-      }}
-      disabled={disabled}
-      className={`h-min duration-200 select-none transition-colors items-center justify-center flex
-      ${
-        {
-          primary: `${!disabled ? "bg-blue-700 hover:bg-blue-800" : "bg-gray-600 hover:bg-gray-600"} px-4 py-2 text-white shadow-lg font-medium`,
-          secondary: `${!disabled ? "text-blue-700 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} rounded-full px-4 py-2 font-medium`,
-          icon: `${!disabled ? "text-blue-700 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} p-2 -m-2 font-medium`,
-          link: `${!disabled ? "text-blue-700 hover:text-blue-800" : "text-gray-600 hover:text-gray-600"} p-1 -m-1 font-normal`,
-        }[variant]
-      } ${!disabled ? "cursor-pointer" : ""} ${className}`}
-    >
-      {title && <span className="sr-only">{title}</span>}
-      {children}
-    </button>
+}) => {
+  const className = `
+    h-min duration-200 select-none transition-colors items-center justify-center flex
+    ${
+      {
+        primary: `${!disabled ? "bg-blue-700 hover:bg-blue-800" : "bg-gray-600 hover:bg-gray-600"} px-4 py-2 text-white shadow-lg font-medium`,
+        secondary: `${!disabled ? "text-blue-700 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} px-4 py-2 font-medium`,
+        link: `${!disabled ? "text-blue-700 hover:text-blue-800" : "text-gray-600 hover:text-gray-600"} p-1 -m-1 font-normal`,
+        icon: `${!disabled ? "text-blue-700 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} p-2 -m-2 font-medium`,
+      }[variant]
+    } ${!disabled ? "cursor-pointer" : ""} ${buttonClassName}
+  `;
+
+  return (
+    !hidden && (
+      <button
+        onClick={(event) => {
+          event.stopPropagation(); // Останавливаем всплытие
+          onClick?.(event);
+          event.preventDefault(); // Отменяем дефолтное поведение
+        }}
+        disabled={disabled}
+        className={className}
+      >
+        {title && <span className="sr-only">{title}</span>}
+        {children}
+      </button>
+    )
   );
+};

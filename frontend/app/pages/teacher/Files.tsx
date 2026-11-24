@@ -12,6 +12,8 @@ import {
   uploadFiles,
   type FileListResponse,
 } from "@/shared/api/file";
+import { IconUI } from "@/shared/components/UI/IconUI";
+import { PageLayout } from "@/shared/components/Layouts/PageLayout";
 
 const formatSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} Б`;
@@ -77,9 +79,9 @@ export function Files() {
   };
 
   return (
-    <div className="min-h-screen">
+    <PageLayout title="Файлы студентов">
       <div className="max-w-6xl mx-auto p-6 mb-20 w-full">
-        <div className="bg-white border border-gray-300 rounded-3xl p-6">
+        <div className="bg-white border border-gray-300 p-6">
           <TextUI variant="title" className="mb-4">
             Загрузка файлов
           </TextUI>
@@ -95,10 +97,10 @@ export function Files() {
           <button
             onClick={() => fileInputRef.current?.click()}
             className="w-full border-2 border-dashed border-gray-300 hover:border-blue-400
-              rounded-2xl p-8 flex flex-col items-center gap-2 text-gray-500
+              p-8 flex flex-col items-center gap-2 text-gray-500
               hover:text-blue-600 transition-colors cursor-pointer"
           >
-            <span className="material-icons text-4xl">cloud_upload</span>
+            <IconUI size="32px" icon="cloud_upload" />
             <TextUI variant="normal">Нажмите, чтобы выбрать файлы</TextUI>
             <TextUI variant="desc">Можно выбрать несколько файлов сразу</TextUI>
           </button>
@@ -113,12 +115,10 @@ export function Files() {
                   <div
                     key={`${file.name}-${index}`}
                     className="flex items-center justify-between gap-3
-                      bg-gray-50 border border-gray-200 rounded-xl px-4 py-2"
+                      bg-gray-50 border border-gray-200 px-4 py-2"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="material-icons text-gray-400">
-                        description
-                      </span>
+                      <IconUI size="20px" icon="description" color="gray-400" />
                       <TextUI variant="normal" maxLines={1}>
                         {file.name}
                       </TextUI>
@@ -131,7 +131,7 @@ export function Files() {
                       onClick={() => removeSelected(index)}
                       className="text-red-600 hover:text-red-800"
                     >
-                      <span className="material-icons">close</span>
+                      <IconUI size="20px" icon="close" />
                     </ButtonUI>
                   </div>
                 ))}
@@ -180,6 +180,6 @@ export function Files() {
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

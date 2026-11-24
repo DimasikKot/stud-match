@@ -1,26 +1,28 @@
 export const IconUI = ({
-  size = "20px",
   icon,
-  color = "white",
-  className = "",
+  size = "20px",
+  color = "black",
+  className: iconClassName = "",
   onClick,
   title,
 }: {
-  size: string;
   icon: string;
+  size?: string;
   color?: string;
   className?: string;
   onClick?: () => void;
   title?: string;
 }) => {
+  const className = `material-icons leading- overflow-clip select-none text-${color}`;
+
   return onClick ? (
     <button
-      className={`flex items-center justify-center cursor-pointer ${className}`}
+      className={`flex items-center justify-center cursor-pointer ${iconClassName}`}
       onClick={onClick}
       title={title}
     >
       <span
-        className={`material-icons leading-none overflow-clip select-none text-${color}`}
+        className={className}
         style={{ fontSize: size, lineHeight: 1, width: size }}
       >
         {icon}
@@ -28,7 +30,7 @@ export const IconUI = ({
     </button>
   ) : (
     <span
-      className={`material-icons leading-none overflow-clip select-none text-${color} ${className}`}
+      className={`${className} ${iconClassName}`}
       style={{ fontSize: size, lineHeight: 1, width: size }}
       title={title}
     >

@@ -7,7 +7,11 @@ export const NAV_ITEMS: {
   { to: "/projects", label: "Проекты", icon: "dashboard" }, // + создание и редактирование
   { to: "/students", label: "Студенты", icon: "school" }, // + просмотр студентов
   { to: "/teachers", label: "Преподаватели", icon: "group" }, // + создание и редактирование для админа
-  { to: "/matches", label: "Распределения", icon: "account_tree_outlined" }, // + создание и запуск
+  {
+    to: "/distributions",
+    label: "Распределения",
+    icon: "account_tree_outlined",
+  }, // + создание и запуск
   { to: "/profile", label: "Профиль", icon: "person" }, // редактирование профиля
   {
     to: "/files",

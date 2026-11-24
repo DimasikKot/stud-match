@@ -27,7 +27,7 @@ export const FileCard = ({
     <div
       onClick={onClick}
       className={`
-        bg-white border border-gray-300 rounded-2xl p-4 gap-3
+        bg-white border border-gray-300 p-4 gap-3
         ${variant === "normal" && "hover:border-gray-400 hover:shadow-md"} transition-all duration-200
         cursor-pointer flex flex-col justify-between w-full
         ${className}

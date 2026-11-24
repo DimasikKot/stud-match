@@ -1,6 +1,6 @@
 export const TextUI = ({
   variant = "normal",
-  className = "",
+  className: textClassName = "",
   maxLines = 3,
   isSelectable = false,
   span = false,
@@ -10,8 +10,8 @@ export const TextUI = ({
   variant?:
     | "desc"
     | "link"
-    | "label"
     | "error"
+    | "label"
     | "normal"
     | "subtitle"
     | "title"
@@ -22,47 +22,31 @@ export const TextUI = ({
   span?: boolean;
   title?: string;
   children: React.ReactNode;
-}) =>
-  span ? (
-    <span
-      title={title}
-      className={`leading-relaxed
-        ${isSelectable ? "select-text" : "select-none"}
+}) => {
+  const className = `leading-relaxed
         ${
           {
             desc: "text-gray-600 text-sm font-normal",
             link: "text-blue-600 hover:text-blue-800 text-sm font-medium",
-            label: "text-sm font-medium",
             error: "text-red-600 text-sm font-medium",
+            label: "text-sm font-medium",
             normal: "text-base font-medium",
             subtitle: "text-lg font-medium",
             title: "text-2xl font-light",
-            header: "text-3xl font-bold",
+            header: "text-2xl font-semibold",
           }[variant]
         }
-        ${className} ${maxLines && `line-clamp-${maxLines}`}`}
-    >
+        ${textClassName}
+        ${isSelectable ? "select-text" : "select-none"}
+        ${maxLines && `line-clamp-${maxLines}`}`;
+
+  return span ? (
+    <span title={title} className={className}>
       {children}
     </span>
   ) : (
-    <p
-      title={title}
-      className={`leading-relaxed
-        ${isSelectable ? "select-text" : "select-none"}
-        ${
-          {
-            desc: "text-gray-600 text-sm font-normal",
-            link: "text-blue-600 hover:text-blue-800 text-sm font-normal",
-            label: "text-sm font-medium",
-            error: "text-red-600 text-sm font-medium",
-            normal: "text-base font-medium",
-            subtitle: "text-base font-bold",
-            title: "text-2xl font-light",
-            header: "text-3xl font-bold",
-          }[variant]
-        }
-        ${className} ${maxLines && `line-clamp-${maxLines}`}`}
-    >
+    <p title={title} className={className}>
       {children}
     </p>
   );
+};

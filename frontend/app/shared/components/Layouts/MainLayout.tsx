@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 
-import { Sidebar } from "@/shared/components/Sidebar";
+import { Sidebar } from "@/shared/components/Layouts/Sidebar";
 
 export function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);

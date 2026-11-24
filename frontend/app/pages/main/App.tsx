@@ -18,11 +18,11 @@ import { NotFound } from "@/pages/main/NotFound";
 
 import Students from "@/pages/teacher/Students";
 import Teachers from "@/pages/teacher/Teachers";
-import Matches from "@/pages/teacher/Matches";
+import Distributions from "@/pages/teacher/Distributions";
 import Profile from "@/pages/teacher/Profile";
 
 import { Files } from "@/pages/teacher/Files";
-import { Components } from "@/pages/main/Components";
+import { Components } from "@/shared/components/UI/Components";
 
 export function App() {
   return (
@@ -41,7 +41,7 @@ export function App() {
               <Route path="/projects" element={<Projects />} />
               <Route path="/students" element={<Students />} />
               <Route path="/teachers" element={<Teachers />} />
-              <Route path="/matches" element={<Matches />} />
+              <Route path="/distributions" element={<Distributions />} />
               <Route path="/profile" element={<Profile />} />
               <Route element={<AdminRoute />}>
                 <Route path="/files" element={<Files />} />
