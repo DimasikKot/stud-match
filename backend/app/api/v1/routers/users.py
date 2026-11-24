@@ -1,5 +1,9 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
-
+from app.core.config import settings
+from app.core.database import get_db
+from app.models.db import UserDB
+from app.services import user as user_service
+from app.services.get_redis import get_redis
+from app.services.get_user import get_current_user, refresh_cookie_scheme, require_admin
 from fastapi import (
     APIRouter,
     Depends,
@@ -7,15 +11,10 @@ from fastapi import (
     Security,
     status,
 )
-from redis import Redis
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
-from app.services import user as user_service
-from app.services.get_user import get_current_user, refresh_cookie_scheme, require_admin
-from app.services.get_redis import get_redis
-from app.models.db import UserDB
-from app.core.config import settings
+from redis import Redis
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -53,11 +52,11 @@ class ChangePasswordRequest(BaseModel):
 ACCESS_COOKIE = "access_token"
 REFRESH_COOKIE = "refresh_token"
 
-COOKIE_OPTIONS = dict(
-    httponly=settings.COOKIE_HTTPONLY,
-    secure=settings.COOKIE_SECURE,
-    samesite=settings.COOKIE_SAMESITE,
-)
+COOKIE_OPTIONS = {
+    "httponly": settings.COOKIE_HTTPONLY,
+    "secure": settings.COOKIE_SECURE,
+    "samesite": settings.COOKIE_SAMESITE,
+}
 
 
 def _set_auth_cookies(response: Response, access: str, refresh: str) -> None:
@@ -65,24 +64,24 @@ def _set_auth_cookies(response: Response, access: str, refresh: str) -> None:
         ACCESS_COOKIE,
         access,
         max_age=settings.USER_JWT_ACCESS_TOKEN_EXPIRATION_HOURS * 3600,
-        **COOKIE_OPTIONS,  # type: ignore
+        **COOKIE_OPTIONS,
     )
     response.set_cookie(
         REFRESH_COOKIE,
         refresh,
         max_age=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS * 3600,
-        **COOKIE_OPTIONS,  # type: ignore
+        **COOKIE_OPTIONS,
     )
 
 
 def _clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(
         ACCESS_COOKIE,
-        **COOKIE_OPTIONS,  # type: ignore
+        **COOKIE_OPTIONS,
     )
     response.delete_cookie(
         REFRESH_COOKIE,
-        **COOKIE_OPTIONS,  # type: ignore
+        **COOKIE_OPTIONS,
     )
 
 

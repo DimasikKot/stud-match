@@ -1,6 +1,5 @@
+from app.api.v1.routers import files, healths, projects, students, users
 from fastapi import APIRouter
-
-from app.api.v1.routers import files, healths, users, projects, students
 
 api_router: APIRouter = APIRouter()
 

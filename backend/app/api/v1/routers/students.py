@@ -1,23 +1,23 @@
 from typing import Any
-from pydantic import BaseModel, ConfigDict, field_validator
+
+from app.core.database import get_db
+from app.services.get_user import require_admin
+from app.services.student import (
+    SortType,
+    create_student_in_db,
+    delete_student_by_id,
+    fetch_all_students,
+    fetch_student_db_by_id,
+    update_student_by_id,
+)
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
     Query,
 )
+from pydantic import BaseModel, ConfigDict, field_validator
 from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.services.student import (
-    delete_student_by_id,
-    fetch_all_students,
-    fetch_student_db_by_id,
-    create_student_in_db,
-    update_student_by_id,
-    SortType,
-)
-from app.services.get_user import require_admin
 
 router = APIRouter(
     prefix="/students", tags=["Students"], dependencies=[Depends(require_admin)]

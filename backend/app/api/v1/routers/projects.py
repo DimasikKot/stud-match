@@ -1,25 +1,26 @@
-from typing import Any
-from pydantic import BaseModel, ConfigDict, field_validator
 from datetime import datetime
+from typing import Any
+
+from app.core.database import get_db
+from app.models.db import UserDB
+from app.services.get_user import get_current_user
+from app.services.project import (
+    SortType,
+    create_project,
+    delete_project_by_id,
+    fetch_project_db_by_id,
+    fetch_projects_by_user_id,
+    is_owner_of_project,
+    update_project_by_id,
+)
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
     Query,
 )
+from pydantic import BaseModel, ConfigDict, field_validator
 from sqlalchemy.orm import Session
-from app.services.project import (
-    create_project,
-    is_owner_of_project,
-    update_project_by_id,
-    fetch_project_db_by_id,
-    SortType,
-    fetch_projects_by_user_id,
-    delete_project_by_id,
-)
-from app.core.database import get_db
-from app.services.get_user import get_current_user
-from app.models.db import UserDB
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 

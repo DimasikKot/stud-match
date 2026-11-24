@@ -1,24 +1,22 @@
 import time
 from typing import Any
+
+import boto3
+import httpx
+import redis.asyncio as aioredis
+from app.core.config import settings
+from app.core.database import get_db
+from app.services import kafka as kafka_service
+from app.services.get_redis import get_async_redis
+from app.services.get_user import require_admin
+from botocore.config import Config
+from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
-from app.core.database import get_db
-from app.services.get_user import require_admin
-from app.services.get_redis import get_async_redis
-
-import redis.asyncio as aioredis
-
-import httpx
-import boto3
-from botocore.exceptions import ClientError
-from botocore.config import Config
-
 from kafka import KafkaAdminClient
-from app.services import kafka as kafka_service
 
 router: APIRouter = APIRouter(prefix="/healths", tags=["Healths"])
 
