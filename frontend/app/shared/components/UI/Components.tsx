@@ -9,6 +9,7 @@ import { PageLayout } from "@/shared/components/Layouts/PageLayout";
 import { IconUI } from "@/shared/components/UI/IconUI";
 import userIcon from "@/shared/images/circle-user-regular-full.svg";
 import { IconSvgUI } from "@/shared/components/UI/IconSvgUI";
+import toast from "react-hot-toast";
 
 const ComponentsDiv = ({
   title,
@@ -18,15 +19,48 @@ const ComponentsDiv = ({
   children: React.ReactNode;
 }) => {
   return (
-    <>
+    <div>
       {title && <TextUI variant="header">{title}</TextUI>}
 
-      <div className="flex flex-col gap-2">
-        {Children.map(children, (child) => (
-          <div className="bg-amber-200 w-fit">{child}</div>
-        ))}
+      <div className="grid grid-cols-5 w-[2400px] gap-4 bg-gray-50">
+        <div className="flex flex-col gap-2">
+          <TextUI variant="title">Без обертки</TextUI>
+          {Children.map(children, (child) => (
+            <div className="bg-amber-100/70">{child}</div>
+          ))}
+        </div>
+
+        <div className="flex flex-col bg-gray-100 gap-2">
+          <TextUI variant="title">Ширина w-fit (auto)</TextUI>
+          {Children.map(children, (child) => (
+            <div className="bg-amber-100/70 w-fit">{child}</div>
+          ))}
+        </div>
+
+        <div className="flex flex-col bg-gray-100 gap-2">
+          <TextUI variant="title">Ширина w-full (100%)</TextUI>
+          {Children.map(children, (child) => (
+            <div className="bg-amber-100/70 w-full">{child}</div>
+          ))}
+        </div>
+
+        <div className="flex flex-col bg-gray-100 gap-2">
+          <TextUI variant="title">Ширина w-full (100%) + flex</TextUI>
+          {Children.map(children, (child) => (
+            <div className="bg-amber-100/70 flex w-full">{child}</div>
+          ))}
+        </div>
+
+        <div className="flex flex-col bg-gray-100 gap-2">
+          <TextUI variant="title">Ширина w-full (100%) + центрирование</TextUI>
+          {Children.map(children, (child) => (
+            <div className="bg-amber-100/70 flex justify-center w-full">
+              {child}
+            </div>
+          ))}
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
@@ -57,6 +91,25 @@ export function Components() {
         <IconUI icon="logout" size="40px" color="text-gray-600" />
       </ComponentsDiv>
 
+      <ComponentsDiv title="Иконки как кнопки">
+        <IconUI
+          icon="logout"
+          onClick={() => toast.success("Кнопка не настроена")}
+        />
+        <IconUI
+          icon="logout"
+          size="32px"
+          color="text-[#e91010]"
+          onClick={() => toast.success("Кнопка не настроена")}
+        />
+        <IconUI
+          icon="logout"
+          size="40px"
+          color="text-gray-600"
+          onClick={() => toast.success("Кнопка не настроена")}
+        />
+      </ComponentsDiv>
+
       <ComponentsDiv title="Иконки Svg">
         <IconSvgUI src={userIcon} className="w-8 h-8 text-black" />
         <IconSvgUI src={userIcon} className="w-12 h-12 text-[#E91010]" />
@@ -67,9 +120,6 @@ export function Components() {
         <ButtonUI variant="primary">Primary Button</ButtonUI>
         <ButtonUI variant="secondary">Secondary Button</ButtonUI>
         <ButtonUI variant="link">Link Button</ButtonUI>
-        <ButtonUI variant="icon">
-          <IconUI icon="logout" size="24px" />
-        </ButtonUI>
       </ComponentsDiv>
 
       <ComponentsDiv title="Кнопки неактивные">
@@ -82,8 +132,29 @@ export function Components() {
         <ButtonUI variant="link" disabled>
           Link Button
         </ButtonUI>
+      </ComponentsDiv>
+
+      <ComponentsDiv title="Кнопки с иконками">
+        <ButtonUI variant="icon">
+          <IconUI icon="logout" />
+        </ButtonUI>
+        <ButtonUI variant="icon">
+          <IconUI icon="logout" size="32px" color="text-[#e91010]" />
+        </ButtonUI>
+        <ButtonUI variant="icon">
+          <IconUI icon="logout" size="40px" />
+        </ButtonUI>
+      </ComponentsDiv>
+
+      <ComponentsDiv title="Кнопки неактивные с иконками">
         <ButtonUI variant="icon" disabled>
-          <IconUI icon="logout" size="24px" />
+          <IconUI icon="logout" />
+        </ButtonUI>
+        <ButtonUI variant="icon" disabled>
+          <IconUI icon="logout" size="32px" color="text-[#e91010]" />
+        </ButtonUI>
+        <ButtonUI variant="icon" disabled>
+          <IconUI icon="logout" size="40px" />
         </ButtonUI>
       </ComponentsDiv>
 

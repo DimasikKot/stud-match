@@ -13,7 +13,7 @@ export const CheckboxUI = ({
   className?: string;
 }) => {
   const className = `
-    flex items-center w-max cursor-pointer gap-2 p-2 ${title && "px-4"}  hover:bg-gray-200 rounded-full transition-colors ${customClassName}
+    flex items-center w-max cursor-pointer gap-2 p-2 ${title && "px-4"}  hover:bg-gray-200/70 rounded-full transition-colors ${customClassName}
   `;
 
   return (
