@@ -31,6 +31,7 @@ class FileResponse(BaseModel):
     rustfs_bucket: str
     status: str
     skills_vector: dict
+    work_zip_id: int
     work_date: datetime
 
 

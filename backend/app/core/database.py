@@ -1,8 +1,6 @@
-from sqlalchemy import create_engine, Engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
-
 from app.core.config import settings
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Основная БД
 engine: Engine = create_engine(
