@@ -1,4 +1,3 @@
-from datetime import datetime
 from urllib.parse import quote
 
 from app.core.database import get_db
@@ -32,7 +31,6 @@ class FileResponse(BaseModel):
     status: str
     skills_vector: dict
     work_zip_id: int
-    work_date: datetime
 
 
 class FileListResponse(BaseModel):
