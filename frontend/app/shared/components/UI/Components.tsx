@@ -79,24 +79,24 @@ export function Components() {
       </ComponentsDiv>
 
       <ComponentsDiv title="Иконки">
-        <IconUI icon="logout" color="text-black" />
-        <IconUI icon="logout" size="32px" color="text-[#e91010]" />
-        <IconUI icon="logout" size="40px" color="text-gray-600" />
+        <IconUI name="logout" color="text-black" />
+        <IconUI name="logout" size="32px" color="text-[#e91010]" />
+        <IconUI name="logout" size="40px" color="text-gray-600" />
       </ComponentsDiv>
 
       <ComponentsDiv title="Иконки как кнопки">
         <IconUI
-          icon="logout"
+          name="logout"
           onClick={() => toast.success("Кнопка не настроена")}
         />
         <IconUI
-          icon="logout"
+          name="logout"
           size="32px"
           color="text-[#e91010]"
           onClick={() => toast.success("Кнопка не настроена")}
         />
         <IconUI
-          icon="logout"
+          name="logout"
           size="40px"
           color="text-gray-600"
           onClick={() => toast.success("Кнопка не настроена")}
@@ -129,25 +129,25 @@ export function Components() {
 
       <ComponentsDiv title="Кнопки с иконками">
         <ButtonUI variant="icon">
-          <IconUI icon="logout" />
+          <IconUI name="logout" />
         </ButtonUI>
         <ButtonUI variant="icon">
-          <IconUI icon="logout" size="32px" color="text-[#e91010]" />
+          <IconUI name="logout" size="32px" color="text-[#e91010]" />
         </ButtonUI>
         <ButtonUI variant="icon">
-          <IconUI icon="logout" size="40px" />
+          <IconUI name="logout" size="40px" />
         </ButtonUI>
       </ComponentsDiv>
 
       <ComponentsDiv title="Кнопки неактивные с иконками">
         <ButtonUI variant="icon" disabled>
-          <IconUI icon="logout" />
+          <IconUI name="logout" />
         </ButtonUI>
         <ButtonUI variant="icon" disabled>
-          <IconUI icon="logout" size="32px" color="text-[#e91010]" />
+          <IconUI name="logout" size="32px" color="text-[#e91010]" />
         </ButtonUI>
         <ButtonUI variant="icon" disabled>
-          <IconUI icon="logout" size="40px" />
+          <IconUI name="logout" size="40px" />
         </ButtonUI>
       </ComponentsDiv>
 
@@ -189,12 +189,12 @@ export function Components() {
       </ComponentsDiv>
 
       <ComponentsDiv title="Статус индикаторы">
-        <StatusUI status={true} />
-        <StatusUI status={false} />
-        <StatusUI status={undefined} />
-        <StatusUI status={true} title="Online" />
-        <StatusUI status={false} title="Offline" />
-        <StatusUI status={undefined} title="Unknown" />
+        <StatusUI value={true} />
+        <StatusUI value={false} />
+        <StatusUI value={undefined} />
+        <StatusUI value={true} title="Online" />
+        <StatusUI value={false} title="Offline" />
+        <StatusUI value={undefined} title="Unknown" />
       </ComponentsDiv>
     </PageLayout>
   );

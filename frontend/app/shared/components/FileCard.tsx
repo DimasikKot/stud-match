@@ -1,8 +1,9 @@
 import toast from "react-hot-toast";
 
-import type { FileListResponse } from "@/shared/api/file";
+import type { FileResponse } from "@/shared/api/file";
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { ButtonUI } from "./UI/ButtonUI";
+import { IconUI } from "./UI/IconUI";
 
 export const FileCard = ({
   file,
@@ -10,10 +11,10 @@ export const FileCard = ({
   onEditClick = () => toast.error("Обработка редактирования не настроена"),
   onDownloadClick = () => toast.error("Обработка скачивания не настроена"),
   onDeleteClick = () => toast.error("Обработка удаления не настроена"),
-  className = "",
+  className: customClassName,
   variant = "normal",
 }: {
-  file: FileListResponse;
+  file: FileResponse;
   onClick?: () => void;
   onEditClick?: React.MouseEventHandler<HTMLButtonElement>;
   onDownloadClick?: React.MouseEventHandler<HTMLButtonElement>;
@@ -22,61 +23,39 @@ export const FileCard = ({
   variant?: "normal" | "compact";
 }) => {
   const date = file.work_date;
+  const className = `
+        flex flex-col justify-between pb-2 px-1 gap-1 overflow-clip
+        transition-all duration-200 cursor-pointer 
+        bg-white border border-gray-300
+        ${variant === "normal" && "hover:border-gray-400 hover:shadow-md"}
+        ${customClassName}
+      `;
 
   return (
-    <div
-      onClick={onClick}
-      className={`
-        bg-white border border-gray-300 p-4 gap-3
-        ${variant === "normal" && "hover:border-gray-400 hover:shadow-md"} transition-all duration-200
-        cursor-pointer flex flex-col justify-between w-full
-        ${className}
-      `}
-    >
+    <div onClick={onClick} className={className}>
       <div className="flex-1 h-full">
         <div className="flex flex-row justify-between gap-4">
-          <div className="flex w-fit flex-row gap-2">
-            <TextUI variant="title" maxLines={1} className="-mt-1">
+          <div className="flex flex-1 min-w-0 max-h-12 flex-row items-center gap-2">
+            <TextUI
+              variant="title"
+              title={file.name}
+              className="-mt-1 line-clamp-1"
+            >
               {file.name}
             </TextUI>
 
-            <TextUI variant="desc" className="flex items-end mt-0.5 h-min w-26">
+            {/* <TextUI variant="desc" className="flex items-end mt-0.5 h-min shrink-0">
               (id: {file.id})
-            </TextUI>
+            </TextUI> */}
           </div>
 
-          <div
-            className={`flex items-center justify-center select-none material-icons 
-            ${file.is_labeled ? "text-green-500" : "text-gray-500"}`}
-          >
-            {file.is_labeled ? "sell" : "help_outline"}
-          </div>
+          <IconUI
+            name={file.status === "extracted" ? "sell" : "help_outline"}
+            className={
+              file.status === "extracted" ? "text-green-500" : "text-gray-500"
+            }
+          />
         </div>
-
-        {file.total_rows && (
-          <TextUI variant="desc" maxLines={1} className="mt-1">
-            <strong>Строк:</strong> {file.total_rows}
-          </TextUI>
-        )}
-
-        {file.prediction_model && (
-          <TextUI variant="desc" maxLines={1} className="mt-1">
-            <strong>Размечен моделью:</strong> {file.prediction_model.name}
-            {" ("}
-            {file.prediction_model.parameters["Базовая модель"]
-              ? String(file.prediction_model.parameters["Базовая модель"])
-                  .split("/")
-                  .pop()
-              : null}
-            {")"}
-          </TextUI>
-        )}
-
-        {file.origin_file && (
-          <TextUI variant="desc" maxLines={1} className="mt-1">
-            <strong>Исходный файл:</strong> {file.origin_file.name}
-          </TextUI>
-        )}
       </div>
 
       {variant === "normal" && (

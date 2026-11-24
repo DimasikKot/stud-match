@@ -19,7 +19,7 @@ export const CheckboxUI = ({
   return (
     <button type="button" onClick={onClick} className={className}>
       <IconUI
-        icon={value ? "check_box" : "check_box_outline_blank"}
+        name={value ? "check_box" : "check_box_outline_blank"}
         color={value ? "text-blue-600" : "text-gray-400"}
       />
 

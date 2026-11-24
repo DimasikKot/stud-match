@@ -1,7 +1,6 @@
 export const TextUI = ({
   variant = "label",
   className: customClassName,
-  maxLines = 3,
   isSelectable = false,
   span = false,
   title,
@@ -17,7 +16,6 @@ export const TextUI = ({
     | "title"
     | "header";
   className?: string;
-  maxLines?: number;
   isSelectable?: boolean;
   span?: boolean;
   title?: string;
@@ -37,8 +35,7 @@ export const TextUI = ({
           }[variant]
         }
         ${customClassName}
-        ${isSelectable ? "select-text" : "select-none"}
-        ${maxLines && `line-clamp-${maxLines}`}`;
+        ${isSelectable ? "select-text" : "select-none"}`;
 
   return span ? (
     <span title={title} className={className}>

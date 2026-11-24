@@ -113,6 +113,7 @@ export const errorValidate = (error: unknown) => {
       error_text = `Ошибка ${error.message}`;
     }
 
+    console.log(error_text);
     toast.error(error_text);
   }
 };

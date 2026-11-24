@@ -1,12 +1,12 @@
 export const IconUI = ({
-  icon,
+  name,
   size = "24px",
   color,
   className: customClassName,
   onClick,
   title,
 }: {
-  icon: string;
+  name: string;
   size?: string;
   color?: string;
   className?: string;
@@ -25,7 +25,7 @@ export const IconUI = ({
         className={className}
         style={{ fontSize: size, lineHeight: 1, width: size }}
       >
-        {icon}
+        {name}
       </span>
     </button>
   ) : (
@@ -35,7 +35,7 @@ export const IconUI = ({
         style={{ fontSize: size, lineHeight: 1, width: size, height: size }}
         title={title}
       >
-        {icon}
+        {name}
       </span>
     </div>
   );

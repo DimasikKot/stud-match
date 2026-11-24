@@ -1,11 +1,11 @@
 import { TextUI } from "@/shared/components/UI/TextUI";
 
 export const StatusUI = ({
-  status,
+  value,
   title,
   className: customClassName,
 }: {
-  status?: boolean;
+  value?: boolean;
   title?: string;
   className?: string;
 }) => {
@@ -16,7 +16,7 @@ export const StatusUI = ({
   return (
     <div className={className}>
       <div
-        className={`rounded-full h-3 w-3 ${status === undefined ? "bg-gray-500" : status === true ? "bg-green-500" : "bg-red-500"}`}
+        className={`rounded-full h-3 w-3 ${value === undefined ? "bg-gray-500" : value === true ? "bg-green-500" : "bg-red-500"}`}
       />
 
       {title && <TextUI variant="label">{title}</TextUI>}

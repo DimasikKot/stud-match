@@ -18,5 +18,8 @@ CREATE TABLE
     rustfs_bucket VARCHAR(255) NOT NULL,
     status file_status NOT NULL DEFAULT 'not_extracted',
     skills_vector JSONB NOT NULL DEFAULT '{}',
+    work_name VARCHAR(255) NOT NULL,
     work_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+
+CREATE INDEX files_work_name_idx ON files (work_name);

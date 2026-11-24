@@ -117,7 +117,7 @@ export function Sidebar({
           }`}
         >
           <IconUI
-            icon="menu"
+            name="menu"
             size="24px"
             onClick={onToggle}
             title={collapsed ? "Развернуть меню" : "Свернуть меню"}
@@ -125,7 +125,7 @@ export function Sidebar({
           />
 
           <IconUI
-            icon="logout"
+            name="logout"
             size="24px"
             onClick={handleLogout}
             title="Выйти"
@@ -176,7 +176,7 @@ export function Sidebar({
                     )}
 
                     <IconUI
-                      icon={item.icon}
+                      name={item.icon}
                       size="20px"
                       color={`flex items-center justify-center ${item.adminOnly ? "text-red-300" : "text-white"}`}
                     />
@@ -202,7 +202,7 @@ export function Sidebar({
       {isAdmin && (
         <div
           className={`${
-            collapsed ? "hidden" : "hidden lg:block"
+            collapsed ? "hidden" : ""
           } border-t border-white/10 px-6 py-3`}
         >
           <TextUI variant="subtitle">Система</TextUI>
@@ -215,9 +215,10 @@ export function Sidebar({
                   key={item.key}
                   content={status?.metrics}
                   isJSON
+                  JSONSpaces={4}
                   className="flex items-center gap-2 w-fit"
                 >
-                  <StatusUI status={status?.success} title={item.label} />
+                  <StatusUI value={status?.success} title={item.label} />
                 </TooltipUI>
               );
             })}

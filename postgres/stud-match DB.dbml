@@ -43,8 +43,15 @@ Table files {
   status file_status [not null, default: 'not_extracted']
   skills_vector JSONB [not null, default: '{}']
 
+  // Название работы, например "Курсовая работа по математике" для обьединения работ
+  work_name VARCHAR(255) [not null]
+
   // Когда выполнена работа, указывает препод, для коэффициента занчимости
   work_date TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    work_name [name: "files_work_name_idx"]
+  }
 }
 
 Table skills {

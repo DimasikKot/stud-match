@@ -47,6 +47,7 @@ CREATE TABLE
     "rustfs_bucket" "VARCHAR(255)" NOT NULL,
     "status" file_status NOT NULL DEFAULT 'not_extracted',
     "skills_vector" JSONB NOT NULL DEFAULT '{}',
+    "work_name" "VARCHAR(255)" NOT NULL,
     "work_date" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
@@ -93,6 +94,8 @@ CREATE TABLE
     "result" JSONB NOT NULL DEFAULT '{}',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
+  
+CREATE INDEX "files_work_name_idx" ON "files" ("work_name");
 
 CREATE INDEX "student_files_student_id_idx" ON "student_files" ("student_id");
 

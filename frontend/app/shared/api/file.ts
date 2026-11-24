@@ -1,28 +1,22 @@
 import api, { errorValidate } from "@/shared/api/axios";
 
+export const FileStatus = {
+  NotExtracted: "not_extracted",
+  Queued: "queued",
+  Extracting: "extracting",
+  Extracted: "extracted",
+  Applied: "applied",
+} as const;
+
 export interface FileResponse {
   id: number;
   name: string;
   size: number;
   rustfs_object_key: string;
   rustfs_bucket: string;
-  status: string;
+  status: (typeof FileStatus)[keyof typeof FileStatus];
   skills_vector: Record<string, unknown>;
   work_date: string;
-}
-
-export interface FileListResponse extends FileResponse {
-  is_labeled?: boolean;
-  total_rows?: number | null;
-  prediction_model?: {
-    id: number;
-    name: string;
-    parameters: Record<string, unknown>;
-  } | null;
-  origin_file?: {
-    id: number;
-    name: string;
-  } | null;
 }
 
 export interface MessageResponse {
@@ -53,9 +47,9 @@ export const uploadFiles = async (files: File[]): Promise<FileResponse[]> => {
   }
 };
 
-export const fetchFiles = async (): Promise<{ data: FileListResponse[] }> => {
+export const fetchFiles = async (): Promise<{ data: FileResponse[] }> => {
   try {
-    const { data } = await api.get<{ data: FileListResponse[] }>("/files/");
+    const { data } = await api.get<{ data: FileResponse[] }>("/files/");
     return data;
   } catch (error) {
     errorValidate(error);
