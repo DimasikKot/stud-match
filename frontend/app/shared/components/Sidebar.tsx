@@ -86,7 +86,7 @@ export function Sidebar({
     const loadUser = async () => {
       try {
         const user = await getCurrentUser();
-        setUsername(sessionStorage.getItem("username"));
+        setUsername(sessionStorage.getItem("fullname"));
         setIsAdmin(user.role === "admin");
       } catch {
         setUsername(null);

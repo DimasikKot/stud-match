@@ -178,7 +178,6 @@ export function Files() {
                 <FileCard
                   key={file.id}
                   file={file}
-                  dateIsCreatedAt
                   onClick={() => window.open(fileViewUrl(file.id), "_blank")}
                   onDownloadClick={() =>
                     window.open(fileDownloadUrl(file.id), "_blank")

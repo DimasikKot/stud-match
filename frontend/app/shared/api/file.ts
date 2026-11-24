@@ -3,11 +3,12 @@ import api, { errorValidate } from "@/shared/api/axios";
 export interface FileResponse {
   id: number;
   name: string;
-  object_key: string;
-  path: string;
   size: number;
-  created_at: string;
-  updated_at: string;
+  rustfs_object_key: string;
+  rustfs_bucket: string;
+  status: string;
+  skills_vector: Record<string, unknown>;
+  work_date: string;
 }
 
 export interface FileListResponse extends FileResponse {
@@ -52,13 +53,9 @@ export const uploadFiles = async (files: File[]): Promise<FileResponse[]> => {
   }
 };
 
-export const fetchFiles = async (
-  projectId?: number | string,
-): Promise<{ data: FileListResponse[] }> => {
+export const fetchFiles = async (): Promise<{ data: FileListResponse[] }> => {
   try {
-    const { data } = await api.get<{ data: FileListResponse[] }>("/files/", {
-      params: projectId !== undefined ? { project_id: projectId } : {},
-    });
+    const { data } = await api.get<{ data: FileListResponse[] }>("/files/");
     return data;
   } catch (error) {
     errorValidate(error);

@@ -10,7 +10,6 @@ export const FileCard = ({
   onEditClick = () => toast.error("Обработка редактирования не настроена"),
   onDownloadClick = () => toast.error("Обработка скачивания не настроена"),
   onDeleteClick = () => toast.error("Обработка удаления не настроена"),
-  dateIsCreatedAt = false,
   className = "",
   variant = "normal",
 }: {
@@ -19,11 +18,10 @@ export const FileCard = ({
   onEditClick?: React.MouseEventHandler<HTMLButtonElement>;
   onDownloadClick?: React.MouseEventHandler<HTMLButtonElement>;
   onDeleteClick?: React.MouseEventHandler<HTMLButtonElement>;
-  dateIsCreatedAt?: boolean;
   className?: string;
   variant?: "normal" | "compact";
 }) => {
-  const date = dateIsCreatedAt ? file.created_at : file.updated_at;
+  const date = file.work_date;
 
   return (
     <div
