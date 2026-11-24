@@ -38,7 +38,7 @@ def _delete_s3_object(object_key: str) -> None:
         pass
 
 
-def upload_file(
+def upload_zip(
     db: Session,
     fileobj: BinaryIO,
     filename: str,
@@ -69,6 +69,7 @@ def upload_file(
         rustfs_object_key=object_key,
         rustfs_bucket=settings.RUSTFS_BUCKET,
         size=size,
+        work_name=zipname,
     )
     try:
         db.add(file_record)

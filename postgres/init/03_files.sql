@@ -18,8 +18,9 @@ CREATE TABLE
     rustfs_bucket VARCHAR(255) NOT NULL,
     status file_status NOT NULL DEFAULT 'not_extracted',
     skills_vector JSONB NOT NULL DEFAULT '{}',
-    work_name VARCHAR(255) NOT NULL,
-    work_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    work_zip_id INT NOT NULL
   );
 
-CREATE INDEX files_work_name_idx ON files (work_name);
+CREATE INDEX files_work_zip_id_idx ON files (work_zip_id);
+
+ALTER TABLE files ADD FOREIGN KEY (work_zip_id) REFERENCES work_zips (id) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

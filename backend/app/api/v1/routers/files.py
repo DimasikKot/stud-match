@@ -86,7 +86,7 @@ async def upload_files(
         for file in files:
             results.append(
                 await run_in_threadpool(
-                    file_service.upload_file,
+                    file_service.upload_zip,
                     db,
                     file.file,
                     file.filename or "file",

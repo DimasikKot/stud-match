@@ -8,3 +8,6 @@ CREATE TABLE
   );
 
 CREATE INDEX student_files_student_id_idx ON student_files (student_id);
+
+ALTER TABLE student_files ADD FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE student_files ADD FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

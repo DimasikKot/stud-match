@@ -34,6 +34,16 @@ Table users {
   updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
 }
 
+Table work_zips {
+  id SERIAL [pk, increment]
+
+  // Название работы, например "Курсовая работа по математике" для обьединения работ
+  name VARCHAR(255) [not null]
+
+  // Когда выполнена работа, указывает препод, для коэффициента занчимости
+  work_date TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
+}
+
 Table files {
   id SERIAL [pk, increment]
   name VARCHAR(255) [not null]
@@ -43,14 +53,10 @@ Table files {
   status file_status [not null, default: 'not_extracted']
   skills_vector JSONB [not null, default: '{}']
 
-  // Название работы, например "Курсовая работа по математике" для обьединения работ
-  work_name VARCHAR(255) [not null]
-
-  // Когда выполнена работа, указывает препод, для коэффициента занчимости
-  work_date TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
+  work_zip_id INT [not null]
 
   Indexes {
-    work_name [name: "files_work_name_idx"]
+    work_zip_id [name: "files_work_zip_id_idx"]
   }
 }
 
@@ -116,6 +122,8 @@ Table distributions {
 
 Ref: users.id < projects.user_id [delete: cascade]
 Ref: users.id < distributions.user_id [delete: cascade]
+
+Ref: work_zips.id < files.work_zip_id [delete: cascade]
 
 Ref: files.id < student_files.file_id [delete: cascade]
 Ref: students.id < student_files.student_id [delete: cascade]

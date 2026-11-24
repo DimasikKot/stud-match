@@ -83,6 +83,25 @@ class UserDB(Base):
     )
 
 
+class WorkZipDB(Base):
+    __tablename__ = "work_zips"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    work_date: Mapped[datetime] = mapped_column(
+        TIMESTAMP,
+        nullable=False,
+        server_default=func.now(),
+    )
+
+
 class FileDB(Base):
     __tablename__ = "files"
 
@@ -117,6 +136,12 @@ class FileDB(Base):
         JSONB,
         nullable=False,
         server_default="{}",
+    )
+    work_zip_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("work_zips.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     work_date: Mapped[datetime] = mapped_column(
         TIMESTAMP,

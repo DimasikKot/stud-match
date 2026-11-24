@@ -22,3 +22,5 @@ CREATE TABLE
   );
 
 CREATE INDEX distributions_user_id_idx ON distributions (user_id);
+
+ALTER TABLE distributions ADD FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

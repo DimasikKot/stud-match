@@ -39,6 +39,13 @@ VALUES
   );
 
 CREATE TABLE
+  "work_zips" (
+    "id" SERIAL PRIMARY KEY,
+    "name" "VARCHAR(255)" NOT NULL,
+    "work_date" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  );
+
+CREATE TABLE
   "files" (
     "id" SERIAL PRIMARY KEY,
     "name" "VARCHAR(255)" NOT NULL,
@@ -47,8 +54,7 @@ CREATE TABLE
     "rustfs_bucket" "VARCHAR(255)" NOT NULL,
     "status" file_status NOT NULL DEFAULT 'not_extracted',
     "skills_vector" JSONB NOT NULL DEFAULT '{}',
-    "work_name" "VARCHAR(255)" NOT NULL,
-    "work_date" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+    "work_zip_id" INT NOT NULL
   );
 
 CREATE TABLE
@@ -95,7 +101,7 @@ CREATE TABLE
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
   
-CREATE INDEX "files_work_name_idx" ON "files" ("work_name");
+CREATE INDEX "files_work_zip_id_idx" ON "files" ("work_zip_id");
 
 CREATE INDEX "student_files_student_id_idx" ON "student_files" ("student_id");
 
@@ -110,3 +116,5 @@ ALTER TABLE "distributions" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id"
 ALTER TABLE "student_files" ADD FOREIGN KEY ("file_id") REFERENCES "files" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "student_files" ADD FOREIGN KEY ("student_id") REFERENCES "students" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "files" ADD FOREIGN KEY ("work_zip_id") REFERENCES "work_zips" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
