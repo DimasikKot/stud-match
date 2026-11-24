@@ -5,9 +5,9 @@ import toast from "react-hot-toast";
 import illustration from "@/shared/images/illustration.jpg";
 import logo from "@/shared/images/logo.png";
 
-import { ButtonUI } from "@/shared/components/ButtonUI";
-import { InputUI } from "@/shared/components/InputUI";
-import { TextUI } from "@/shared/components/TextUI";
+import { ButtonUI } from "@/shared/components/UI/ButtonUI";
+import { InputUI } from "@/shared/components/UI/InputUI";
+import { TextUI } from "@/shared/components/UI/TextUI";
 
 import { getCurrentUser, loginUser } from "@/shared/api/users";
 

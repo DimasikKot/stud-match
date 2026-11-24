@@ -1,4 +1,4 @@
-import { ButtonUI } from "@/shared/components/ButtonUI";
+import { ButtonUI } from "@/shared/components/UI/ButtonUI";
 import { useNavigate } from "react-router-dom";
 
 export function NotFound() {

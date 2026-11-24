@@ -2,11 +2,11 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 import { ButtonPage } from "@/shared/components/ButtonPage";
-import { TextUI } from "@/shared/components/TextUI";
-import { ButtonUI } from "@/shared/components/ButtonUI";
+import { TextUI } from "@/shared/components/UI/TextUI";
+import { ButtonUI } from "@/shared/components/UI/ButtonUI";
 import { StatusIndicator } from "@/shared/components/StatusIndicator";
-import { InputUI } from "@/shared/components/InputUI";
-import { CheckboxUI } from "@/shared/components/CheckboxUI";
+import { InputUI } from "@/shared/components/UI/InputUI";
+import { CheckboxUI } from "@/shared/components/UI/CheckboxUI";
 
 export function Components() {
   const navigate = useNavigate();

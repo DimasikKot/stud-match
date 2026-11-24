@@ -13,8 +13,8 @@ import { getCurrentUser, logoutUser } from "@/shared/api/users";
 import { StatusIndicator } from "@/shared/components/StatusIndicator";
 import userIcon from "@/shared/images/circle-user-regular-full.svg";
 import { HEALTH_ITEMS, NAV_ITEMS, type HealthKey } from "../constants/sidebar";
-import { TextUI } from "./TextUI";
-import { IconUI } from "./IconUI";
+import { TextUI } from "./UI/TextUI";
+import { IconUI } from "./UI/IconUI";
 
 const SvgIcon = ({
   src,

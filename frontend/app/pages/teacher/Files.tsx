@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import { ButtonPage } from "@/shared/components/ButtonPage";
-import { ButtonUI } from "@/shared/components/ButtonUI";
-import { TextUI } from "@/shared/components/TextUI";
+import { ButtonUI } from "@/shared/components/UI/ButtonUI";
+import { TextUI } from "@/shared/components/UI/TextUI";
 import { FileCard } from "@/shared/components/FileCard";
 import {
   deleteFile,

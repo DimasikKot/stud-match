@@ -6,28 +6,28 @@ import {
 } from "react-router-dom";
 import "material-icons/iconfont/material-icons.css";
 
-import { ToasterUI } from "@/shared/components/ToasterUI";
-import { MainLayout } from "@/shared/components/MainLayout";
-import { PrivateRoute } from "@/shared/components/PrivateRoute";
-import { AdminRoute } from "@/shared/components/AdminRoute";
+import { ToasterLayout } from "@/shared/components/Layouts/ToasterLayout";
+import { MainLayout } from "@/shared/components/Layouts/MainLayout";
+import { PrivateRoute } from "@/shared/components/Layouts/PrivateRoute";
+import { AdminRoute } from "@/shared/components/Layouts/AdminRoute";
 
 import { Login } from "@/pages/main/Login";
 
-import { Projects } from "@/pages/main/Projects";
+import { Projects } from "@/pages/teacher/Projects";
 import { NotFound } from "@/pages/main/NotFound";
 
-import Students from "@/pages/main/Students";
-import Teachers from "@/pages/main/Teachers";
-import Matches from "@/pages/main/Matches";
-import Profile from "@/pages/main/Profile";
+import Students from "@/pages/teacher/Students";
+import Teachers from "@/pages/teacher/Teachers";
+import Matches from "@/pages/teacher/Matches";
+import Profile from "@/pages/teacher/Profile";
 
-import { Files } from "@/pages/main/Files";
+import { Files } from "@/pages/teacher/Files";
 import { Components } from "@/pages/main/Components";
 
 export function App() {
   return (
     <Router>
-      <ToasterUI />
+      <ToasterLayout />
 
       <div className="bg-white">
         <Routes>

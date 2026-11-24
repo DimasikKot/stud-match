@@ -1,8 +1,8 @@
 import toast from "react-hot-toast";
 
 import type { FileListResponse } from "@/shared/api/file";
-import { TextUI } from "@/shared/components/TextUI";
-import { ButtonUI } from "./ButtonUI";
+import { TextUI } from "@/shared/components/UI/TextUI";
+import { ButtonUI } from "./UI/ButtonUI";
 
 export const FileCard = ({
   file,
