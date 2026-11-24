@@ -21,11 +21,19 @@ class UserRole(str, enum.Enum):
     TEACHER = "teacher"
 
 
+class ZipStatus(str, enum.Enum):
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 class FileStatus(str, enum.Enum):
     NOT_EXTRACTED = "not_extracted"
     QUEUED = "queued"
     EXTRACTING = "extracting"
     EXTRACTED = "extracted"
+    FAILED = "failed"
     APPLIED = "applied"
 
 
@@ -34,6 +42,7 @@ class DistributionStatus(str, enum.Enum):
     QUEUED = "queued"
     DISTRIBUTING = "distributing"
     DISTRIBUTED = "distributed"
+    FAILED = "failed"
 
 
 ROLE_ADMIN = UserRole.ADMIN
@@ -82,19 +91,25 @@ class UserDB(Base):
     )
 
 
-class WorkZipDB(Base):
-    __tablename__ = "work_zips"
+class ZipDB(Base):
+    __tablename__ = "zips"
 
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
         index=True,
     )
+    status: Mapped[ZipStatus] = mapped_column(
+        Enum(ZipStatus, name="zip_status", values_callable=_enum_values),
+        nullable=False,
+        default=ZipStatus.PENDING,
+        server_default=ZipStatus.PENDING.value,
+    )
     name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
-    work_date: Mapped[datetime] = mapped_column(
+    date: Mapped[datetime] = mapped_column(
         TIMESTAMP,
         nullable=False,
         server_default=func.now(),
@@ -136,9 +151,9 @@ class FileDB(Base):
         nullable=False,
         server_default="{}",
     )
-    work_zip_id: Mapped[int] = mapped_column(
+    zip_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("work_zips.id", ondelete="CASCADE"),
+        ForeignKey("zips.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

@@ -5,7 +5,8 @@ CREATE TYPE distribution_status AS ENUM (
   'not_started',
   'queued',
   'distributing',
-  'distributed'
+  'distributed',
+  'failed'
 );
 
 CREATE TABLE

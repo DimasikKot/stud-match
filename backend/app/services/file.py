@@ -7,7 +7,7 @@ from typing import BinaryIO
 
 import boto3
 from app.core.config import settings
-from app.models.db import FileDB, StudentDB, StudentFilesDB, WorkZipDB
+from app.models.db import FileDB, StudentDB, StudentFilesDB, ZipDB
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from fastapi import HTTPException
@@ -69,7 +69,7 @@ def upload_zip(
     except zipfile.BadZipFile:
         raise HTTPException(status_code=400, detail="Файл не является zip-архивом")
 
-    zip_record = WorkZipDB(name=filename)
+    zip_record = ZipDB(name=filename)
     db.add(zip_record)
     db.flush()
 

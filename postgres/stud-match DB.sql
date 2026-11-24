@@ -1,10 +1,18 @@
 CREATE TYPE "user_role" AS ENUM ('admin', 'teacher');
 
+CREATE TYPE "zip_status" AS ENUM (
+  'pending',
+  'processing',
+  'completed',
+  'failed'
+);
+
 CREATE TYPE "file_status" AS ENUM (
   'not_extracted',
   'queued',
   'extracting',
   'extracted',
+  'failed',
   'applied'
 );
 
@@ -12,7 +20,8 @@ CREATE TYPE "distribution_status" AS ENUM (
   'not_started',
   'queued',
   'distributing',
-  'distributed'
+  'distributed',
+  'failed'
 );
 
 CREATE TABLE
@@ -39,10 +48,11 @@ VALUES
   );
 
 CREATE TABLE
-  "work_zips" (
+  "zips" (
     "id" SERIAL PRIMARY KEY,
+    "status" zip_status NOT NULL DEFAULT 'pending',
     "name" "VARCHAR(255)" NOT NULL,
-    "work_date" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+    "date" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
 CREATE TABLE
@@ -54,7 +64,7 @@ CREATE TABLE
     "rustfs_bucket" "VARCHAR(255)" NOT NULL,
     "status" file_status NOT NULL DEFAULT 'not_extracted',
     "skills_vector" JSONB NOT NULL DEFAULT '{}',
-    "work_zip_id" INT NOT NULL
+    "zip_id" INT NOT NULL
   );
 
 CREATE TABLE
@@ -101,7 +111,7 @@ CREATE TABLE
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
   
-CREATE INDEX "files_work_zip_id_idx" ON "files" ("work_zip_id");
+CREATE INDEX "files_zip_id_idx" ON "files" ("zip_id");
 
 CREATE INDEX "student_files_student_id_idx" ON "student_files" ("student_id");
 
@@ -117,4 +127,4 @@ ALTER TABLE "student_files" ADD FOREIGN KEY ("file_id") REFERENCES "files" ("id"
 
 ALTER TABLE "student_files" ADD FOREIGN KEY ("student_id") REFERENCES "students" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
-ALTER TABLE "files" ADD FOREIGN KEY ("work_zip_id") REFERENCES "work_zips" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "files" ADD FOREIGN KEY ("zip_id") REFERENCES "zips" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

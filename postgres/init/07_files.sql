@@ -6,6 +6,7 @@ CREATE TYPE file_status AS ENUM (
   'queued',
   'extracting',
   'extracted',
+  'failed',
   'applied'
 );
 
@@ -18,9 +19,9 @@ CREATE TABLE
     rustfs_bucket VARCHAR(255) NOT NULL,
     status file_status NOT NULL DEFAULT 'not_extracted',
     skills_vector JSONB NOT NULL DEFAULT '{}',
-    work_zip_id INT NOT NULL
+    zip_id INT NOT NULL
   );
 
-CREATE INDEX files_work_zip_id_idx ON files (work_zip_id);
+CREATE INDEX files_zip_id_idx ON files (zip_id);
 
-ALTER TABLE files ADD FOREIGN KEY (work_zip_id) REFERENCES work_zips (id) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE files ADD FOREIGN KEY (zip_id) REFERENCES zips (id) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

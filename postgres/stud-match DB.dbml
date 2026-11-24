@@ -1,8 +1,15 @@
 // --- ENUMS ---
 
 Enum user_role {
-  admin
-  teacher
+  admin              // администратор
+  teacher            // преподаватель
+}
+
+Enum zip_status {
+  pending            // ожидает обработки
+  processing         // обрабатывается
+  completed          // обработан
+  failed             // ошибка обработки
 }
 
 Enum file_status {
@@ -10,6 +17,7 @@ Enum file_status {
   queued             // в очереди на извлечение
   extracting         // извлекаются признаки
   extracted          // извлечены признаки
+  failed             // ошибка извлечения
   applied            // учтён при формировании профиля студента (для пропуске при создании профиля)
 }
 
@@ -18,6 +26,7 @@ Enum distribution_status {
   queued             // в очереди на распределение
   distributing       // распределяются
   distributed        // распределен
+  failed             // ошибка распределения
 }
 
 // --- TABLES ---
@@ -34,14 +43,15 @@ Table users {
   updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
 }
 
-Table work_zips {
+Table zips {
   id SERIAL [pk, increment]
+  status zip_status [not null, default: 'pending']
 
   // Название работы, например "Курсовая работа по математике" для обьединения работ
   name VARCHAR(255) [not null]
 
   // Когда выполнена работа, указывает препод, для коэффициента занчимости
-  work_date TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
+  date TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
 }
 
 Table files {
@@ -53,10 +63,10 @@ Table files {
   status file_status [not null, default: 'not_extracted']
   skills_vector JSONB [not null, default: '{}']
 
-  work_zip_id INT [not null]
+  zip_id INT [not null]
 
   Indexes {
-    work_zip_id [name: "files_work_zip_id_idx"]
+    zip_id [name: "files_zip_id_idx"]
   }
 }
 
@@ -123,7 +133,7 @@ Table distributions {
 Ref: users.id < projects.user_id [delete: cascade]
 Ref: users.id < distributions.user_id [delete: cascade]
 
-Ref: work_zips.id < files.work_zip_id [delete: cascade]
+Ref: zips.id < files.zip_id [delete: cascade]
 
 Ref: files.id < student_files.file_id [delete: cascade]
 Ref: students.id < student_files.student_id [delete: cascade]
