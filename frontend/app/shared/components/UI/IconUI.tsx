@@ -1,8 +1,8 @@
 export const IconUI = ({
   icon,
-  size = "20px",
-  color = "black",
-  className: customClassName = "",
+  size = "24px",
+  color,
+  className: customClassName,
   onClick,
   title,
 }: {
@@ -13,7 +13,7 @@ export const IconUI = ({
   onClick?: () => void;
   title?: string;
 }) => {
-  const className = `material-icons leading- overflow-clip select-none text-${color}`;
+  const className = `material-icons select-none ${color}`;
 
   return onClick ? (
     <button

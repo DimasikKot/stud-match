@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Children, useState } from "react";
 
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { ButtonUI } from "@/shared/components/UI/ButtonUI";
@@ -21,7 +21,11 @@ const ComponentsDiv = ({
     <>
       {title && <TextUI variant="header">{title}</TextUI>}
 
-      <div className="flex flex-col w-fit bg-gray-100">{children}</div>
+      <div className="flex flex-col gap-2">
+        {Children.map(children, (child) => (
+          <div className="bg-amber-200 w-fit">{child}</div>
+        ))}
+      </div>
     </>
   );
 };
@@ -48,14 +52,14 @@ export function Components() {
       </ComponentsDiv>
 
       <ComponentsDiv title="Иконки">
-        <IconUI icon="logout" color="black" />
-        <IconUI icon="logout" size="32px" color="[#e91010]" />
-        <IconUI icon="logout" size="40px" color="gray-600" />
+        <IconUI icon="logout" color="text-black" />
+        <IconUI icon="logout" size="32px" color="text-[#e91010]" />
+        <IconUI icon="logout" size="40px" color="text-gray-600" />
       </ComponentsDiv>
 
       <ComponentsDiv title="Иконки Svg">
         <IconSvgUI src={userIcon} className="w-8 h-8 text-black" />
-        <IconSvgUI src={userIcon} className="w-12 h-12 text-[#e91010]" />
+        <IconSvgUI src={userIcon} className="w-12 h-12 text-[#E91010]" />
         <IconSvgUI src={userIcon} className="w-16 h-16 text-gray-600" />
       </ComponentsDiv>
 

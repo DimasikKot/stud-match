@@ -20,7 +20,7 @@ export const CheckboxUI = ({
     <button type="button" onClick={onClick} className={className}>
       <IconUI
         icon={value ? "check_box" : "check_box_outline_blank"}
-        color={value ? "blue-600" : "gray-400"}
+        color={value ? "text-blue-600" : "text-gray-400"}
       />
 
       {title && <TextUI variant="label">{title}</TextUI>}

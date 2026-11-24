@@ -149,7 +149,6 @@ export function Sidebar({
           <IconUI
             icon="menu"
             size="24px"
-            color="[#8FCBEA]"
             onClick={onToggle}
             title={collapsed ? "Развернуть меню" : "Свернуть меню"}
             className={iconButtonClass}
@@ -158,7 +157,6 @@ export function Sidebar({
           <IconUI
             icon="logout"
             size="24px"
-            color="[#8FCBEA]"
             onClick={handleLogout}
             title="Выйти"
             className={iconButtonClass}
@@ -209,7 +207,8 @@ export function Sidebar({
 
                     <IconUI
                       icon={item.icon}
-                      color={item.adminOnly ? "red-300" : "white"}
+                      size="20px"
+                      color={item.adminOnly ? "text-red-300" : "text-white"}
                     />
 
                     <TextUI

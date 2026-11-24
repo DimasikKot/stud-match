@@ -5,7 +5,7 @@ export const ButtonUI = ({
     toast.success("Кнопка без действия");
   },
   variant = "primary",
-  className: customClassName = "",
+  className: customClassName,
   title,
   disabled = false,
   hidden = false,
@@ -43,6 +43,7 @@ export const ButtonUI = ({
         className={className}
       >
         {title && <span className="sr-only">{title}</span>}
+
         {children}
       </button>
     )

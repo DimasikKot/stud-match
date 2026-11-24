@@ -5,11 +5,11 @@ export const InputUI = ({
   onEnter,
   onEscape,
   autoFocus = false,
-  placeholder = "",
+  placeholder,
   disabled = false,
   name = "input",
   type = "text",
-  className: customClassName = "",
+  className: customClassName,
   isArea = false,
   rows = 3,
 }: {

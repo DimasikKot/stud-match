@@ -1,6 +1,6 @@
 export const TextUI = ({
   variant = "normal",
-  className: customClassName = "",
+  className: customClassName,
   maxLines = 3,
   isSelectable = false,
   span = false,

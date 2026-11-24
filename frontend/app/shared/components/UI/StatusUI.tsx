@@ -3,14 +3,14 @@ import { TextUI } from "@/shared/components/UI/TextUI";
 export const StatusUI = ({
   status,
   title,
-  className: customClassName = "",
+  className: customClassName,
 }: {
   status?: boolean;
   title?: string;
   className?: string;
 }) => {
   const className = `
-    flex items-center w-max gap-2 ${title && "px-4"} ${customClassName}
+    flex items-center w-fit gap-2 ${customClassName}
   `;
 
   return (

@@ -1,6 +1,6 @@
 export const IconSvgUI = ({
   src,
-  className: customClassName = "",
+  className: customClassName,
 }: {
   src: string;
   className?: string;
@@ -8,7 +8,7 @@ export const IconSvgUI = ({
   return (
     <span
       aria-hidden="true"
-      className={`inline-block shrink-0 bg-current ${customClassName}`}
+      className={`inline-block shrink-0 bg-current h-6 w-6 ${customClassName}`}
       style={{
         maskImage: `url("${src}")`,
         WebkitMaskImage: `url("${src}")`,
