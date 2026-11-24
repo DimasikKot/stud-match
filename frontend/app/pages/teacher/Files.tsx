@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-import { ButtonPage } from "@/shared/components/ButtonPage";
 import { ButtonUI } from "@/shared/components/UI/ButtonUI";
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { FileCard } from "@/shared/components/FileCard";
@@ -25,7 +24,6 @@ export function Files() {
 
   const [files, setFiles] = useState<FileListResponse[]>([]);
   const [selected, setSelected] = useState<File[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   const loadFiles = () =>
@@ -69,25 +67,18 @@ export function Files() {
   };
 
   const handleDelete = async (file: FileListResponse) => {
-    setIsLoading(true);
     try {
       await deleteFile(file.id);
       toast.success(`Файл "${file.name}" удалён`);
       await loadFiles();
-    } finally {
-      setIsLoading(false);
+    } catch {
+      toast.error("Не удалось удалить файл");
     }
   };
 
   return (
     <div className="min-h-screen">
       <div className="max-w-6xl mx-auto p-6 mb-20 w-full">
-        <ButtonPage
-          onClick={() => window.scrollTo({ top: 0 })}
-          isLoading={isLoading}
-        />
-
-        {/* Загрузка файлов */}
         <div className="bg-white border border-gray-300 rounded-3xl p-6">
           <TextUI variant="title" className="mb-4">
             Загрузка файлов

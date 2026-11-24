@@ -1,7 +1,5 @@
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-import { ButtonPage } from "@/shared/components/ButtonPage";
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { ButtonUI } from "@/shared/components/UI/ButtonUI";
 import { StatusIndicator } from "@/shared/components/StatusIndicator";
@@ -9,15 +7,12 @@ import { InputUI } from "@/shared/components/UI/InputUI";
 import { CheckboxUI } from "@/shared/components/UI/CheckboxUI";
 
 export function Components() {
-  const navigate = useNavigate();
   const [textValue, setTextValue] = useState("");
   const [checkboxValue, setCheckboxValue] = useState(false);
 
   return (
     <>
       <div className="max-w-6xl mx-auto m-6 mb-80 bg-white">
-        <ButtonPage onClick={() => navigate("/")} />
-
         <div className="flex flex-col gap-16">
           {/* TextUI */}
           <div>
