@@ -1,8 +1,8 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
+
+from app.core.config import settings
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -16,7 +16,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(subject: str | int) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         hours=settings.USER_JWT_ACCESS_TOKEN_EXPIRATION_HOURS
     )
     payload = {"sub": str(subject), "exp": expire, "type": "access"}
@@ -28,7 +28,7 @@ def create_access_token(subject: str | int) -> str:
 
 
 def create_refresh_token(subject: str | int, jti: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         hours=settings.USER_JWT_REFRESH_TOKEN_EXPIRATION_HOURS
     )
     payload = {"sub": str(subject), "exp": expire, "type": "refresh", "jti": jti}
@@ -39,7 +39,7 @@ def create_refresh_token(subject: str | int, jti: str) -> str:
     )
 
 
-def decode_access_token(token: str) -> Optional[dict]:
+def decode_access_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(
             token,
@@ -53,7 +53,7 @@ def decode_access_token(token: str) -> Optional[dict]:
         return None
 
 
-def decode_refresh_token(token: str) -> Optional[dict]:
+def decode_refresh_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(
             token,

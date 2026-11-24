@@ -2,9 +2,9 @@ import json
 import ssl
 import threading
 
-from kafka import KafkaConsumer, KafkaProducer
-
 from app.core.config import settings
+
+from kafka import KafkaConsumer, KafkaProducer
 
 
 def security_protocol() -> str:

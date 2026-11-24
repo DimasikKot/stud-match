@@ -1,10 +1,6 @@
 import uuid
 from datetime import timedelta
 
-from fastapi import HTTPException, status
-from redis import Redis
-from sqlalchemy.orm import Session
-
 from app.core.config import settings
 from app.models.db import UserDB
 from app.services.auth import (
@@ -14,6 +10,10 @@ from app.services.auth import (
     hash_password,
     verify_password,
 )
+from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
+from redis import Redis
 
 
 def register_user(db: Session, fullname: str, email: str, password: str) -> UserDB:

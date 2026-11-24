@@ -1,12 +1,8 @@
-from typing import Literal
-from fastapi import HTTPException
+from typing import Any, Literal
+
+from app.models.db import ProjectDB, UserDB
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from typing import Any
-from app.models.db import UserDB, ProjectDB
-from fastapi import (
-    HTTPException,
-    status,
-)
 
 
 def is_owner_of_project(project_id: int, user_id: int, db: Session) -> None:

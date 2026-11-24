@@ -1,10 +1,10 @@
+from app.core.database import get_db
+from app.models.db import ROLE_ADMIN, UserDB
+from app.services.auth import decode_access_token
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyCookie
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.models.db import ROLE_ADMIN, UserDB
-from app.services.auth import decode_access_token
 
 access_cookie_scheme = APIKeyCookie(
     name="access_token",

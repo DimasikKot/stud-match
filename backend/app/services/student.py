@@ -1,9 +1,8 @@
 from typing import Any, Literal
 
+from app.models.db import StudentDB
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-
-from app.models.db import StudentDB
 
 
 def fetch_student_db_by_id(db: Session, student_id: int):
