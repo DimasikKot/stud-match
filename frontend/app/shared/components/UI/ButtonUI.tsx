@@ -5,7 +5,7 @@ export const ButtonUI = ({
     toast.success("Кнопка без действия");
   },
   variant = "primary",
-  className: buttonClassName = "",
+  className: customClassName = "",
   title,
   disabled = false,
   hidden = false,
@@ -25,10 +25,10 @@ export const ButtonUI = ({
       {
         primary: `${!disabled ? "bg-blue-700 hover:bg-blue-800" : "bg-gray-600 hover:bg-gray-600"} px-4 py-2 text-white shadow-lg font-medium`,
         secondary: `${!disabled ? "text-blue-700 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} px-4 py-2 font-medium`,
-        link: `${!disabled ? "text-blue-700 hover:text-blue-800" : "text-gray-600 hover:text-gray-600"} p-1 -m-1 font-normal`,
-        icon: `${!disabled ? "text-blue-700 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} p-2 -m-2 font-medium`,
+        link: `${!disabled ? "text-blue-700 hover:text-blue-800" : "text-gray-600 hover:text-gray-600"} p-1 -m-1 font-normal w-fit`,
+        icon: `${!disabled ? "text-blue-700 hover:bg-gray-200" : "text-gray-600 hover:text-gray-600"} p-2 font-medium w-fit`,
       }[variant]
-    } ${!disabled ? "cursor-pointer" : ""} ${buttonClassName}
+    } ${!disabled ? "cursor-pointer" : ""} ${customClassName}
   `;
 
   return (

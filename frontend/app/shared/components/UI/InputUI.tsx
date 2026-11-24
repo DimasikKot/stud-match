@@ -9,7 +9,7 @@ export const InputUI = ({
   disabled = false,
   name = "input",
   type = "text",
-  className: inputClassName = "",
+  className: customClassName = "",
   isArea = false,
   rows = 3,
 }: {
@@ -35,7 +35,7 @@ export const InputUI = ({
     border border-gray-300
     focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-300
     transition-colors duration-200
-    ${inputClassName}
+    ${customClassName}
   `;
 
   return isArea ? (

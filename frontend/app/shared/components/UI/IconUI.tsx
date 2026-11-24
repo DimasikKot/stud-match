@@ -2,7 +2,7 @@ export const IconUI = ({
   icon,
   size = "20px",
   color = "black",
-  className: iconClassName = "",
+  className: customClassName = "",
   onClick,
   title,
 }: {
@@ -17,7 +17,7 @@ export const IconUI = ({
 
   return onClick ? (
     <button
-      className={`flex items-center justify-center cursor-pointer ${iconClassName}`}
+      className={`flex items-center justify-center cursor-pointer ${customClassName}`}
       onClick={onClick}
       title={title}
     >
@@ -30,7 +30,7 @@ export const IconUI = ({
     </button>
   ) : (
     <span
-      className={`${className} ${iconClassName}`}
+      className={`${className} ${customClassName}`}
       style={{ fontSize: size, lineHeight: 1, width: size }}
       title={title}
     >

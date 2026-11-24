@@ -5,7 +5,7 @@ export const CheckboxUI = ({
   value,
   onClick,
   title,
-  className: checkboxClassName,
+  className: customClassName,
 }: {
   value: boolean;
   onClick: () => void;
@@ -13,7 +13,7 @@ export const CheckboxUI = ({
   className?: string;
 }) => {
   const className = `
-    flex items-center w-max cursor-pointer gap-2 p-2 ${title && "px-4"}  hover:bg-gray-200 rounded-full transition-colors ${checkboxClassName}
+    flex items-center w-max cursor-pointer gap-2 p-2 ${title && "px-4"}  hover:bg-gray-200 rounded-full transition-colors ${customClassName}
   `;
 
   return (

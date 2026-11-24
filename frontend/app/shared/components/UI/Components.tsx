@@ -7,6 +7,24 @@ import { InputUI } from "@/shared/components/UI/InputUI";
 import { CheckboxUI } from "@/shared/components/UI/CheckboxUI";
 import { PageLayout } from "@/shared/components/Layouts/PageLayout";
 import { IconUI } from "@/shared/components/UI/IconUI";
+import userIcon from "@/shared/images/circle-user-regular-full.svg";
+import { IconSvgUI } from "@/shared/components/UI/IconSvgUI";
+
+const ComponentsDiv = ({
+  title,
+  children,
+}: {
+  title?: string;
+  children: React.ReactNode;
+}) => {
+  return (
+    <>
+      {title && <TextUI variant="header">{title}</TextUI>}
+
+      <div className="flex flex-col w-fit bg-gray-100">{children}</div>
+    </>
+  );
+};
 
 export function Components() {
   const [textValue, setTextValue] = useState("");
@@ -14,9 +32,7 @@ export function Components() {
 
   return (
     <PageLayout title="Компоненты" className="flex flex-col gap-8">
-      <TextUI variant="header">Текст</TextUI>
-
-      <div>
+      <ComponentsDiv title="Текст">
         <TextUI variant="desc">Пример текста - desc (описание)</TextUI>
         <TextUI variant="link">Пример текста - link (ссылка)</TextUI>
         <TextUI variant="error">Пример текста - error (ошибка)</TextUI>
@@ -29,30 +45,30 @@ export function Components() {
         <TextUI variant="header">
           Пример текста - header (большой заголовок)
         </TextUI>
-      </div>
+      </ComponentsDiv>
 
-      <TextUI variant="header">Иконки</TextUI>
+      <ComponentsDiv title="Иконки">
+        <IconUI icon="logout" color="black" />
+        <IconUI icon="logout" size="32px" color="[#e91010]" />
+        <IconUI icon="logout" size="40px" color="gray-600" />
+      </ComponentsDiv>
 
-      <div>
-        <IconUI icon="logout" />
-        <IconUI icon="logout" size="32px" />
-        <IconUI icon="logout" size="40px" />
-      </div>
+      <ComponentsDiv title="Иконки Svg">
+        <IconSvgUI src={userIcon} className="w-8 h-8 text-black" />
+        <IconSvgUI src={userIcon} className="w-12 h-12 text-[#e91010]" />
+        <IconSvgUI src={userIcon} className="w-16 h-16 text-gray-600" />
+      </ComponentsDiv>
 
-      <TextUI variant="header">Кнопки активные</TextUI>
-
-      <div>
+      <ComponentsDiv title="Кнопки активные">
         <ButtonUI variant="primary">Primary Button</ButtonUI>
         <ButtonUI variant="secondary">Secondary Button</ButtonUI>
         <ButtonUI variant="link">Link Button</ButtonUI>
         <ButtonUI variant="icon">
           <IconUI icon="logout" size="24px" />
         </ButtonUI>
-      </div>
+      </ComponentsDiv>
 
-      <TextUI variant="header">Кнопки неактивные</TextUI>
-
-      <div>
+      <ComponentsDiv title="Кнопки неактивные">
         <ButtonUI variant="primary" disabled>
           Primary Button
         </ButtonUI>
@@ -65,11 +81,9 @@ export function Components() {
         <ButtonUI variant="icon" disabled>
           <IconUI icon="logout" size="24px" />
         </ButtonUI>
-      </div>
+      </ComponentsDiv>
 
-      <TextUI variant="header">Чекбоксы</TextUI>
-
-      <div>
+      <ComponentsDiv title="Чекбоксы">
         <CheckboxUI
           value={checkboxValue}
           title="Checked"
@@ -88,13 +102,9 @@ export function Components() {
           value={!checkboxValue}
           onClick={() => setCheckboxValue(!checkboxValue)}
         />
-      </div>
+      </ComponentsDiv>
 
-      <TextUI variant="header">Статус индикаторы</TextUI>
-
-      <TextUI variant="header">Поля ввода</TextUI>
-
-      <div>
+      <ComponentsDiv title="Поля ввода">
         <InputUI
           value={textValue}
           setValue={setTextValue}
@@ -108,16 +118,16 @@ export function Components() {
           isArea
           rows={4}
         />
-      </div>
+      </ComponentsDiv>
 
-      <div>
+      <ComponentsDiv title="Статус индикаторы">
         <StatusUI status={true} />
         <StatusUI status={false} />
         <StatusUI status={undefined} />
         <StatusUI status={true} title="Online" />
         <StatusUI status={false} title="Offline" />
         <StatusUI status={undefined} title="Unknown" />
-      </div>
+      </ComponentsDiv>
     </PageLayout>
   );
 }

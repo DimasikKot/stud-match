@@ -19,29 +19,7 @@ import {
 } from "@/shared/constants/sidebar";
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { IconUI } from "@/shared/components/UI/IconUI";
-
-const SvgIcon = ({
-  src,
-  className = "",
-}: {
-  src: string;
-  className?: string;
-}) => (
-  <span
-    aria-hidden="true"
-    className={`inline-block h-5 w-5 shrink-0 bg-current ${className}`}
-    style={{
-      maskImage: `url("${src}")`,
-      WebkitMaskImage: `url("${src}")`,
-      maskSize: "contain",
-      WebkitMaskSize: "contain",
-      maskRepeat: "no-repeat",
-      WebkitMaskRepeat: "no-repeat",
-      maskPosition: "center",
-      WebkitMaskPosition: "center",
-    }}
-  />
-);
+import { IconSvgUI } from "@/shared/components/UI/IconSvgUI";
 
 const formatPrimitive = (value: unknown): string => {
   if (value === null) return "null";
@@ -171,7 +149,7 @@ export function Sidebar({
           <IconUI
             icon="menu"
             size="24px"
-            color="#8FCBEA"
+            color="[#8FCBEA]"
             onClick={onToggle}
             title={collapsed ? "Развернуть меню" : "Свернуть меню"}
             className={iconButtonClass}
@@ -180,7 +158,7 @@ export function Sidebar({
           <IconUI
             icon="logout"
             size="24px"
-            color="#8FCBEA"
+            color="[#8FCBEA]"
             onClick={handleLogout}
             title="Выйти"
             className={iconButtonClass}
@@ -188,9 +166,9 @@ export function Sidebar({
         </div>
 
         <div className="mt-4 flex flex-col items-center gap-1.5">
-          <SvgIcon
+          <IconSvgUI
             src={userIcon}
-            className={`text-white ${collapsed ? "h-8 w-8" : "h-17 w-17"}`}
+            className={`text-white ${collapsed ? "w-8 h-8" : "w-17 h-17"}`}
           />
 
           <div

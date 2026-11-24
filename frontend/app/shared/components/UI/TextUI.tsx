@@ -1,6 +1,6 @@
 export const TextUI = ({
   variant = "normal",
-  className: textClassName = "",
+  className: customClassName = "",
   maxLines = 3,
   isSelectable = false,
   span = false,
@@ -36,7 +36,7 @@ export const TextUI = ({
             header: "text-2xl font-semibold",
           }[variant]
         }
-        ${textClassName}
+        ${customClassName}
         ${isSelectable ? "select-text" : "select-none"}
         ${maxLines && `line-clamp-${maxLines}`}`;
 
