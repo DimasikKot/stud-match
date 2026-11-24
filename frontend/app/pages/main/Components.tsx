@@ -5,7 +5,7 @@ import { ButtonPage } from "@/shared/components/ButtonPage";
 import { TextUI } from "@/shared/components/TextUI";
 import { ButtonUI } from "@/shared/components/ButtonUI";
 import { StatusIndicator } from "@/shared/components/StatusIndicator";
-import { TextField } from "@/shared/components/TextField";
+import { InputUI } from "@/shared/components/InputUI";
 import { CheckboxUI } from "@/shared/components/CheckboxUI";
 
 export function Components() {
@@ -114,7 +114,7 @@ export function Components() {
                 <TextUI variant="label" className="mb-1 block">
                   Обычное поле
                 </TextUI>
-                <TextField
+                <InputUI
                   value={textValue}
                   setValue={setTextValue}
                   placeholder="Введите текст..."
@@ -125,7 +125,7 @@ export function Components() {
                 <TextUI variant="label" className="mb-1 block">
                   Многострочное поле
                 </TextUI>
-                <TextField
+                <InputUI
                   value={textValue}
                   setValue={setTextValue}
                   placeholder="Введите длинный текст..."

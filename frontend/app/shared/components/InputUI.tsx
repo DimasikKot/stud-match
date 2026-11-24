@@ -1,4 +1,4 @@
-export const TextField = ({
+export const InputUI = ({
   value,
   setValue,
   onChange,

@@ -6,7 +6,7 @@ import illustration from "@/shared/images/illustration.jpg";
 import logo from "@/shared/images/logo.png";
 
 import { ButtonUI } from "@/shared/components/ButtonUI";
-import { TextField } from "@/shared/components/TextField";
+import { InputUI } from "@/shared/components/InputUI";
 import { TextUI } from "@/shared/components/TextUI";
 
 import { getCurrentUser, loginUser } from "@/shared/api/users";
@@ -81,7 +81,7 @@ export function Login() {
 
           <TextUI variant="title">Вход</TextUI>
 
-          <TextField
+          <InputUI
             value={email}
             setValue={setEmail}
             type="email"
@@ -89,7 +89,8 @@ export function Login() {
             placeholder="Почта"
             autoFocus
           />
-          <TextField
+
+          <InputUI
             value={password}
             setValue={setPassword}
             type="password"
