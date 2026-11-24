@@ -20,7 +20,7 @@ export const ButtonUI = ({
   children: React.ReactNode;
 }) => {
   const className = `
-    h-min duration-200 select-none transition-colors items-center flex
+    h-min duration-200 select-none transition-colors justify-center flex
     ${
       {
         primary: `${!disabled ? "bg-blue-700 hover:bg-blue-800" : "bg-gray-600 hover:bg-gray-600"} px-4 py-2 text-white shadow-lg font-medium w-full`,

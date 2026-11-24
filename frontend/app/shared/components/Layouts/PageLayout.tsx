@@ -10,7 +10,7 @@ export function PageLayout({
   className?: string;
 }) {
   return (
-    <div className="p-5 mb-80">
+    <div className="p-5 mb-80 w-fit">
       <div className="mx-4">
         <TextUI variant="header">{title}</TextUI>
       </div>
