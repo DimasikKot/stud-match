@@ -27,6 +27,9 @@ export function Files() {
   const [files, setFiles] = useState<FileResponse[]>([]);
   const [selected, setSelected] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<number, number>>(
+    {},
+  );
 
   const loadFiles = () =>
     fetchFiles()
@@ -60,14 +63,18 @@ export function Files() {
       return;
     }
     setIsUploading(true);
+    setUploadProgress({});
     try {
-      const uploaded = await uploadFiles(selected);
+      const uploaded = await uploadFiles(selected, (index, progress) =>
+        setUploadProgress((prev) => ({ ...prev, [index]: progress })),
+      );
       toast.success(
         uploaded.length === 1
           ? "Файл загружен"
           : `Загружено файлов: ${uploaded.length}`,
       );
       setSelected([]);
+      setUploadProgress({});
       await loadFiles();
     } finally {
       setIsUploading(false);
@@ -133,30 +140,38 @@ export function Files() {
             </TextUI>
 
             <div className="flex flex-col gap-2 mt-4">
-              {selected.map((file, index) => (
-                <div
-                  key={`${file.name}-${index}`}
-                  className="flex items-center justify-between gap-3
-                      bg-gray-50 border border-gray-200 px-4 py-2"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <IconUI size="20px" name="description" color="gray-400" />
-                    <TextUI variant="normal" className="line-clamp-1">
-                      {file.name}
-                    </TextUI>
-                    <TextUI variant="desc" span>
-                      {formatSize(file.size)}
-                    </TextUI>
-                  </div>
-                  <ButtonUI
-                    variant="icon"
-                    onClick={() => removeSelected(index)}
-                    className="text-red-600 hover:text-red-800"
+              {selected.map((file, index) => {
+                const progress = uploadProgress[index] ?? 0;
+                return (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="relative flex items-center justify-between gap-3
+                        bg-gray-50 border border-gray-200 px-4 py-2 overflow-hidden"
                   >
-                    <IconUI size="20px" name="close" />
-                  </ButtonUI>
-                </div>
-              ))}
+                    <div
+                      className="absolute inset-y-0 left-0 bg-blue-200 transition-all"
+                      style={{ width: `${progress}%` }}
+                    />
+                    <div className="relative flex items-center gap-3 min-w-0">
+                      <IconUI size="20px" name="description" color="gray-400" />
+                      <TextUI variant="normal" className="line-clamp-1">
+                        {file.name}
+                      </TextUI>
+                      <TextUI variant="desc" span>
+                        {formatSize(file.size)}
+                      </TextUI>
+                    </div>
+                    <ButtonUI
+                      variant="icon"
+                      onClick={() => removeSelected(index)}
+                      disabled={isUploading}
+                      className="relative text-red-600 hover:text-red-800"
+                    >
+                      <IconUI size="20px" name="close" />
+                    </ButtonUI>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
