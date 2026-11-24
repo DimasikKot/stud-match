@@ -330,17 +330,34 @@ jobs:
       - name: Login as admin
         run: |
           LOGIN_URL="https://stud-match.mooo.com/backend/api/v1/users/login"
-          resp=$(curl -s -w $'\n%{http_code}' --max-time 20 -k \
-            -c "$RUNNER_TEMP/cookies.txt" \
-            -H 'Content-Type: application/json' \
-            -d "{\"email\":\"${{ secrets.ADMIN_EMAIL }}\",\"password\":\"${{ secrets.ADMIN_PASSWORD }}\"}" \
-            "$LOGIN_URL")
+          MAX_ATTEMPTS=15
+          DELAY=10
+          code="000"
+          body=""
 
-          code=$(printf '%s' "$resp" | tail -n1)
-          body=$(printf '%s' "$resp" | sed '$d')
+          for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+            echo "login attempt $attempt/$MAX_ATTEMPTS"
 
-          echo "login status=$code"
-          echo "$body"
+            resp=$(curl -s -w $'\n%{http_code}' --max-time 20 -k \
+              -c "$RUNNER_TEMP/cookies.txt" \
+              -H 'Content-Type: application/json' \
+              -d "{\"email\":\"${{ secrets.ADMIN_EMAIL }}\",\"password\":\"${{ secrets.ADMIN_PASSWORD }}\"}" \
+              "$LOGIN_URL" || printf '\n000')
+
+            code=$(printf '%s' "$resp" | tail -n1)
+            body=$(printf '%s' "$resp" | sed '$d')
+
+            echo "login status=$code"
+            echo "$body"
+
+            if [ "$code" = "200" ] || [ "$code" = "201" ]; then
+              break
+            fi
+
+            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+              sleep "$DELAY"
+            fi
+          done
 
           if [ "$code" != "200" ] && [ "$code" != "201" ]; then
             echo "::error::login failed (status=$code)"

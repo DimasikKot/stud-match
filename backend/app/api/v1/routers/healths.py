@@ -296,46 +296,34 @@ def _kafka_health() -> HealthResponse:
             client.close()
 
 
-@router.get(
-    "/backend",
-    response_model=HealthResponse,
-    dependencies=[Depends(require_admin)],
-)
+@router.get("/backend", response_model=HealthResponse)
 async def get_backend_health():
     return await _backend_health()
 
 
 @router.get(
-    "/postgres",
-    response_model=HealthResponse,
-    dependencies=[Depends(require_admin)],
+    "/postgres", response_model=HealthResponse, dependencies=[Depends(require_admin)]
 )
 def get_postgres_health(db: Session = Depends(get_db)):
     return _postgres_health(db)
 
 
 @router.get(
-    "/redis",
-    response_model=HealthResponse,
-    dependencies=[Depends(require_admin)],
+    "/redis", response_model=HealthResponse, dependencies=[Depends(require_admin)]
 )
 async def get_redis_health(redis: aioredis.Redis = Depends(get_async_redis)):
     return await _redis_health(redis)
 
 
 @router.get(
-    "/rustfs",
-    response_model=HealthResponse,
-    dependencies=[Depends(require_admin)],
+    "/rustfs", response_model=HealthResponse, dependencies=[Depends(require_admin)]
 )
 async def get_rustfs_health():
     return await _rustfs_health()
 
 
 @router.get(
-    "/kafka",
-    response_model=HealthResponse,
-    dependencies=[Depends(require_admin)],
+    "/kafka", response_model=HealthResponse, dependencies=[Depends(require_admin)]
 )
 def get_kafka_health():
     return _kafka_health()
