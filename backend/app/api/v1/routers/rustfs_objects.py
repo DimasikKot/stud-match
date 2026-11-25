@@ -21,6 +21,7 @@ class RustfsObjectListResponse(BaseModel):
     object_key: str
     status: FileStatus
     feature_set: dict[str, Any]
+    model_version: str
 
 
 class RustfsObjectListResponseData(BaseModel):
@@ -46,6 +47,7 @@ async def get_rustfs_objects(
                 object_key=rustfs_object.object_key,
                 status=rustfs_object.status,
                 feature_set=rustfs_object.feature_set,
+                model_version=rustfs_object.model_version,
             )
             for rustfs_object in rustfs_objects_list
         ],
