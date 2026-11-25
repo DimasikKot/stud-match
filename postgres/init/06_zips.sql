@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS zips CASCADE;
+DROP TYPE IF EXISTS zip_status CASCADE;
 
 CREATE TYPE zip_status AS ENUM (
   'pending',
