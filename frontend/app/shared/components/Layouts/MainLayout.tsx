@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 import { Sidebar } from "@/shared/components/Layouts/Sidebar";
 
 export function MainLayout() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <div className="h-screen bg-white">
