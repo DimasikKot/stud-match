@@ -1,7 +1,7 @@
 import ssl
 import urllib.request
 
-from config import settings
+from app.config import settings
 
 from kafka import KafkaProducer
 

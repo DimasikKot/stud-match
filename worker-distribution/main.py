@@ -5,7 +5,7 @@ import time
 from contextlib import asynccontextmanager
 
 import torch
-from kafka import KafkaConsumer, KafkaProducer
+from app.config import settings
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from transformers import (
@@ -15,7 +15,7 @@ from transformers import (
     TextStreamer,
 )
 
-from config import settings
+from kafka import KafkaConsumer, KafkaProducer
 
 MODEL_NAME: str = "Qwen/Qwen3-4B"
 LLM_MAX_NEW_TOKENS: int = 2048

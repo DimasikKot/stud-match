@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 import urllib3
 from app.api.v1.endpoints import api_router
+from app.services import distribution as distribution_service
 from app.services import features as features_service
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +22,11 @@ async def lifespan(app: FastAPI):
             target=features_service.results_consumer_loop,
             daemon=True,
             name="kafka-features-results",
+        ),
+        threading.Thread(
+            target=distribution_service.results_consumer_loop,
+            daemon=True,
+            name="kafka-distribution-results",
         ),
     ]
     for thread in consumer_threads:

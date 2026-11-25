@@ -4,9 +4,9 @@ import threading
 import time
 from contextlib import asynccontextmanager
 
-from config import settings
+from app.config import settings
+from app.task import task
 from fastapi import FastAPI
-from task import task
 
 from kafka import KafkaConsumer, KafkaProducer
 
