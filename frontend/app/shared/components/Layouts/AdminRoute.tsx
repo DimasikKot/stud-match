@@ -9,7 +9,7 @@ export function AdminRoute() {
 
     const checkRole = async () => {
       try {
-        if (active) setIsAdmin(sessionStorage.getItem("role") === "admin");
+        if (active) setIsAdmin(localStorage.getItem("role") === "admin");
       } catch {
         if (active) setIsAdmin(false);
       }

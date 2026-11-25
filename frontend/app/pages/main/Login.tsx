@@ -9,7 +9,7 @@ import { ButtonUI } from "@/shared/components/UI/ButtonUI";
 import { InputUI } from "@/shared/components/UI/InputUI";
 import { TextUI } from "@/shared/components/UI/TextUI";
 
-import { getCurrentUser, loginUser } from "@/shared/api/users";
+import { loginUser } from "@/shared/api/users";
 
 export function Login() {
   const navigate = useNavigate();
@@ -25,8 +25,8 @@ export function Login() {
 
     const checkAuth = async () => {
       try {
-        await getCurrentUser();
-        if (active) setIsAuthenticated(true);
+        if (active)
+          setIsAuthenticated(localStorage.getItem("fullname") !== null);
       } catch {
         if (active) setIsAuthenticated(false);
       }

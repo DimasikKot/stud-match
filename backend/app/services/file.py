@@ -260,13 +260,25 @@ def fetch_files(db: Session) -> list[FileDB]:
 
 
 def fetch_files_by_hash(db: Session) -> list[FileDB]:
-    """Список всех файлов, отсортированный по хешу (sha256)."""
-    return (
+    """Список всех файлов, отсортированный по хешу, с одинаковыми хешами и разными extensions (sha256)."""
+    files = (
         db.query(FileDB)
         .options(selectinload(FileDB.students))
         .order_by(FileDB.rustfs_object_key)
         .all()
     )
+
+    result = set()
+
+    for i in range(len(files) - 1):
+        if (
+            files[i].rustfs_object_key == files[i + 1].rustfs_object_key
+            and files[i].name.split(".")[-1] != files[i + 1].name.split(".")[-1]
+        ):
+            result.add(files[i])
+            result.add(files[i + 1])
+
+    return list(result)
 
 
 def get_file_object(file_db: FileDB) -> dict:

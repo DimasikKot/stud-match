@@ -19,7 +19,7 @@ router: APIRouter = APIRouter(
 
 
 class FileResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
     id: int
     name: str
@@ -73,13 +73,15 @@ async def _stream_file(file_db: FileDB, disposition: str) -> StreamingResponse:
     )
 
 
-@router.get("/", response_model=FileListResponse)
+@router.get("/", response_model=FileListResponse, dependencies=[Depends(require_admin)])
 def list_files(db: Session = Depends(get_db)):
     files = file_service.fetch_files(db)
     return FileListResponse(data=[FileResponse.model_validate(file) for file in files])
 
 
-@router.get("/by-hash", response_model=FileListResponse)
+@router.get(
+    "/by-hash", response_model=FileListResponse, dependencies=[Depends(require_admin)]
+)
 def list_files_by_hash(db: Session = Depends(get_db)):
     files = file_service.fetch_files_by_hash(db)
     return FileListResponse(data=[FileResponse.model_validate(file) for file in files])
@@ -105,7 +107,9 @@ async def download_file(
     return await _stream_file(file_db, "attachment")
 
 
-@router.delete("/{file_id}", response_model=MessageResponse)
+@router.delete(
+    "/{file_id}", response_model=MessageResponse, dependencies=[Depends(require_admin)]
+)
 def delete_file(
     file_id: int,
     db: Session = Depends(get_db),

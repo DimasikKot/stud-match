@@ -38,7 +38,7 @@ class CreateStudentRequest(BaseModel):
 
 
 class CreateStudentResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
     id: int
     fullname: str
@@ -85,7 +85,7 @@ async def get_all_students(
 
 
 class GetStudentResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
     id: int
     fullname: str

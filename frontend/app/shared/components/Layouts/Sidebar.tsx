@@ -9,7 +9,7 @@ import {
   fetchKafkaHealth,
   type GetHealthResponse,
 } from "@/shared/api/healths";
-import { getCurrentUser, logoutUser } from "@/shared/api/users";
+import { logoutUser } from "@/shared/api/users";
 import { StatusUI } from "@/shared/components/UI/StatusUI";
 import { TooltipUI } from "@/shared/components/UI/TooltipUI";
 import userIcon from "@/shared/images/circle-user-regular-full.svg";
@@ -40,9 +40,8 @@ export function Sidebar({
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const user = await getCurrentUser();
-        setFullname(sessionStorage.getItem("fullname"));
-        setIsAdmin(user.role === "admin");
+        setFullname(localStorage.getItem("fullname"));
+        setIsAdmin(localStorage.getItem("role") === "admin");
       } catch {
         setFullname(null);
         setIsAdmin(false);
@@ -61,7 +60,7 @@ export function Sidebar({
 
     const loadAll = async () => {
       await loadUser();
-      if (sessionStorage.getItem("role") !== "admin") {
+      if (localStorage.getItem("role") !== "admin") {
         return;
       }
 
@@ -83,9 +82,9 @@ export function Sidebar({
     }
 
     setFullname(null);
-    sessionStorage.removeItem("fullname");
-    sessionStorage.removeItem("email");
-    sessionStorage.removeItem("role");
+    localStorage.removeItem("fullname");
+    localStorage.removeItem("email");
+    localStorage.removeItem("role");
     navigate("/login");
   };
 

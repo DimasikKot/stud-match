@@ -49,7 +49,7 @@ class CreateProjectRequest(BaseModel):
 
 
 class CreateProjectResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
     id: int
     name: str
@@ -108,7 +108,7 @@ async def get_list_projects(
 
 
 class GetProjectResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
     id: int
     name: str

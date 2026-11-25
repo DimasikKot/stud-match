@@ -79,9 +79,9 @@ export const logoutUser = async (): Promise<MessageResponse> => {
 export const getCurrentUser = async (): Promise<UserResponse> => {
   try {
     const { data } = await api.get<UserResponse>("/users/me");
-    sessionStorage.setItem("fullname", data.fullname);
-    sessionStorage.setItem("email", data.email);
-    sessionStorage.setItem("role", data.role);
+    localStorage.setItem("fullname", data.fullname);
+    localStorage.setItem("email", data.email);
+    localStorage.setItem("role", data.role);
     return data;
   } catch (error) {
     errorValidate(error);
