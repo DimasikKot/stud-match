@@ -21,12 +21,13 @@ class TaskResponse:
 
 def task(producer: KafkaProducer, task: dict):
     rustfs_object_id = task["rustfs_object_id"]
+    extension = task["extension"]
     try:
         first_line = read_first_line(rustfs_object_id)
         payload = TaskResponse(
             rustfs_object_id=rustfs_object_id,
             status="failed",
-            feature_set={"first_line": first_line},
+            feature_set={"extension": extension, "first_line": first_line},
             model_version=MODEL_VERSION,
         ).__dict__
     except Exception as exc:
@@ -34,7 +35,10 @@ def task(producer: KafkaProducer, task: dict):
         payload = TaskResponse(
             rustfs_object_id=rustfs_object_id,
             status="failed",
-            feature_set={"error": str(exc) or type(exc).__name__},
+            feature_set={
+                "extension": extension,
+                "error": str(exc) or type(exc).__name__,
+            },
             model_version=MODEL_VERSION,
         ).__dict__
 

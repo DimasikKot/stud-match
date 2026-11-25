@@ -17,7 +17,10 @@ def queue_not_extracted_objects(db: Session) -> int:
     for rustfs_object in objects:
         kafka_service.produce(
             kafka_service.settings.KAFKA_FTRS_TASKS_TOPIC,
-            {"rustfs_object_id": rustfs_object.id},
+            {
+                "rustfs_object_id": rustfs_object.id,
+                "extension": rustfs_object.extension,
+            },
         )
         rustfs_object.status = FileStatus.QUEUED
     db.commit()
