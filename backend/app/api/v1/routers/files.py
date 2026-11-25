@@ -154,6 +154,15 @@ def queue_feature_extraction(
     )
 
 
+@router.get("/reset-features/")
+async def reset_features(
+    db: Session = Depends(get_db),
+):
+    """Сбрасывает статус всех rustfs_objects на not_extracted."""
+    count = features_service.reset_features(db)
+    return MessageResponse(detail=f"Сброшено статусов: {count}", success=True)
+
+
 @router.delete(
     "/{file_id}", response_model=MessageResponse, dependencies=[Depends(require_admin)]
 )

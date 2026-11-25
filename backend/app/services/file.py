@@ -198,7 +198,7 @@ def _process_zip(zip_id: int, data: bytes) -> None:
                             bucket=settings.RUSTFS_BUCKET,
                             extension=os.path.splitext(base_name)[1].lower(),
                             size=len(file_data),
-                            status=FileStatus.EXTRACTED,
+                            status=FileStatus.NOT_EXTRACTED,
                         )
                         db.add(rustfs_object)
                         db.flush()

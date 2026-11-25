@@ -27,6 +27,19 @@ def queue_not_extracted_objects(db: Session) -> int:
     return len(objects)
 
 
+def reset_features(db: Session) -> int:
+    """Сбрасывает статус всех rustfs_objects на NOT_EXTRACTED."""
+    objects = (
+        db.query(RustfsObjectDB)
+        .filter(RustfsObjectDB.status == FileStatus.EXTRACTED)
+        .all()
+    )
+    for rustfs_object in objects:
+        rustfs_object.status = FileStatus.NOT_EXTRACTED
+    db.commit()
+    return len(objects)
+
+
 def apply_feature_result(payload: dict) -> None:
     """Применяет результат от воркера features к rustfs_objects."""
     db = SessionLocal()
