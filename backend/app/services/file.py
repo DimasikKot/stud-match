@@ -259,6 +259,16 @@ def fetch_files(db: Session) -> list[FileDB]:
     )
 
 
+def fetch_files_by_hash(db: Session) -> list[FileDB]:
+    """Список всех файлов, отсортированный по хешу (sha256)."""
+    return (
+        db.query(FileDB)
+        .options(selectinload(FileDB.students))
+        .order_by(FileDB.rustfs_object_key)
+        .all()
+    )
+
+
 def get_file_object(file_db: FileDB) -> dict:
     """Возвращает ответ S3 get_object (содержит Body - StreamingBody)."""
     try:

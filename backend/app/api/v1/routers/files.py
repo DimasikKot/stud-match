@@ -1,4 +1,3 @@
-from datetime import datetime
 from urllib.parse import quote
 
 from app.core.database import get_db
@@ -77,6 +76,12 @@ async def _stream_file(file_db: FileDB, disposition: str) -> StreamingResponse:
 @router.get("/", response_model=FileListResponse)
 def list_files(db: Session = Depends(get_db)):
     files = file_service.fetch_files(db)
+    return FileListResponse(data=[FileResponse.model_validate(file) for file in files])
+
+
+@router.get("/by-hash", response_model=FileListResponse)
+def list_files_by_hash(db: Session = Depends(get_db)):
+    files = file_service.fetch_files_by_hash(db)
     return FileListResponse(data=[FileResponse.model_validate(file) for file in files])
 
 
