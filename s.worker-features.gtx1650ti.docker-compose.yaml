@@ -23,6 +23,7 @@ services:
 
     environment:
       - HF_TOKEN=${W_FTRS_HF_TOKEN}
+      - BACKEND_URL=${W_FTRS_BACKEND_URL}
       - KAFKA_HOST=${KF_W_FTRS_HOST}
       - KAFKA_PORT=${KF_W_FTRS_PORT}
       - KAFKA_USERNAME=${KF_W_FTRS_USERNAME}
@@ -34,6 +35,9 @@ services:
     volumes:
       - ./worker-features:/app
       - sm_hf_cache:/root/.cache/huggingface # Кэш моделей HF
+
+    networks:
+      - nginx-network
 
     deploy:
       resources:

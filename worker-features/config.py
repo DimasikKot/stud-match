@@ -6,6 +6,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class _Settings(BaseSettings):
     HF_TOKEN: str | None = None
 
+    BACKEND_URL: str = "backend url"
+
     # PLAINTEXT | SSL | SASL_SSL | SASL_PLAINTEXT; пусто = авто по порту
     KAFKA_SECURITY_PROTOCOL: str = ""
     KAFKA_SASL_MECHANISM: str = "PLAIN"
