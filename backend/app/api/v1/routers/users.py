@@ -37,7 +37,8 @@ class UserResponse(BaseModel):
     fullname: str
     email: str
     role: str
-    skills_vector: dict
+    skills_set: dict
+    model_version: str
 
 
 class UserListResponse(BaseModel):
@@ -93,16 +94,16 @@ def _clear_auth_cookies(response: Response) -> None:
 )
 def register(user_in: UserRequest, db: Session = Depends(get_db)):
     """Создаёт преподавателя. Доступно только администратору."""
-    return user_service.register_user(
+    user = user_service.register_user(
         db, user_in.fullname, user_in.email, user_in.password
     )
+    return UserResponse.model_validate(user)
 
 
 @router.get("/", response_model=UserListResponse, dependencies=[Depends(require_admin)])
 def list_users(db: Session = Depends(get_db)):
-    return UserListResponse(
-        data=[UserResponse.model_validate(u) for u in user_service.fetch_users(db)]
-    )
+    users = user_service.fetch_users(db)
+    return UserListResponse(data=[UserResponse.model_validate(u) for u in users])
 
 
 @router.post("/login", response_model=UserResponse)

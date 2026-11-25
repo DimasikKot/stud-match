@@ -26,7 +26,6 @@ router = APIRouter(
 
 class CreateStudentRequest(BaseModel):
     fullname: str
-    skills_vector: dict[str, Any]
 
     @field_validator("fullname")
     def validate_fullname(cls, value):
@@ -37,35 +36,23 @@ class CreateStudentRequest(BaseModel):
             )
         return value
 
-    @field_validator("skills_vector")
-    def validate_skills_vector(cls, value):
-        if len(value) > 1024:
-            raise HTTPException(
-                status_code=400,
-                detail="Вектор навыков не должен превышать 1024 символов",
-            )
-        return value
-
 
 class CreateStudentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     fullname: str
-    skills_vector: dict[str, Any]
+    skills_set: dict[str, Any]
+    model_version: str
 
 
 @router.post("/", response_model=CreateStudentResponse)
 async def create_student(
-    studentrequest: CreateStudentRequest,
+    student: CreateStudentRequest,
     db: Session = Depends(get_db),
 ):
-    student = create_student_in_db(
-        db=db,
-        fullname=studentrequest.fullname,
-        skills_vector=studentrequest.skills_vector,
-    )
-    return student
+    student_db = create_student_in_db(db=db, fullname=student.fullname)
+    return student_db
 
 
 class GetListStudentResponse(BaseModel):
@@ -102,7 +89,8 @@ class GetStudentResponse(BaseModel):
 
     id: int
     fullname: str
-    skills_vector: dict[str, Any]
+    skills_set: dict[str, Any]
+    model_version: str
 
 
 @router.get("/{student_id}", response_model=GetStudentResponse)
@@ -110,33 +98,36 @@ async def get_student(
     student_id: int,
     db: Session = Depends(get_db),
 ):
-    student = fetch_student_db_by_id(db=db, student_id=student_id)
-    if student is None:
+    student_db = fetch_student_db_by_id(db=db, student_id=student_id)
+    if student_db is None:
         raise HTTPException(status_code=404, detail="студент не найден")
-    return student
+    return GetStudentResponse.model_validate(student_db)
 
 
 class UpdateStudentRequest(CreateStudentRequest):
-    pass
+    skills_set: dict[str, Any] | None = None
+    model_version: str | None = None
 
 
 class UpdateStudentResponse(CreateStudentResponse):
-    pass
+    skills_set: dict[str, Any]
+    model_version: str
 
 
 @router.patch("/{student_id}", response_model=UpdateStudentResponse)
 async def update_student(
     student_id: int,
-    studentrequest: UpdateStudentRequest,
+    student: UpdateStudentRequest,
     db: Session = Depends(get_db),
 ):
-    student = update_student_by_id(
+    student_db = update_student_by_id(
         student_id=student_id,
         db=db,
-        new_fullname=studentrequest.fullname,
-        new_skills_vector=studentrequest.skills_vector,
+        new_fullname=student.fullname,
+        new_skills_set=student.skills_set,
+        new_model_version=student.model_version,
     )
-    return student
+    return UpdateStudentResponse.model_validate(student_db)
 
 
 class GetEchoResponse(BaseModel):

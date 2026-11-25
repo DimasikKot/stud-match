@@ -28,8 +28,6 @@ router = APIRouter(prefix="/projects", tags=["Projects"])
 class CreateProjectRequest(BaseModel):
     name: str
     description: str
-    constraints_vector: dict[str, Any] = {}
-    skills_vector: dict[str, Any] = {}
 
     @field_validator("name")
     def validate_name(cls, value):
@@ -58,7 +56,7 @@ class CreateProjectRequest(BaseModel):
             )
         return value
 
-    @field_validator("skills_vector")
+    @field_validator("skills_set")
     def validate_skills_vector(cls, value):
         if len(value) > 20000:
             raise HTTPException(
@@ -74,26 +72,23 @@ class CreateProjectResponse(BaseModel):
     id: int
     name: str
     description: str
-    constraints_vector: dict[str, Any]
-    skills_vector: dict[str, Any]
+    constraints_set: dict[str, Any]
+    skills_set: dict[str, Any]
+    model_version: str
+
     updated_at: datetime
 
 
 @router.post("/", response_model=CreateProjectResponse)
 async def post_create_project(
-    projectrequest: CreateProjectRequest,
+    project: CreateProjectRequest,
     db: Session = Depends(get_db),
     user: UserDB = Depends(get_current_user),
 ):
-    project = create_project(
-        user_id=user.id,
-        db=db,
-        name=projectrequest.name,
-        description=projectrequest.description,
-        constraints_vector=projectrequest.constraints_vector,
-        skills_vector=projectrequest.skills_vector,
+    project_db = create_project(
+        user_id=user.id, db=db, name=project.name, description=project.description
     )
-    return project
+    return CreateProjectResponse.model_validate(project_db)
 
 
 class GetListProjectResponse(BaseModel):
@@ -134,8 +129,9 @@ class GetProjectResponse(BaseModel):
     id: int
     name: str
     description: str
-    constraints_vector: dict[str, Any]
-    skills_vector: dict[str, Any]
+    constraints_set: dict[str, Any]
+    skills_set: dict[str, Any]
+    model_version: str
     updated_at: datetime
 
 
@@ -145,16 +141,20 @@ async def get_project(
     db: Session = Depends(get_db),
     user: UserDB = Depends(get_current_user),
 ):
-    project = fetch_project_db_by_id(project_id=project_id, user_id=user.id, db=db)
-    return project
+    project_db = fetch_project_db_by_id(project_id=project_id, user_id=user.id, db=db)
+    return GetProjectResponse.model_validate(project_db)
 
 
 class PatchProjectRequest(CreateProjectRequest):
-    pass
+    constraints_set: dict[str, Any] | None = None
+    skills_set: dict[str, Any] | None = None
+    model_version: str | None = None
 
 
 class PatchProjectResponse(CreateProjectResponse):
-    pass
+    constraints_set: dict[str, Any]
+    skills_set: dict[str, Any]
+    model_version: str
 
 
 @router.patch("/{project_id}", response_model=PatchProjectResponse)
@@ -165,17 +165,18 @@ async def patch_update_project(
     user: UserDB = Depends(get_current_user),
 ):
     is_owner_of_project(project_id=project_id, user_id=user.id, db=db)
-    project = update_project_by_id(
+    project_db = update_project_by_id(
         project_id=project_id,
         user_id=user.id,
         db=db,
         new_name=projectrequest.name,
         new_description=projectrequest.description,
-        new_constraints_vector=projectrequest.constraints_vector,
-        new_skills_vector=projectrequest.skills_vector,
+        new_constraints_set=projectrequest.constraints_set,
+        new_skills_set=projectrequest.skills_set,
+        new_model_version=projectrequest.model_version,
     )
 
-    return project
+    return PatchProjectResponse.model_validate(project_db)
 
 
 class GetEchoResponse(BaseModel):
