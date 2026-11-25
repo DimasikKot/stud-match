@@ -1,32 +1,33 @@
 // --- ENUMS ---
 
 Enum user_role {
-  admin              // администратор
-  teacher            // преподаватель
+  admin                 // администратор
+  teacher               // преподаватель
 }
 
 Enum zip_status {
-  pending            // ожидает обработки
-  processing         // обрабатывается
-  completed          // обработан
-  failed             // ошибка обработки
+  pending               // ожидает обработки
+  processing            // обрабатывается
+  completed             // обработан
+  failed                // ошибка обработки
 }
 
 Enum file_status {
-  not_extracted      // не извлечены признаки
-  queued             // в очереди на извлечение
-  extracting         // извлекаются признаки
-  extracted          // извлечены признаки
-  failed             // ошибка извлечения
-  applied            // учтён при формировании профиля студента (для пропуске при создании профиля)
+  not_extracted         // не извлечены признаки
+  queued                // в очереди на извлечение
+  extracting            // извлекаются признаки
+  extracted             // извлечены признаки
+  failed                // ошибка извлечения
+  applied               // учтён при формировании профиля студента (для пропуске при создании профиля)
+  deleted_from_rustfs   // удалён из RustFS
 }
 
 Enum distribution_status {
-  not_started        // не запускался
-  queued             // в очереди на распределение
-  distributing       // распределяются
-  distributed        // распределен
-  failed             // ошибка распределения
+  not_started           // не запускался
+  queued                // в очереди на распределение
+  distributing          // распределяются
+  distributed           // распределен
+  failed                // ошибка распределения
 }
 
 // --- TABLES ---

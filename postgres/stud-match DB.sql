@@ -13,7 +13,8 @@ CREATE TYPE "file_status" AS ENUM (
   'extracting',
   'extracted',
   'failed',
-  'applied'
+  'applied',
+  'deleted_from_rustfs'
 );
 
 CREATE TYPE "distribution_status" AS ENUM (

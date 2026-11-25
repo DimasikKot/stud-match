@@ -35,6 +35,7 @@ class FileStatus(str, enum.Enum):
     EXTRACTED = "extracted"
     FAILED = "failed"
     APPLIED = "applied"
+    DELETED_FROM_RUSTFS = "deleted_from_rustfs"
 
 
 class DistributionStatus(str, enum.Enum):
@@ -43,10 +44,6 @@ class DistributionStatus(str, enum.Enum):
     DISTRIBUTING = "distributing"
     DISTRIBUTED = "distributed"
     FAILED = "failed"
-
-
-ROLE_ADMIN = UserRole.ADMIN
-ROLE_TEACHER = UserRole.TEACHER
 
 
 def _enum_values(enum_cls: type[enum.Enum]) -> list[str]:

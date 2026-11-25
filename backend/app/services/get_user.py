@@ -1,5 +1,5 @@
 from app.core.database import get_db
-from app.core.db import ROLE_ADMIN, UserDB
+from app.core.db import UserDB, UserRole
 from app.services.auth import decode_access_token
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyCookie
@@ -65,7 +65,7 @@ def get_optional_user(
 
 
 def require_admin(user: UserDB = Depends(get_current_user)) -> UserDB:
-    if user.role != ROLE_ADMIN:
+    if user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Требуются права администратора",
