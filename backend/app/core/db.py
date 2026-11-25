@@ -62,7 +62,7 @@ class SkillDB(Base):
         index=True,
     )
     name: Mapped[str] = mapped_column(
-        String(255),
+        String(64),
         nullable=False,
     )
 
@@ -76,17 +76,17 @@ class UserDB(Base):
         index=True,
     )
     fullname: Mapped[str] = mapped_column(
-        String(255),
+        String(256),
         nullable=False,
     )
     email: Mapped[str] = mapped_column(
-        String(255),
+        String(256),
         unique=True,
         nullable=False,
         index=True,
     )
     hashed_password: Mapped[str] = mapped_column(
-        String(255),
+        String(1024),
         nullable=False,
     )
     role: Mapped[UserRole] = mapped_column(
@@ -101,7 +101,7 @@ class UserDB(Base):
         server_default="{}",
     )
     model_version: Mapped[str] = mapped_column(
-        String(255),
+        String(64),
         nullable=False,
         default="-",
         server_default="-",
@@ -126,7 +126,7 @@ class ZipDB(Base):
         server_default=ZipStatus.PENDING.value,
     )
     name: Mapped[str] = mapped_column(
-        String(255),
+        String(256),
         nullable=False,
     )
     date: Mapped[datetime] = mapped_column(
@@ -139,6 +139,54 @@ class ZipDB(Base):
     )
 
 
+class RustfsObjectDB(Base):
+    __tablename__ = "rustfs_objects"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+    object_key: Mapped[str] = mapped_column(
+        String(128),
+        unique=True,
+        nullable=False,
+    )
+    bucket: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
+    extension: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+    )
+    size: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+    status: Mapped[FileStatus] = mapped_column(
+        Enum(FileStatus, name="file_status", values_callable=_enum_values),
+        nullable=False,
+        default=FileStatus.NOT_EXTRACTED,
+        server_default=FileStatus.NOT_EXTRACTED.value,
+        index=True,
+    )
+    feature_set: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default="{}",
+    )
+    model_version: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="-",
+        server_default="-",
+    )
+    files: Mapped[list["FileDB"]] = relationship(
+        back_populates="rustfs_object", cascade="all, delete-orphan"
+    )
+
+
 class FileDB(Base):
     __tablename__ = "files"
 
@@ -148,38 +196,8 @@ class FileDB(Base):
         index=True,
     )
     name: Mapped[str] = mapped_column(
-        String(255),
+        String(256),
         nullable=False,
-    )
-    size: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-    )
-    rustfs_object_key: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-        index=True,
-    )
-    rustfs_bucket: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-    )
-    status: Mapped[FileStatus] = mapped_column(
-        Enum(FileStatus, name="file_status", values_callable=_enum_values),
-        nullable=False,
-        default=FileStatus.NOT_EXTRACTED,
-        server_default=FileStatus.NOT_EXTRACTED.value,
-    )
-    feature_set: Mapped[dict[str, Any]] = mapped_column(
-        JSONB,
-        nullable=False,
-        server_default="{}",
-    )
-    model_version: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-        default="-",
-        server_default="-",
     )
     zip_id: Mapped[int] = mapped_column(
         Integer,
@@ -187,7 +205,14 @@ class FileDB(Base):
         nullable=False,
         index=True,
     )
+    rustfs_object_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("rustfs_objects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     zip: Mapped["ZipDB"] = relationship(back_populates="files")
+    rustfs_object: Mapped["RustfsObjectDB"] = relationship(back_populates="files")
     students: Mapped[list["StudentDB"]] = relationship(
         secondary="student_files", back_populates="files"
     )
@@ -207,7 +232,7 @@ class StudentDB(Base):
         index=True,
     )
     fullname: Mapped[str] = mapped_column(
-        String(255),
+        String(256),
         nullable=False,
     )
     skills_set: Mapped[dict[str, Any]] = mapped_column(
@@ -216,7 +241,7 @@ class StudentDB(Base):
         server_default="{}",
     )
     model_version: Mapped[str] = mapped_column(
-        String(255),
+        String(64),
         nullable=False,
         default="-",
         server_default="-",
@@ -254,7 +279,7 @@ class ProjectDB(Base):
         index=True,
     )
     name: Mapped[str] = mapped_column(
-        String(255),
+        String(256),
         nullable=False,
     )
     description: Mapped[str] = mapped_column(
@@ -272,7 +297,7 @@ class ProjectDB(Base):
         server_default="{}",
     )
     model_version: Mapped[str] = mapped_column(
-        String(255),
+        String(64),
         nullable=False,
         default="-",
         server_default="-",
@@ -297,7 +322,7 @@ class DistributionDB(Base):
         index=True,
     )
     name: Mapped[str] = mapped_column(
-        String(255),
+        String(256),
         nullable=False,
     )
     status: Mapped[DistributionStatus] = mapped_column(
@@ -329,7 +354,7 @@ class DistributionDB(Base):
         server_default="{}",
     )
     model_version: Mapped[str] = mapped_column(
-        String(255),
+        String(64),
         nullable=False,
         default="-",
         server_default="-",

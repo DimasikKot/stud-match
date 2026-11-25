@@ -4,11 +4,11 @@ CREATE TABLE
   projects (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(256) NOT NULL,
     description TEXT NOT NULL,
     constraints_set JSONB NOT NULL DEFAULT '{}',
     skills_set JSONB NOT NULL DEFAULT '{}',
-    model_version VARCHAR(255) NOT NULL DEFAULT '-',
+    model_version VARCHAR(64) NOT NULL DEFAULT '-',
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 

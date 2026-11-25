@@ -25,14 +25,20 @@ CREATE TYPE "distribution_status" AS ENUM (
 );
 
 CREATE TABLE
+  "skills" (
+    "id" SERIAL PRIMARY KEY,
+    "name" "VARCHAR(64)" NOT NULL
+  );
+
+CREATE TABLE
   "users" (
     "id" SERIAL PRIMARY KEY,
-    "fullname" "VARCHAR(255)" NOT NULL,
-    "email" "VARCHAR(255)" UNIQUE NOT NULL,
-    "hashed_password" "VARCHAR(255)" NOT NULL,
+    "fullname" "VARCHAR(256)" NOT NULL,
+    "email" "VARCHAR(256)" UNIQUE NOT NULL,
+    "hashed_password" "VARCHAR(1024)" NOT NULL,
     "role" user_role NOT NULL DEFAULT 'teacher',
     "skills_set" JSONB NOT NULL DEFAULT '{}',
-    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-',
+    "model_version" "VARCHAR(64)" NOT NULL DEFAULT '-',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
@@ -40,9 +46,10 @@ CREATE TABLE
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 INSERT INTO
-  users (email, hashed_password, role)
+  users (fullname, email, hashed_password, role)
 VALUES
   (
+    'Администратор',
     '${ADMIN_EMAIL}',
     crypt ('${ADMIN_PASSWORD}', gen_salt ('bf', 12)),
     'admin'
@@ -52,35 +59,36 @@ CREATE TABLE
   "zips" (
     "id" SERIAL PRIMARY KEY,
     "status" zip_status NOT NULL DEFAULT 'pending',
-    "name" "VARCHAR(255)" NOT NULL,
+    "name" "VARCHAR(256)" NOT NULL,
     "date" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+  );
+
+CREATE TABLE
+  "rustfs_objects" (
+    "id" SERIAL PRIMARY KEY,
+    "object_key" "VARCHAR(128)" UNIQUE NOT NULL,
+    "bucket" "VARCHAR(64)" NOT NULL,
+    "extension" "VARCHAR(32)" NOT NULL,
+    "size" INT NOT NULL,
+    "status" file_status NOT NULL DEFAULT 'not_extracted',
+    "feature_set" JSONB NOT NULL DEFAULT '{}',
+    "model_version" "VARCHAR(64)" NOT NULL DEFAULT '-'
   );
 
 CREATE TABLE
   "files" (
     "id" SERIAL PRIMARY KEY,
-    "name" "VARCHAR(255)" NOT NULL,
-    "size" INT NOT NULL,
-    "rustfs_object_key" "VARCHAR(255)" NOT NULL,
-    "rustfs_bucket" "VARCHAR(255)" NOT NULL,
-    "status" file_status NOT NULL DEFAULT 'not_extracted',
-    "skills_set" JSONB NOT NULL DEFAULT '{}',
-    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-',
-    "zip_id" INT NOT NULL
-  );
-
-CREATE TABLE
-  "skills" (
-    "id" SERIAL PRIMARY KEY,
-    "name" "VARCHAR(255)" NOT NULL
+    "name" "VARCHAR(256)" NOT NULL,
+    "zip_id" INT NOT NULL,
+    "rustfs_object_id" INT NOT NULL
   );
 
 CREATE TABLE
   "students" (
     "id" SERIAL PRIMARY KEY,
-    "fullname" "VARCHAR(255)" NOT NULL,
+    "fullname" "VARCHAR(256)" NOT NULL,
     "skills_set" JSONB NOT NULL DEFAULT '{}',
-    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-'
+    "model_version" "VARCHAR(64)" NOT NULL DEFAULT '-'
   );
 
 CREATE TABLE
@@ -94,11 +102,11 @@ CREATE TABLE
   "projects" (
     "id" SERIAL PRIMARY KEY,
     "user_id" INT NOT NULL,
-    "name" "VARCHAR(255)" NOT NULL,
+    "name" "VARCHAR(256)" NOT NULL,
     "description" TEXT NOT NULL,
     "constraints_set" JSONB NOT NULL DEFAULT '{}',
     "skills_set" JSONB NOT NULL DEFAULT '{}',
-    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-',
+    "model_version" "VARCHAR(64)" NOT NULL DEFAULT '-',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
@@ -106,21 +114,21 @@ CREATE TABLE
   "distributions" (
     "id" SERIAL PRIMARY KEY,
     "user_id" INT NOT NULL,
-    "name" "VARCHAR(255)" NOT NULL,
+    "name" "VARCHAR(256)" NOT NULL,
     "status" distribution_status NOT NULL DEFAULT 'not_started',
     "selected_project_ids" JSONB NOT NULL DEFAULT '[]',
     "selected_student_ids" JSONB NOT NULL DEFAULT '[]',
     "selected_teacher_ids" JSONB NOT NULL DEFAULT '[]',
     "result_set" JSONB NOT NULL DEFAULT '{}',
-    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-',
+    "model_version" "VARCHAR(64)" NOT NULL DEFAULT '-',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
-CREATE INDEX "files_status_idx" ON "files" ("status");
-  
+CREATE INDEX "rustfs_objects_status_idx" ON "rustfs_objects" ("status");
+
 CREATE INDEX "files_zip_id_idx" ON "files" ("zip_id");
 
-CREATE INDEX "files_rustfs_object_key_idx" ON "files" ("rustfs_object_key");
+CREATE INDEX "files_rustfs_object_id_idx" ON "files" ("rustfs_object_id");
 
 CREATE INDEX "student_files_student_id_idx" ON "student_files" ("student_id");
 
@@ -137,3 +145,5 @@ ALTER TABLE "student_files" ADD FOREIGN KEY ("file_id") REFERENCES "files" ("id"
 ALTER TABLE "student_files" ADD FOREIGN KEY ("student_id") REFERENCES "students" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "files" ADD FOREIGN KEY ("zip_id") REFERENCES "zips" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "files" ADD FOREIGN KEY ("rustfs_object_id") REFERENCES "rustfs_objects" ("id") ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

@@ -6,12 +6,12 @@ CREATE TYPE user_role AS ENUM ('admin', 'teacher');
 CREATE TABLE
   users (
     id SERIAL PRIMARY KEY,
-    fullname VARCHAR(255) NOT NULL DEFAULT 'ФИО',
-    email VARCHAR(255) UNIQUE NOT NULL,
-    hashed_password VARCHAR(255) NOT NULL,
+    fullname VARCHAR(256) NOT NULL,
+    email VARCHAR(256) UNIQUE NOT NULL,
+    hashed_password VARCHAR(1024) NOT NULL,
     role user_role NOT NULL DEFAULT 'teacher',
     skills_set JSONB NOT NULL DEFAULT '{}',
-    model_version VARCHAR(255) NOT NULL DEFAULT '-',
+    model_version VARCHAR(64) NOT NULL DEFAULT '-',
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 

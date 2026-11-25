@@ -3,5 +3,5 @@ DROP TABLE IF EXISTS skills CASCADE;
 CREATE TABLE
   skills (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL
+    name VARCHAR(64) NOT NULL
   );

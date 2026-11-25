@@ -13,13 +13,13 @@ CREATE TABLE
   distributions (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(256) NOT NULL,
     status distribution_status NOT NULL DEFAULT 'not_started',
     selected_project_ids JSONB NOT NULL DEFAULT '[]',
     selected_student_ids JSONB NOT NULL DEFAULT '[]',
     selected_teacher_ids JSONB NOT NULL DEFAULT '[]',
     result_set JSONB NOT NULL DEFAULT '{}',
-    model_version VARCHAR(255) NOT NULL DEFAULT '-',
+    model_version VARCHAR(64) NOT NULL DEFAULT '-',
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 

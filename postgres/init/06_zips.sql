@@ -12,6 +12,6 @@ CREATE TABLE
   zips (
     id SERIAL PRIMARY KEY,
     status zip_status NOT NULL DEFAULT 'pending',
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(256) NOT NULL,
     date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );

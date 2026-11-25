@@ -154,7 +154,7 @@ def _process_zip(zip_id: int, data: bytes) -> None:
                     file_data = archive.read(info)
                     # extension = os.path.splitext(base_name)[1]
                     # object_key = hashlib.sha256(file_data).hexdigest() + extension
-                    object_key = hashlib.sha256(file_data).hexdigest()
+                    object_key = hashlib.sha512(file_data).hexdigest()
                     if not _is_object_referenced(
                         db, object_key, settings.RUSTFS_BUCKET
                     ):
