@@ -4,21 +4,11 @@ import threading
 import time
 from contextlib import asynccontextmanager
 
-import torch
-from kafka import KafkaConsumer, KafkaProducer
-from fastapi import FastAPI
-from pydantic import BaseModel, Field
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    TextStreamer,
-)
-
 from config import settings
+from fastapi import FastAPI
+from task import task
 
-MODEL_NAME: str = "Qwen/Qwen3-4B"
-LLM_MAX_NEW_TOKENS: int = 2048
+from kafka import KafkaConsumer, KafkaProducer
 
 
 def _security_protocol() -> str:
@@ -64,138 +54,29 @@ def _kafka_kwargs(**extra) -> dict:
     return kwargs
 
 
-llm: dict = {}
-gpu_lock = threading.Lock()
-
-
-def load_model():
-    # 4-bit NF4 (~2.5 GB VRAM); GTX 1650 Ti (Turing) has no bf16, so compute in fp16
-    quantization_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.float16,
-        bnb_4bit_use_double_quant=True,
-    )
-    llm["tokenizer"] = AutoTokenizer.from_pretrained(
-        MODEL_NAME, token=settings.HF_TOKEN
-    )
-    llm["model"] = AutoModelForCausalLM.from_pretrained(
-        MODEL_NAME,
-        token=settings.HF_TOKEN,
-        dtype=torch.float16,
-        device_map="cuda:0",
-        quantization_config=quantization_config,
-    )
-    print(f"VRAM allocated: {torch.cuda.memory_allocated() / 1024**3:.2f} GB")
+state: dict = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_model()
-    llm["queue_thread"] = threading.Thread(
-        target=kafka_loop, daemon=True, name="llm-kafka"
+    state["queue_thread"] = threading.Thread(
+        target=kafka_loop, daemon=True, name="features-kafka"
     )
-    llm["queue_thread"].start()
+    state["queue_thread"].start()
     yield
-    llm.clear()
-    torch.cuda.empty_cache()
+    state.clear()
 
 
-app = FastAPI(title="sm-llm-worker", lifespan=lifespan)
-
-
-class Message(BaseModel):
-    role: str
-    content: str
-
-
-class GenerateRequest(BaseModel):
-    prompt: str | None = None
-    messages: list[Message] | None = None
-    max_new_tokens: int = Field(default=LLM_MAX_NEW_TOKENS, ge=1, le=32768)
-    enable_thinking: bool = True
-
-
-class GenerateResponse(BaseModel):
-    thinking: str
-    content: str
-
-
-def build_inputs(request: GenerateRequest):
-    tokenizer, model = llm["tokenizer"], llm["model"]
-    messages = [m.model_dump() for m in request.messages or []]
-    if request.prompt:
-        messages.append({"role": "user", "content": request.prompt})
-    text = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True,
-        enable_thinking=request.enable_thinking,
-    )
-    return tokenizer([text], return_tensors="pt").to(model.device)
-
-
-def log_request(request: GenerateRequest):
-    last = request.prompt or (request.messages[-1].content if request.messages else "")
-    print(f"\n[llm] >>> {last}\n[llm] <<< ", end="", flush=True)
+app = FastAPI(title="sm-features-worker", lifespan=lifespan)
 
 
 @app.get("/health")
 def health():
-    queue_thread = llm.get("queue_thread")
+    queue_thread = state.get("queue_thread")
     return {
         "status": "ok",
-        "model": MODEL_NAME,
-        "loaded": "model" in llm,
         "consumer": bool(queue_thread and queue_thread.is_alive()),
     }
-
-
-class CollectStreamer(TextStreamer):
-    """Собирает куски ответа для итогового результата."""
-
-    def __init__(self, tokenizer):
-        super().__init__(tokenizer, skip_prompt=True, skip_special_tokens=True)
-        self.parts: list[str] = []
-
-    def on_finalized_text(self, text: str, stream_end: bool = False):
-        if text:
-            self.parts.append(text)
-        super().on_finalized_text(text, stream_end)
-
-
-def process_task(producer: KafkaProducer, task: dict):
-    task_id = task["task_id"]
-    try:
-        producer.send(
-            settings.KAFKA_RESULTS_TOPIC, {"task_id": task_id, "status": "running"}
-        ).get(timeout=10)
-
-        request = GenerateRequest(
-            prompt=task["prompt"],
-            enable_thinking=task.get("enable_thinking", True),
-            max_new_tokens=task.get("max_new_tokens") or LLM_MAX_NEW_TOKENS,
-        )
-        streamer = CollectStreamer(llm["tokenizer"])
-        with gpu_lock, torch.inference_mode():
-            print(f"\n[llm] task {task_id}", flush=True)
-            log_request(request)
-            llm["model"].generate(
-                **build_inputs(request),
-                max_new_tokens=request.max_new_tokens,
-                streamer=streamer,
-            )
-        payload = {"task_id": task_id, "result": "".join(streamer.parts)}
-    except Exception as exc:
-        print(f"\n[llm] task {task_id} failed: {exc}", flush=True)
-        payload = {"task_id": task_id, "error": str(exc) or type(exc).__name__}
-
-    try:
-        producer.send(settings.KAFKA_RESULTS_TOPIC, payload).get(timeout=10)
-    except Exception as exc:
-        print(
-            f"[llm] task {task_id}: не удалось отправить результат: {exc}", flush=True
-        )
 
 
 def kafka_loop():
@@ -204,7 +85,7 @@ def kafka_loop():
         **_kafka_kwargs(),
     )
     print(
-        f"[llm] kafka {settings.KAFKA_TASKS_TOPIC} -> {settings.KAFKA_RESULTS_TOPIC} @ {settings.KAFKA_HOST}:{settings.KAFKA_PORT}",
+        f"[features] kafka {settings.KAFKA_TASKS_TOPIC} -> {settings.KAFKA_RESULTS_TOPIC} @ {settings.KAFKA_HOST}:{settings.KAFKA_PORT}",
         flush=True,
     )
     while True:
@@ -219,10 +100,10 @@ def kafka_loop():
                 **_kafka_kwargs(),
             )
             for message in consumer:
-                process_task(producer, message.value)
+                task(producer, message.value)
                 consumer.commit()
         except Exception as exc:
-            print(f"[llm] kafka error: {exc}", flush=True)
+            print(f"[features] kafka error: {exc}", flush=True)
             time.sleep(5)
         finally:
             if consumer is not None:
