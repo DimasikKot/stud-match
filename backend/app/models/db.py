@@ -53,6 +53,20 @@ def _enum_values(enum_cls: type[enum.Enum]) -> list[str]:
     return [member.value for member in enum_cls]
 
 
+class SkillDB(Base):
+    __tablename__ = "skills"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+
+
 class UserDB(Base):
     __tablename__ = "users"
 
@@ -85,6 +99,12 @@ class UserDB(Base):
         JSONB,
         nullable=False,
         server_default="{}",
+    )
+    model_version: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="1.0.0",
+        server_default="1.0.0",
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
@@ -154,25 +174,17 @@ class FileDB(Base):
         nullable=False,
         server_default="{}",
     )
+    model_version: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="1.0.0",
+        server_default="1.0.0",
+    )
     zip_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("zips.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-    )
-
-
-class SkillDB(Base):
-    __tablename__ = "skills"
-
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True,
-        index=True,
-    )
-    name: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
     )
 
 
@@ -192,6 +204,12 @@ class StudentDB(Base):
         JSONB,
         nullable=False,
         server_default="{}",
+    )
+    model_version: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="1.0.0",
+        server_default="1.0.0",
     )
 
 
@@ -286,10 +304,16 @@ class DistributionDB(Base):
         nullable=False,
         server_default="[]",
     )
-    result: Mapped[dict[str, Any]] = mapped_column(
+    result_set: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
         server_default="{}",
+    )
+    model_version: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="1.0.0",
+        server_default="1.0.0",
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()

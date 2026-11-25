@@ -37,7 +37,8 @@ Table users {
   email VARCHAR(255) [unique, not null]
   hashed_password VARCHAR(255) [not null]
   role user_role [not null, default: 'teacher']
-  skills_set JSONB [not null, default: '{}'] // Набор признаков, меняет админ
+  skills_set JSONB [not null, default: '{}'] // Набор навыков, меняет админ
+  model_version VARCHAR(255) [not null, default: '1.0.0'] // Версия модели, которая создала набор навыков
 
   // сортировка, отображать когда были последние изменения
   updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
@@ -62,6 +63,7 @@ Table files {
   rustfs_bucket VARCHAR(255) [not null]
   status file_status [not null, default: 'not_extracted']
   feature_set JSONB [not null, default: '{}'] // Набор признаков
+  model_version VARCHAR(255) [not null, default: '1.0.0'] // Версия модели, которая создала признаки
 
   zip_id INT [not null]
 
@@ -80,6 +82,7 @@ Table students {
   id SERIAL [pk, increment]
   fullname VARCHAR(255) [not null]
   skills_set JSONB [not null, default: '{}']
+  model_version VARCHAR(255) [not null, default: '1.0.0'] // Версия модели, которая создала набор навыков
 }
 
 Table student_files {
@@ -98,7 +101,7 @@ Table projects {
   name VARCHAR(255) [not null]
   description TEXT [not null]
   constraints_set JSONB [not null, default: '{}'] // Набор ограничений
-  skills_set JSONB [not null, default: '{}'] // Набор признаков
+  skills_set JSONB [not null, default: '{}'] // Набор навыков, меняет преподаватель
   updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`] // сортировка
 
   Indexes {
@@ -121,7 +124,8 @@ Table distributions {
   // JSONB который хранит массив словарей преподавателей, 
   // каждый препод хранит массив словарей проектов,
   // каждый проект хранит массив ФИО подобранных студентов и вектора их признаков
-  result_set JSONB [not null, default: '{}'] 
+  result_set JSONB [not null, default: '{}'] // Результат распределения
+  model_version VARCHAR(255) [not null, default: '1.0.0'] // Версия модели, которая создала результат
   updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`] // сортировка
 
   Indexes {

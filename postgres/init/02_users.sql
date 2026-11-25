@@ -11,6 +11,7 @@ CREATE TABLE
     hashed_password VARCHAR(255) NOT NULL,
     role user_role NOT NULL DEFAULT 'teacher',
     skills_set JSONB NOT NULL DEFAULT '{}',
+    model_version VARCHAR(255) NOT NULL DEFAULT '1.0.0',
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 

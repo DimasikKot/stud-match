@@ -19,6 +19,7 @@ CREATE TABLE
     selected_student_ids JSONB NOT NULL DEFAULT '[]',
     selected_teacher_ids JSONB NOT NULL DEFAULT '[]',
     result_set JSONB NOT NULL DEFAULT '{}',
+    model_version VARCHAR(255) NOT NULL DEFAULT '1.0.0',
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
