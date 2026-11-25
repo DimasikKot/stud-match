@@ -43,9 +43,9 @@ class _Settings(BaseSettings):
     KAFKA_USERNAME: str = ""
     KAFKA_PASSWORD: str = ""
 
-    KAFKA_TAGS_TASKS_TOPIC: str = ""
-    KAFKA_TAGS_RESULTS_TOPIC: str = ""
-    KAFKA_TAGS_CONSUMER_GROUP: str = ""
+    KAFKA_FTRS_TASKS_TOPIC: str = ""
+    KAFKA_FTRS_RESULTS_TOPIC: str = ""
+    KAFKA_FTRS_CONSUMER_GROUP: str = ""
     KAFKA_DIST_TASKS_TOPIC: str = ""
     KAFKA_DIST_RESULTS_TOPIC: str = ""
     KAFKA_DIST_CONSUMER_GROUP: str = ""

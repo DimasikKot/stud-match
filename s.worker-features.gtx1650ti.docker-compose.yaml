@@ -1,11 +1,11 @@
 # gtx1650ti
 
 services:
-  sm-worker-tags:
-    container_name: sm-worker-tags
+  sm-worker-features:
+    container_name: sm-worker-features
     build:
-      context: ./worker-tags # Папка, содержащая файлы контейнера
-      dockerfile: worker-tags.gtx1650ti.Dockerfile
+      context: ./worker-features # Папка, содержащая файлы контейнера
+      dockerfile: worker-features.gtx1650ti.Dockerfile
     restart: always
     healthcheck:
       test:
@@ -22,17 +22,17 @@ services:
       - "127.0.0.1:8070:8070"
 
     environment:
-      - HF_TOKEN=${W_TAGS_HF_TOKEN}
-      - KAFKA_HOST=${KF_W_TAGS_HOST}
-      - KAFKA_PORT=${KF_W_TAGS_PORT}
-      - KAFKA_USERNAME=${KF_W_TAGS_USERNAME}
-      - KAFKA_PASSWORD=${KF_W_TAGS_PASSWORD}
-      - KAFKA_TASKS_TOPIC=${KF_W_TAGS_TASKS_TOPIC}
-      - KAFKA_RESULTS_TOPIC=${KF_W_TAGS_RESULTS_TOPIC}
-      - KAFKA_CONSUMER_GROUP=${KF_W_TAGS_CONSUMER_GROUP}
+      - HF_TOKEN=${W_FTRS_HF_TOKEN}
+      - KAFKA_HOST=${KF_W_FTRS_HOST}
+      - KAFKA_PORT=${KF_W_FTRS_PORT}
+      - KAFKA_USERNAME=${KF_W_FTRS_USERNAME}
+      - KAFKA_PASSWORD=${KF_W_FTRS_PASSWORD}
+      - KAFKA_TASKS_TOPIC=${KF_W_FTRS_TASKS_TOPIC}
+      - KAFKA_RESULTS_TOPIC=${KF_W_FTRS_RESULTS_TOPIC}
+      - KAFKA_CONSUMER_GROUP=${KF_W_FTRS_CONSUMER_GROUP}
 
     volumes:
-      - ./worker-tags:/app
+      - ./worker-features:/app
       - sm_hf_cache:/root/.cache/huggingface # Кэш моделей HF
 
     deploy:
