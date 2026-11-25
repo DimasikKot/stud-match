@@ -130,12 +130,16 @@ async def get_project(
 
 
 class PatchProjectRequest(CreateProjectRequest):
+    model_config = ConfigDict(protected_namespaces=())
+
     constraints_set: dict[str, Any] | None = None
     skills_set: dict[str, Any] | None = None
     model_version: str | None = None
 
 
 class PatchProjectResponse(CreateProjectResponse):
+    model_config = ConfigDict(protected_namespaces=())
+
     constraints_set: dict[str, Any]
     skills_set: dict[str, Any]
     model_version: str

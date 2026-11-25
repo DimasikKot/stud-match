@@ -1,4 +1,5 @@
 import time
+from typing import Any
 from urllib.parse import quote
 
 from app.core.database import SessionLocal
@@ -96,6 +97,19 @@ def reset_features(db: Session, status: FileStatus = FileStatus.EXTRACTED) -> in
     return len(objects)
 
 
+def _sanitize_json_value(value: Any) -> Any:
+    if isinstance(value, str):
+        return value.replace("\x00", "")
+    if isinstance(value, list):
+        return [_sanitize_json_value(item) for item in value]
+    if isinstance(value, dict):
+        return {
+            _sanitize_json_value(key): _sanitize_json_value(item)
+            for key, item in value.items()
+        }
+    return value
+
+
 def apply_feature_result(payload: dict) -> None:
     """Применяет результат от воркера features к rustfs_objects."""
     db = SessionLocal()
@@ -108,7 +122,7 @@ def apply_feature_result(payload: dict) -> None:
             )
             return
         if payload.get("feature_set") is not None:
-            rustfs_object.feature_set = payload["feature_set"]
+            rustfs_object.feature_set = _sanitize_json_value(payload["feature_set"])
         if payload.get("status"):
             rustfs_object.status = FileStatus(payload["status"])
         if payload.get("model_version"):

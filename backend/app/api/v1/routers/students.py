@@ -105,11 +105,15 @@ async def get_student(
 
 
 class UpdateStudentRequest(CreateStudentRequest):
+    model_config = ConfigDict(protected_namespaces=())
+
     skills_set: dict[str, Any] | None = None
     model_version: str | None = None
 
 
 class UpdateStudentResponse(CreateStudentResponse):
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
     skills_set: dict[str, Any]
     model_version: str
 
