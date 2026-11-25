@@ -2,6 +2,7 @@ import hashlib
 import io
 import logging
 import mimetypes
+import os
 import threading
 import zipfile
 from typing import BinaryIO
@@ -12,6 +13,7 @@ from app.core.database import SessionLocal
 from app.core.db import (
     FileDB,
     FileStatus,
+    RustfsObjectDB,
     StudentDB,
     StudentFilesDB,
     ZipDB,
@@ -51,21 +53,42 @@ def _delete_s3_object(object_key: str, bucket: str | None = None) -> None:
         logger.exception("Не удалось удалить объект %s из RustFS", object_key)
 
 
-def _is_object_referenced(db: Session, object_key: str, bucket: str) -> bool:
+def _get_rustfs_object(
+    db: Session, object_key: str, bucket: str
+) -> RustfsObjectDB | None:
     return (
-        db.query(FileDB.id)
+        db.query(RustfsObjectDB)
         .filter(
-            FileDB.rustfs_object_key == object_key,
-            FileDB.rustfs_bucket == bucket,
+            RustfsObjectDB.object_key == object_key,
+            RustfsObjectDB.bucket == bucket,
         )
         .first()
-        is not None
     )
+
+
+def _is_object_referenced(db: Session, object_key: str, bucket: str) -> bool:
+    return _get_rustfs_object(db, object_key, bucket) is not None
 
 
 def _delete_object_if_unreferenced(db: Session, object_key: str, bucket: str) -> None:
     if not _is_object_referenced(db, object_key, bucket):
         _delete_s3_object(object_key, bucket)
+
+
+def _delete_rustfs_object_if_orphan(db: Session, rustfs_object: RustfsObjectDB) -> None:
+    """Удаляет запись rustfs_objects и сам объект из S3, если на него
+    не осталось ссылок в таблице files."""
+    remaining = (
+        db.query(FileDB.id).filter(FileDB.rustfs_object_id == rustfs_object.id).first()
+    )
+    if remaining is not None:
+        return
+
+    object_key = rustfs_object.object_key
+    bucket = rustfs_object.bucket
+    db.delete(rustfs_object)
+    db.commit()
+    _delete_s3_object(object_key, bucket)
 
 
 def _get_or_create_student(db: Session, fullname: str) -> StudentDB:
@@ -119,6 +142,8 @@ def _process_zip(zip_id: int, data: bytes) -> None:
     папки лежат файлы студента по одной работе (название работы - имя архива).
     Каждый файл загружается в RustFS, для него создаётся запись в files,
     студент создаётся при отсутствии и связывается с файлом в student_files.
+    Одинаковые по содержимому файлы (одинаковый sha512) ссылаются на одну
+    запись rustfs_objects; extension берётся из первого такого файла.
     """
     db = SessionLocal()
     uploaded_keys: list[str] = []
@@ -152,12 +177,11 @@ def _process_zip(zip_id: int, data: bytes) -> None:
                     student = _get_or_create_student(db, fullname)
 
                     file_data = archive.read(info)
-                    # extension = os.path.splitext(base_name)[1]
-                    # object_key = hashlib.sha256(file_data).hexdigest() + extension
                     object_key = hashlib.sha512(file_data).hexdigest()
-                    if not _is_object_referenced(
+                    rustfs_object = _get_rustfs_object(
                         db, object_key, settings.RUSTFS_BUCKET
-                    ):
+                    )
+                    if rustfs_object is None:
                         content_type, _ = mimetypes.guess_type(base_name)
                         s3_client.upload_fileobj(
                             io.BytesIO(file_data),
@@ -169,14 +193,20 @@ def _process_zip(zip_id: int, data: bytes) -> None:
                             },
                         )
                         uploaded_keys.append(object_key)
+                        rustfs_object = RustfsObjectDB(
+                            object_key=object_key,
+                            bucket=settings.RUSTFS_BUCKET,
+                            extension=os.path.splitext(base_name)[1].lower(),
+                            size=len(file_data),
+                            status=FileStatus.EXTRACTED,
+                        )
+                        db.add(rustfs_object)
+                        db.flush()
 
                     file_record = FileDB(
                         name=base_name,
-                        rustfs_object_key=object_key,
-                        rustfs_bucket=settings.RUSTFS_BUCKET,
-                        size=info.file_size,
-                        status=FileStatus.EXTRACTED,
                         zip_id=zip_id,
+                        rustfs_object_id=rustfs_object.id,
                     )
                     db.add(file_record)
                     db.flush()
@@ -212,7 +242,10 @@ def fetch_zips(db: Session) -> list[tuple[ZipDB, int]]:
 def fetch_zip_by_id(db: Session, zip_id: int) -> ZipDB:
     zip_record = (
         db.query(ZipDB)
-        .options(selectinload(ZipDB.files).selectinload(FileDB.students))
+        .options(
+            selectinload(ZipDB.files).selectinload(FileDB.students),
+            selectinload(ZipDB.files).selectinload(FileDB.rustfs_object),
+        )
         .filter(ZipDB.id == zip_id)
         .first()
     )
@@ -224,26 +257,29 @@ def fetch_zip_by_id(db: Session, zip_id: int) -> ZipDB:
 def delete_zip_by_id(db: Session, zip_id: int) -> None:
     """Удаляет зип и его файлы из БД.
 
-    Объекты в RustFS удаляются только если на их ключ
-    не осталось ссылок в таблице files.
+    Записи rustfs_objects и сами объекты в RustFS удаляются только
+    если на них не осталось ссылок в таблице files.
     Студенты не удаляются, они остаются даже без файлов.
     """
     zip_record = fetch_zip_by_id(db, zip_id)
 
     files = db.query(FileDB).filter(FileDB.zip_id == zip_id).all()
-    object_refs = {
-        (file_db.rustfs_bucket, file_db.rustfs_object_key) for file_db in files
-    }
+    rustfs_objects = {file_db.rustfs_object for file_db in files}
 
     db.delete(zip_record)
     db.commit()
 
-    for bucket, object_key in object_refs:
-        _delete_object_if_unreferenced(db, object_key, bucket)
+    for rustfs_object in rustfs_objects:
+        _delete_rustfs_object_if_orphan(db, rustfs_object)
 
 
 def fetch_file_by_id(db: Session, file_id: int) -> FileDB:
-    file_db = db.query(FileDB).filter(FileDB.id == file_id).first()
+    file_db = (
+        db.query(FileDB)
+        .options(selectinload(FileDB.rustfs_object))
+        .filter(FileDB.id == file_id)
+        .first()
+    )
     if file_db is None:
         raise HTTPException(status_code=404, detail=f"Файл {file_id} не найден")
     return file_db
@@ -253,18 +289,25 @@ def fetch_files(db: Session) -> list[FileDB]:
     """Список всех файлов с привязанными студентами."""
     return (
         db.query(FileDB)
-        .options(selectinload(FileDB.students))
+        .options(
+            selectinload(FileDB.students),
+            selectinload(FileDB.rustfs_object),
+        )
         .order_by(FileDB.id.desc())
         .all()
     )
 
 
 def fetch_files_by_hash(db: Session) -> list[FileDB]:
-    """Список всех файлов, отсортированный по хешу, с одинаковыми хешами и разными extensions (sha256)."""
+    """Список всех файлов, сгруппированных по rustfs-объекту (sha512),
+    у которых в names разные extension."""
     files = (
         db.query(FileDB)
-        .options(selectinload(FileDB.students))
-        .order_by(FileDB.rustfs_object_key)
+        .options(
+            selectinload(FileDB.students),
+            selectinload(FileDB.rustfs_object),
+        )
+        .order_by(FileDB.rustfs_object_id)
         .all()
     )
 
@@ -272,8 +315,9 @@ def fetch_files_by_hash(db: Session) -> list[FileDB]:
 
     for i in range(len(files) - 1):
         if (
-            files[i].rustfs_object_key == files[i + 1].rustfs_object_key
-            and files[i].name.split(".")[-1] != files[i + 1].name.split(".")[-1]
+            files[i].rustfs_object_id == files[i + 1].rustfs_object_id
+            and os.path.splitext(files[i].name)[1].lower()
+            != os.path.splitext(files[i + 1].name)[1].lower()
         ):
             result.add(files[i])
             result.add(files[i + 1])
@@ -285,8 +329,8 @@ def get_file_object(file_db: FileDB) -> dict:
     """Возвращает ответ S3 get_object (содержит Body - StreamingBody)."""
     try:
         return s3_client.get_object(
-            Bucket=file_db.rustfs_bucket,
-            Key=file_db.rustfs_object_key,
+            Bucket=file_db.rustfs_object.bucket,
+            Key=file_db.rustfs_object.object_key,
         )
     except ClientError as exc:
         code = str(exc.response.get("Error", {}).get("Code", ""))
@@ -302,10 +346,9 @@ def guess_content_type(file_db: FileDB) -> str:
 
 def delete_file_by_id(db: Session, file_id: int) -> None:
     file_db = fetch_file_by_id(db, file_id)
-    object_key = file_db.rustfs_object_key
-    bucket = file_db.rustfs_bucket
+    rustfs_object = file_db.rustfs_object
 
     db.delete(file_db)
     db.commit()
 
-    _delete_object_if_unreferenced(db, object_key, bucket)
+    _delete_rustfs_object_if_orphan(db, rustfs_object)

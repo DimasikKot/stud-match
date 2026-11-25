@@ -42,6 +42,22 @@ class MessageResponse(BaseModel):
     detail: str
 
 
+def _file_response(file_db: FileDB) -> FileResponse:
+    rustfs_object = file_db.rustfs_object
+    return FileResponse(
+        id=file_db.id,
+        name=file_db.name,
+        size=rustfs_object.size,
+        rustfs_object_key=rustfs_object.object_key,
+        rustfs_bucket=rustfs_object.bucket,
+        status=rustfs_object.status.value,
+        feature_set=rustfs_object.feature_set,
+        model_version=rustfs_object.model_version,
+        zip_id=file_db.zip_id,
+        student_fullname=file_db.student_fullname,
+    )
+
+
 def _content_disposition(disposition: str, filename: str) -> str:
     """Content-Disposition с поддержкой не-ASCII имён (RFC 5987)."""
     return f"{disposition}; filename*=UTF-8''{quote(filename)}"
@@ -76,7 +92,7 @@ async def _stream_file(file_db: FileDB, disposition: str) -> StreamingResponse:
 @router.get("/", response_model=FileListResponse, dependencies=[Depends(require_admin)])
 def list_files(db: Session = Depends(get_db)):
     files = file_service.fetch_files(db)
-    return FileListResponse(data=[FileResponse.model_validate(file) for file in files])
+    return FileListResponse(data=[_file_response(file) for file in files])
 
 
 @router.get(
@@ -84,7 +100,7 @@ def list_files(db: Session = Depends(get_db)):
 )
 def list_files_by_hash(db: Session = Depends(get_db)):
     files = file_service.fetch_files_by_hash(db)
-    return FileListResponse(data=[FileResponse.model_validate(file) for file in files])
+    return FileListResponse(data=[_file_response(file) for file in files])
 
 
 @router.get("/{file_id}/view")

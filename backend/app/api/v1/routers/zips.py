@@ -110,7 +110,16 @@ def get_zip(
         status=zip_record.status.value,
         date=zip_record.date,
         files_count=len(zip_record.files),
-        files=[ZipFileResponse.model_validate(file_db) for file_db in zip_record.files],
+        files=[
+            ZipFileResponse(
+                id=file_db.id,
+                name=file_db.name,
+                size=file_db.rustfs_object.size,
+                status=file_db.rustfs_object.status.value,
+                student_fullname=file_db.student_fullname,
+            )
+            for file_db in zip_record.files
+        ],
     )
 
 
