@@ -1,12 +1,13 @@
 import ssl
 import urllib.request
+from datetime import datetime
 
 from app.config import settings
 
 from kafka import KafkaProducer
 
 FIRST_LINE_LIMIT = 1024 * 1024
-MODEL_VERSION = "0.0.1 2026-11-25: first line and failed status"
+MODEL_VERSION = "0.0.2 2026-11-26: extracted_at field"
 
 
 class TaskResponse:
@@ -27,7 +28,11 @@ def task(producer: KafkaProducer, task: dict):
         payload = TaskResponse(
             rustfs_object_id=rustfs_object_id,
             status="failed",
-            feature_set={"extension": extension, "first_line": first_line},
+            feature_set={
+                "extension": extension,
+                "extracted_at": datetime.now().isoformat(),
+                "first_line": first_line[:50],
+            },
             model_version=MODEL_VERSION,
         ).__dict__
     except Exception as exc:
@@ -37,6 +42,7 @@ def task(producer: KafkaProducer, task: dict):
             status="failed",
             feature_set={
                 "extension": extension,
+                "extracted_at": datetime.now().isoformat(),
                 "error": str(exc) or type(exc).__name__,
             },
             model_version=MODEL_VERSION,
