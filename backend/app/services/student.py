@@ -12,9 +12,8 @@ def fetch_student_db_by_id(db: Session, student_id: int):
 def create_student_in_db(
     db: Session,
     fullname: str,
-    skills_vector: dict[str, Any],
 ) -> StudentDB:
-    student_db: StudentDB = StudentDB(fullname=fullname, skills_vector=skills_vector)
+    student_db: StudentDB = StudentDB(fullname=fullname)
 
     db.add(student_db)
     db.commit()
@@ -27,7 +26,8 @@ def update_student_by_id(
     student_id: int,
     db: Session,
     new_fullname: str | None,
-    new_skills_vector: dict[str, Any] | None,
+    new_skills_set: dict[str, Any] | None,
+    new_model_version: str | None = None,
 ) -> StudentDB:
     student_db = fetch_student_db_by_id(db=db, student_id=student_id)
 
@@ -37,8 +37,11 @@ def update_student_by_id(
     if new_fullname is not None:
         student_db.fullname = new_fullname
 
-    if new_skills_vector is not None:
-        student_db.skills_vector = new_skills_vector
+    if new_skills_set is not None:
+        student_db.skills_set = new_skills_set
+
+    if new_model_version is not None:
+        student_db.model_version = new_model_version
 
     db.commit()
     db.refresh(student_db)

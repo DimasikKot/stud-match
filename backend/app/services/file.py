@@ -49,13 +49,13 @@ def _delete_s3_object(object_key: str) -> None:
     try:
         s3_client.delete_object(Bucket=settings.RUSTFS_BUCKET, Key=object_key)
     except Exception:
-        pass
+        logger.exception("Не удалось удалить объект %s из RustFS", object_key)
 
 
 def _get_or_create_student(db: Session, fullname: str) -> StudentDB:
     student = db.query(StudentDB).filter(StudentDB.fullname == fullname).first()
     if student is None:
-        student = StudentDB(fullname=fullname, skills_vector={})
+        student = StudentDB(fullname=fullname)
         db.add(student)
         db.flush()
     return student

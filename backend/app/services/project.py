@@ -32,16 +32,11 @@ def create_project(
     db: Session,
     name: str,
     description: str,
-    constraints_vector: dict[str, Any],
-    skills_vector: dict[str, Any],
 ) -> ProjectDB:
     project_db: ProjectDB = ProjectDB(
-        name=name,
-        user_id=user_id,
-        description=description,
-        constraints_vector=constraints_vector,
-        skills_vector=skills_vector,
+        name=name, user_id=user_id, description=description
     )
+
     user = db.query(UserDB).filter(UserDB.id == user_id).first()
     if user is None:
         raise HTTPException(
@@ -100,8 +95,9 @@ def update_project_by_id(
     db: Session,
     new_name: str | None,
     new_description: str | None,
-    new_constraints_vector: dict[str, Any] | None,
-    new_skills_vector: dict[str, Any] | None,
+    new_constraints_set: dict[str, Any] | None = None,
+    new_skills_set: dict[str, Any] | None = None,
+    new_model_version: str | None = None,
 ) -> ProjectDB:
     project_db = fetch_project_db_by_id(project_id=project_id, user_id=user_id, db=db)
 
@@ -111,11 +107,14 @@ def update_project_by_id(
     if new_description is not None:
         project_db.description = new_description
 
-    if new_constraints_vector is not None:
-        project_db.constraints_vector = new_constraints_vector
+    if new_constraints_set is not None:
+        project_db.constraints_set = new_constraints_set
 
-    if new_skills_vector is not None:
-        project_db.skills_vector = new_skills_vector
+    if new_skills_set is not None:
+        project_db.skills_set = new_skills_set
+
+    if new_model_version is not None:
+        project_db.model_version = new_model_version
 
     db.commit()
     db.refresh(project_db)
