@@ -19,7 +19,7 @@ CREATE TABLE
     rustfs_bucket VARCHAR(255) NOT NULL,
     status file_status NOT NULL DEFAULT 'not_extracted',
     feature_set JSONB NOT NULL DEFAULT '{}',
-    model_version VARCHAR(255) NOT NULL DEFAULT '1.0.0',
+    model_version VARCHAR(255) NOT NULL DEFAULT '-',
     zip_id INT NOT NULL
   );
 

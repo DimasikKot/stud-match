@@ -8,6 +8,7 @@ CREATE TABLE
     description TEXT NOT NULL,
     constraints_set JSONB NOT NULL DEFAULT '{}',
     skills_set JSONB NOT NULL DEFAULT '{}',
+    model_version VARCHAR(255) NOT NULL DEFAULT '-',
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 

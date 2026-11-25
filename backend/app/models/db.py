@@ -103,8 +103,8 @@ class UserDB(Base):
     model_version: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        default="1.0.0",
-        server_default="1.0.0",
+        default="-",
+        server_default="-",
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
@@ -177,8 +177,8 @@ class FileDB(Base):
     model_version: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        default="1.0.0",
-        server_default="1.0.0",
+        default="-",
+        server_default="-",
     )
     zip_id: Mapped[int] = mapped_column(
         Integer,
@@ -208,8 +208,8 @@ class StudentDB(Base):
     model_version: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        default="1.0.0",
-        server_default="1.0.0",
+        default="-",
+        server_default="-",
     )
 
 
@@ -257,6 +257,12 @@ class ProjectDB(Base):
         JSONB,
         nullable=False,
         server_default="{}",
+    )
+    model_version: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="-",
+        server_default="-",
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
@@ -312,8 +318,8 @@ class DistributionDB(Base):
     model_version: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        default="1.0.0",
-        server_default="1.0.0",
+        default="-",
+        server_default="-",
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()

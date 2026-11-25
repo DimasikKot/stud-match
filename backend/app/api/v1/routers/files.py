@@ -28,7 +28,8 @@ class FileResponse(BaseModel):
     rustfs_object_key: str
     rustfs_bucket: str
     status: str
-    skills_vector: dict
+    feature_set: dict
+    model_version: str
     zip_id: int
 
 

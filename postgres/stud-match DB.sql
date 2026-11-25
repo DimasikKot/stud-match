@@ -32,7 +32,7 @@ CREATE TABLE
     "hashed_password" "VARCHAR(255)" NOT NULL,
     "role" user_role NOT NULL DEFAULT 'teacher',
     "skills_set" JSONB NOT NULL DEFAULT '{}',
-    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '1.0.0',
+    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
@@ -65,7 +65,7 @@ CREATE TABLE
     "rustfs_bucket" "VARCHAR(255)" NOT NULL,
     "status" file_status NOT NULL DEFAULT 'not_extracted',
     "skills_set" JSONB NOT NULL DEFAULT '{}',
-    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '1.0.0',
+    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-',
     "zip_id" INT NOT NULL
   );
 
@@ -80,7 +80,7 @@ CREATE TABLE
     "id" SERIAL PRIMARY KEY,
     "fullname" "VARCHAR(255)" NOT NULL,
     "skills_set" JSONB NOT NULL DEFAULT '{}',
-    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '1.0.0'
+    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-'
   );
 
 CREATE TABLE
@@ -98,6 +98,7 @@ CREATE TABLE
     "description" TEXT NOT NULL,
     "constraints_set" JSONB NOT NULL DEFAULT '{}',
     "skills_set" JSONB NOT NULL DEFAULT '{}',
+    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
@@ -111,7 +112,7 @@ CREATE TABLE
     "selected_student_ids" JSONB NOT NULL DEFAULT '[]',
     "selected_teacher_ids" JSONB NOT NULL DEFAULT '[]',
     "result_set" JSONB NOT NULL DEFAULT '{}',
-    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '1.0.0',
+    "model_version" "VARCHAR(255)" NOT NULL DEFAULT '-',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
