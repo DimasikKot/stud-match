@@ -30,7 +30,6 @@ class FileResponse(BaseModel):
     status: str
     skills_vector: dict
     zip_id: int
-    work_date: datetime
 
 
 class FileListResponse(BaseModel):

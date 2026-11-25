@@ -81,7 +81,7 @@ class UserDB(Base):
         default=UserRole.TEACHER,
         server_default=UserRole.TEACHER.value,
     )
-    skills_vector: Mapped[dict[str, Any]] = mapped_column(
+    skills_set: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
         server_default="{}",
@@ -149,7 +149,7 @@ class FileDB(Base):
         default=FileStatus.NOT_EXTRACTED,
         server_default=FileStatus.NOT_EXTRACTED.value,
     )
-    skills_vector: Mapped[dict[str, Any]] = mapped_column(
+    feature_set: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
         server_default="{}",
@@ -160,11 +160,6 @@ class FileDB(Base):
         nullable=False,
         index=True,
     )
-    zip: Mapped["ZipDB"] = relationship(back_populates="files")
-
-    @property
-    def work_date(self) -> datetime:
-        return self.zip.date if self.zip else None  # type: ignore[return-value]
 
 
 class SkillDB(Base):
@@ -193,7 +188,7 @@ class StudentDB(Base):
         String(255),
         nullable=False,
     )
-    skills_vector: Mapped[dict[str, Any]] = mapped_column(
+    skills_set: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
         server_default="{}",
@@ -235,12 +230,12 @@ class ProjectDB(Base):
         Text,
         nullable=False,
     )
-    constraints_vector: Mapped[dict[str, Any]] = mapped_column(
+    constraints_set: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
         server_default="{}",
     )
-    skills_vector: Mapped[dict[str, Any]] = mapped_column(
+    skills_set: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
         server_default="{}",

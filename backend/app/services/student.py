@@ -68,8 +68,6 @@ def fetch_all_students(
         student_db = student_db.order_by(StudentDB.fullname.asc())
     elif sort == "fullname_desc":
         student_db = student_db.order_by(StudentDB.fullname.desc())
-    else:
-        student_db = student_db.order_by(StudentDB.id.desc())
 
     return student_db.all()
 

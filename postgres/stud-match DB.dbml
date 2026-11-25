@@ -37,7 +37,7 @@ Table users {
   email VARCHAR(255) [unique, not null]
   hashed_password VARCHAR(255) [not null]
   role user_role [not null, default: 'teacher']
-  skills_vector JSONB [not null, default: '{}'] // меняет админ
+  skills_set JSONB [not null, default: '{}'] // Набор признаков, меняет админ
 
   // сортировка, отображать когда были последние изменения
   updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`]
@@ -61,12 +61,13 @@ Table files {
   rustfs_object_key VARCHAR(255) [not null]
   rustfs_bucket VARCHAR(255) [not null]
   status file_status [not null, default: 'not_extracted']
-  skills_vector JSONB [not null, default: '{}']
+  feature_set JSONB [not null, default: '{}'] // Набор признаков
 
   zip_id INT [not null]
 
   Indexes {
     zip_id [name: "files_zip_id_idx"]
+    status [name: "files_status_idx"]
   }
 }
 
@@ -78,7 +79,7 @@ Table skills {
 Table students {
   id SERIAL [pk, increment]
   fullname VARCHAR(255) [not null]
-  skills_vector JSONB [not null, default: '{}']
+  skills_set JSONB [not null, default: '{}']
 }
 
 Table student_files {
@@ -96,8 +97,8 @@ Table projects {
   user_id INT [not null] // Преподаватель, создавший проект
   name VARCHAR(255) [not null]
   description TEXT [not null]
-  constraints_vector JSONB [not null, default: '{}'] // ограничения
-  skills_vector JSONB [not null, default: '{}']
+  constraints_set JSONB [not null, default: '{}'] // Набор ограничений
+  skills_set JSONB [not null, default: '{}'] // Набор признаков
   updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`] // сортировка
 
   Indexes {
@@ -120,7 +121,7 @@ Table distributions {
   // JSONB который хранит массив словарей преподавателей, 
   // каждый препод хранит массив словарей проектов,
   // каждый проект хранит массив ФИО подобранных студентов и вектора их признаков
-  result JSONB [not null, default: '{}'] 
+  result_set JSONB [not null, default: '{}'] 
   updated_at TIMESTAMP [not null, default: `CURRENT_TIMESTAMP`] // сортировка
 
   Indexes {

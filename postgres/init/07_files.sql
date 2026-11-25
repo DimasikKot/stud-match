@@ -18,10 +18,11 @@ CREATE TABLE
     rustfs_object_key VARCHAR(255) NOT NULL,
     rustfs_bucket VARCHAR(255) NOT NULL,
     status file_status NOT NULL DEFAULT 'not_extracted',
-    skills_vector JSONB NOT NULL DEFAULT '{}',
+    feature_set JSONB NOT NULL DEFAULT '{}',
     zip_id INT NOT NULL
   );
 
 CREATE INDEX files_zip_id_idx ON files (zip_id);
+CREATE INDEX files_status_idx ON files (status);
 
 ALTER TABLE files ADD FOREIGN KEY (zip_id) REFERENCES zips (id) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

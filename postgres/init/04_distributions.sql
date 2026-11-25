@@ -18,7 +18,7 @@ CREATE TABLE
     selected_project_ids JSONB NOT NULL DEFAULT '[]',
     selected_student_ids JSONB NOT NULL DEFAULT '[]',
     selected_teacher_ids JSONB NOT NULL DEFAULT '[]',
-    result JSONB NOT NULL DEFAULT '{}',
+    result_set JSONB NOT NULL DEFAULT '{}',
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 

@@ -31,7 +31,7 @@ CREATE TABLE
     "email" "VARCHAR(255)" UNIQUE NOT NULL,
     "hashed_password" "VARCHAR(255)" NOT NULL,
     "role" user_role NOT NULL DEFAULT 'teacher',
-    "skills_vector" JSONB NOT NULL DEFAULT '{}',
+    "skills_set" JSONB NOT NULL DEFAULT '{}',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
@@ -63,7 +63,7 @@ CREATE TABLE
     "rustfs_object_key" "VARCHAR(255)" NOT NULL,
     "rustfs_bucket" "VARCHAR(255)" NOT NULL,
     "status" file_status NOT NULL DEFAULT 'not_extracted',
-    "skills_vector" JSONB NOT NULL DEFAULT '{}',
+    "skills_set" JSONB NOT NULL DEFAULT '{}',
     "zip_id" INT NOT NULL
   );
 
@@ -77,7 +77,7 @@ CREATE TABLE
   "students" (
     "id" SERIAL PRIMARY KEY,
     "fullname" "VARCHAR(255)" NOT NULL,
-    "skills_vector" JSONB NOT NULL DEFAULT '{}'
+    "skills_set" JSONB NOT NULL DEFAULT '{}'
   );
 
 CREATE TABLE
@@ -93,8 +93,8 @@ CREATE TABLE
     "user_id" INT NOT NULL,
     "name" "VARCHAR(255)" NOT NULL,
     "description" TEXT NOT NULL,
-    "constraints_vector" JSONB NOT NULL DEFAULT '{}',
-    "skills_vector" JSONB NOT NULL DEFAULT '{}',
+    "constraints_set" JSONB NOT NULL DEFAULT '{}',
+    "skills_set" JSONB NOT NULL DEFAULT '{}',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
 
@@ -107,9 +107,11 @@ CREATE TABLE
     "selected_project_ids" JSONB NOT NULL DEFAULT '[]',
     "selected_student_ids" JSONB NOT NULL DEFAULT '[]',
     "selected_teacher_ids" JSONB NOT NULL DEFAULT '[]',
-    "result" JSONB NOT NULL DEFAULT '{}',
+    "result_set" JSONB NOT NULL DEFAULT '{}',
     "updated_at" TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP)
   );
+
+CREATE INDEX "files_status_idx" ON "files" ("status");
   
 CREATE INDEX "files_zip_id_idx" ON "files" ("zip_id");
 
