@@ -19,11 +19,13 @@ from app.core.db import (
     ZipDB,
     ZipStatus,
 )
+from app.services.rustfs_object import stream_rustfs_object
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
+from starlette.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +100,16 @@ def _get_or_create_student(db: Session, fullname: str) -> StudentDB:
         db.add(student)
         db.flush()
     return student
+
+
+async def stream_file(file_db: FileDB, disposition: str) -> StreamingResponse:
+    """Отдаёт файл из RustFS/S3 потоком."""
+    return await stream_rustfs_object(
+        file_db.rustfs_object,
+        file_db.name,
+        disposition,
+        guess_content_type(file_db),
+    )
 
 
 def upload_zip(
@@ -287,18 +299,19 @@ def fetch_file_by_id(db: Session, file_id: int) -> FileDB:
 
 def fetch_files(db: Session) -> list[FileDB]:
     """Список всех файлов с привязанными студентами."""
-    return (
+    query = (
         db.query(FileDB)
         .options(
             selectinload(FileDB.students),
             selectinload(FileDB.rustfs_object),
         )
         .order_by(FileDB.id.desc())
-        .all()
     )
 
+    return query.all()
 
-def fetch_files_by_hash(db: Session) -> list[FileDB]:
+
+def fetch_files_duplicate_hash_and_different_extensions(db: Session) -> list[FileDB]:
     """Список всех файлов, сгруппированных по rustfs-объекту (sha512),
     у которых в names разные extension."""
     files = (
@@ -323,15 +336,6 @@ def fetch_files_by_hash(db: Session) -> list[FileDB]:
             result.add(files[i + 1])
 
     return list(result)
-
-
-def fetch_rustfs_object_by_id(db: Session, rustfs_object_id: int) -> RustfsObjectDB:
-    rustfs_object = db.get(RustfsObjectDB, rustfs_object_id)
-    if rustfs_object is None:
-        raise HTTPException(
-            status_code=404, detail=f"Объект {rustfs_object_id} не найден"
-        )
-    return rustfs_object
 
 
 def get_rustfs_object_file(rustfs_object: RustfsObjectDB) -> dict:

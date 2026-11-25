@@ -3,8 +3,7 @@ from contextlib import asynccontextmanager
 
 import urllib3
 from app.api.v1.endpoints import api_router
-from app.services import distribution as distribution_service
-from app.services import features as features_service
+from app.services import distribution, rustfs_object
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -19,12 +18,12 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 async def lifespan(app: FastAPI):
     consumer_threads = [
         threading.Thread(
-            target=features_service.results_consumer_loop,
+            target=rustfs_object.results_consumer_loop,
             daemon=True,
             name="kafka-features-results",
         ),
         threading.Thread(
-            target=distribution_service.results_consumer_loop,
+            target=distribution.results_consumer_loop,
             daemon=True,
             name="kafka-distribution-results",
         ),

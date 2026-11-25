@@ -1,19 +1,13 @@
-import mimetypes
-from urllib.parse import quote
-
 from app.core.database import get_db
-from app.core.db import FileDB, RustfsObjectDB
-from app.services import features as features_service
-from app.services import file as file_service
+from app.core.db import FileDB
+from app.services import file, rustfs_object
 from app.services.get_user import require_admin
 from fastapi import (
     APIRouter,
     Depends,
 )
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
-from starlette.concurrency import run_in_threadpool
 
 router: APIRouter = APIRouter(
     prefix="/files", tags=["Files"], dependencies=[Depends(require_admin)]
@@ -60,65 +54,19 @@ def _file_response(file_db: FileDB) -> FileResponse:
     )
 
 
-def _content_disposition(disposition: str, filename: str) -> str:
-    """Content-Disposition с поддержкой не-ASCII имён (RFC 5987)."""
-    return f"{disposition}; filename*=UTF-8''{quote(filename)}"
-
-
-async def _stream_rustfs_object(
-    rustfs_object: RustfsObjectDB,
-    filename: str,
-    disposition: str,
-    media_type: str,
-) -> StreamingResponse:
-    """Отдаёт объект из RustFS/S3 потоком."""
-    s3_response = await run_in_threadpool(
-        file_service.get_rustfs_object_file, rustfs_object
-    )
-    body = s3_response["Body"]
-
-    def iterator():
-        try:
-            while chunk := body.read(64 * 1024):
-                yield chunk
-        finally:
-            body.close()
-
-    headers = {
-        "Content-Disposition": _content_disposition(disposition, filename),
-    }
-    content_length = s3_response.get("ContentLength")
-    if content_length is not None:
-        headers["Content-Length"] = str(content_length)
-
-    return StreamingResponse(
-        iterator(),
-        media_type=media_type,
-        headers=headers,
-    )
-
-
-async def _stream_file(file_db: FileDB, disposition: str) -> StreamingResponse:
-    """Отдаёт файл из RustFS/S3 потоком."""
-    return await _stream_rustfs_object(
-        file_db.rustfs_object,
-        file_db.name,
-        disposition,
-        file_service.guess_content_type(file_db),
-    )
-
-
 @router.get("/", response_model=FileListResponse, dependencies=[Depends(require_admin)])
 def list_files(db: Session = Depends(get_db)):
-    files = file_service.fetch_files(db)
+    files = file.fetch_files(db)
     return FileListResponse(data=[_file_response(file) for file in files])
 
 
 @router.get(
-    "/by-hash", response_model=FileListResponse, dependencies=[Depends(require_admin)]
+    "/duplicate-hash-different-extensions",
+    response_model=FileListResponse,
+    dependencies=[Depends(require_admin)],
 )
 def list_files_by_hash(db: Session = Depends(get_db)):
-    files = file_service.fetch_files_by_hash(db)
+    files = file.fetch_files_duplicate_hash_and_different_extensions(db)
     return FileListResponse(data=[_file_response(file) for file in files])
 
 
@@ -128,8 +76,8 @@ async def view_file(
     db: Session = Depends(get_db),
 ):
     """Просмотр файла inline (браузер откроет его, не скачивая)."""
-    file_db = file_service.fetch_file_by_id(db, file_id)
-    return await _stream_file(file_db, "inline")
+    file_db = file.fetch_file_by_id(db, file_id)
+    return await rustfs_object.stream_file(file_db, "inline")
 
 
 @router.get("/{file_id}/download")
@@ -138,29 +86,8 @@ async def download_file(
     db: Session = Depends(get_db),
 ):
     """Скачивание файла как вложения (attachment)."""
-    file_db = file_service.fetch_file_by_id(db, file_id)
-    return await _stream_file(file_db, "attachment")
-
-
-@router.post("/extract-features", response_model=MessageResponse)
-def queue_feature_extraction(
-    db: Session = Depends(get_db),
-):
-    """Ставит все rustfs_objects со статусом not_extracted
-    в очередь features.tasks для воркера features."""
-    count = features_service.queue_not_extracted_objects(db)
-    return MessageResponse(
-        detail=f"В очередь отправлено объектов: {count}", success=True
-    )
-
-
-@router.get("/reset-features/")
-async def reset_features(
-    db: Session = Depends(get_db),
-):
-    """Сбрасывает статус всех rustfs_objects на not_extracted."""
-    count = features_service.reset_features(db)
-    return MessageResponse(detail=f"Сброшено статусов: {count}", success=True)
+    file_db = file.fetch_file_by_id(db, file_id)
+    return await rustfs_object.stream_file(file_db, "attachment")
 
 
 @router.delete(
@@ -170,27 +97,5 @@ def delete_file(
     file_id: int,
     db: Session = Depends(get_db),
 ):
-    file_service.delete_file_by_id(db, file_id)
+    file.delete_file_by_id(db, file_id)
     return MessageResponse(detail="Файл успешно удален!", success=True)
-
-
-internal_router: APIRouter = APIRouter(prefix="/internal", tags=["Internal"])
-
-
-@internal_router.get("/rustfs-objects/{rustfs_object_id}/content")
-async def get_rustfs_object_content(
-    rustfs_object_id: int,
-    db: Session = Depends(get_db),
-):
-    """Отдаёт содержимое rustfs_objects по id.
-
-    Используется воркером features для скачивания файла на обработку,
-    без cookie-авторизации."""
-    rustfs_object = file_service.fetch_rustfs_object_by_id(db, rustfs_object_id)
-    content_type, _ = mimetypes.guess_type(rustfs_object.object_key)
-    return await _stream_rustfs_object(
-        rustfs_object,
-        rustfs_object.object_key,
-        "attachment",
-        content_type or "application/octet-stream",
-    )

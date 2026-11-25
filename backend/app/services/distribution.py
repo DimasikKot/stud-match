@@ -2,7 +2,7 @@ import time
 
 from app.core.database import SessionLocal
 from app.core.db import DistributionDB, DistributionStatus
-from app.services import kafka as kafka_service
+from app.services import kafka
 from sqlalchemy.orm import Session
 
 
@@ -15,8 +15,8 @@ def queue_not_extracted_objects(db: Session) -> int:
         .all()
     )
     for distribution in distributions:
-        kafka_service.produce(
-            kafka_service.settings.KAFKA_FTRS_TASKS_TOPIC,
+        kafka.produce(
+            kafka.settings.KAFKA_FTRS_TASKS_TOPIC,
             {
                 "distribution_id": distribution.id,
                 "selected_student_ids": distribution.selected_student_ids,
@@ -36,7 +36,7 @@ def apply_distribution_result(payload: dict) -> None:
         distribution_db = db.get(DistributionDB, payload["distribution_id"])
         if distribution_db is None:
             print(
-                f"[kafka] distribution result: distribution_result не найден",
+                "[kafka] distribution result: distribution_result не найден",
                 flush=True,
             )
             return
@@ -57,9 +57,9 @@ def results_consumer_loop() -> None:
     while True:
         consumer = None
         try:
-            consumer = kafka_service.results_consumer(
-                kafka_service.settings.KAFKA_DIST_RESULTS_TOPIC,
-                kafka_service.settings.KAFKA_DIST_CONSUMER_GROUP,
+            consumer = kafka.results_consumer(
+                kafka.settings.KAFKA_DIST_RESULTS_TOPIC,
+                kafka.settings.KAFKA_DIST_CONSUMER_GROUP,
             )
             for message in consumer:
                 apply_distribution_result(message.value)
