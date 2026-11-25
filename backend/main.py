@@ -1,12 +1,15 @@
 import threading
 from contextlib import asynccontextmanager
 
+import urllib3
+from app.api.v1.endpoints import api_router
+from app.services import predict as predict_service
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
-from app.api.v1.endpoints import api_router
-from app.services import predict as predict_service
+# Отключаем предупреждения об непроверенных HTTPS соединениях (из-за RustFS)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # from app.services import tags as tags_service
 
