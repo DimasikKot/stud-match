@@ -2,7 +2,7 @@ import uuid
 from datetime import timedelta
 
 from app.core.config import settings
-from app.models.db import UserDB
+from app.core.db import UserDB
 from app.services.auth import (
     create_access_token,
     create_refresh_token,

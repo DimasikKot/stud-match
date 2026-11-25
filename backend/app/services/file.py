@@ -10,7 +10,7 @@ from typing import BinaryIO
 import boto3
 from app.core.config import settings
 from app.core.database import SessionLocal
-from app.models.db import (
+from app.core.db import (
     FileDB,
     FileStatus,
     StudentDB,

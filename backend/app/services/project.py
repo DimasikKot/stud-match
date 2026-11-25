@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from app.models.db import ProjectDB, UserDB
+from app.core.db import ProjectDB, UserDB
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 

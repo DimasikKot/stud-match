@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from app.core.database import get_db
-from app.models.db import UserDB
+from app.core.db import UserDB
 from app.services.get_user import get_current_user
 from app.services.project import (
     SortType,

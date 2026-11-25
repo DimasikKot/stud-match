@@ -1,5 +1,5 @@
 from app.core.database import get_db
-from app.models.db import ROLE_ADMIN, UserDB
+from app.core.db import ROLE_ADMIN, UserDB
 from app.services.auth import decode_access_token
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyCookie

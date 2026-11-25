@@ -2,7 +2,7 @@ from datetime import datetime
 from urllib.parse import quote
 
 from app.core.database import get_db
-from app.models.db import FileDB
+from app.core.db import FileDB
 from app.services import file as file_service
 from app.services.get_user import require_admin
 from fastapi import (

@@ -1,6 +1,6 @@
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.db import UserDB
+from app.core.db import UserDB
 from app.services import user as user_service
 from app.services.get_redis import get_redis
 from app.services.get_user import get_current_user, refresh_cookie_scheme, require_admin

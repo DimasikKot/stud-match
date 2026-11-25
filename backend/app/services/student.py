@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from app.models.db import StudentDB
+from app.core.db import StudentDB
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
