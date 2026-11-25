@@ -22,7 +22,7 @@ from botocore.client import Config
 from botocore.exceptions import ClientError
 from fastapi import HTTPException
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +189,12 @@ def fetch_zips(db: Session) -> list[tuple[ZipDB, int]]:
 
 
 def fetch_zip_by_id(db: Session, zip_id: int) -> ZipDB:
-    zip_record = db.get(ZipDB, zip_id)
+    zip_record = (
+        db.query(ZipDB)
+        .options(selectinload(ZipDB.files).selectinload(FileDB.students))
+        .filter(ZipDB.id == zip_id)
+        .first()
+    )
     if zip_record is None:
         raise HTTPException(status_code=404, detail=f"Архив {zip_id} не найден")
     return zip_record
@@ -224,8 +229,13 @@ def fetch_file_by_id(db: Session, file_id: int) -> FileDB:
 
 
 def fetch_files(db: Session) -> list[FileDB]:
-    """Список всех файлов, отсортированный по дате работы (новые первыми)."""
-    return db.query(FileDB).all()
+    """Список всех файлов с привязанными студентами."""
+    return (
+        db.query(FileDB)
+        .options(selectinload(FileDB.students))
+        .order_by(FileDB.id.desc())
+        .all()
+    )
 
 
 def get_file_object(file_db: FileDB) -> dict:

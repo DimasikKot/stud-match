@@ -47,24 +47,6 @@ class CreateProjectRequest(BaseModel):
             )
         return value
 
-    @field_validator("constraints_vector")
-    def validate_constraints_vector(cls, value):
-        if len(value) > 20000:
-            raise HTTPException(
-                status_code=400,
-                detail="Вектор ограничений не должен превышать 20000 символов",
-            )
-        return value
-
-    @field_validator("skills_set")
-    def validate_skills_vector(cls, value):
-        if len(value) > 20000:
-            raise HTTPException(
-                status_code=400,
-                detail="Вектор навыков не должен превышать 20000 символов",
-            )
-        return value
-
 
 class CreateProjectResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -96,6 +78,8 @@ class GetListProjectResponse(BaseModel):
 
     id: int
     name: str
+    description: str
+    updated_at: datetime
 
 
 class GetListProjectsResponse(BaseModel):

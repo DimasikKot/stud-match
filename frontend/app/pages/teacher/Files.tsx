@@ -1,19 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { ButtonUI } from "@/shared/components/UI/ButtonUI";
 import { TextUI } from "@/shared/components/UI/TextUI";
-import { FileCard } from "@/shared/components/FileCard";
-import {
-  deleteFile,
-  fetchFiles,
-  fileDownloadUrl,
-  fileViewUrl,
-  uploadFiles,
-  type FileResponse,
-} from "@/shared/api/file";
+import { ZipCard } from "@/shared/components/ZipCard";
 import { IconUI } from "@/shared/components/UI/IconUI";
 import { PageLayout } from "@/shared/components/Layouts/PageLayout";
+import { uploadFiles } from "@/shared/api/file";
+import { deleteZip, fetchZips, type ZipResponse } from "@/shared/api/zips";
 
 const formatSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} Б`;
@@ -22,34 +17,35 @@ const formatSize = (bytes: number): string => {
 };
 
 export function Files() {
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [files, setFiles] = useState<FileResponse[]>([]);
+  const [zips, setZips] = useState<ZipResponse[]>([]);
   const [selected, setSelected] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>(
     {},
   );
 
-  const loadFiles = () =>
-    fetchFiles()
-      .then((response) => setFiles(response.data))
+  const loadZips = () =>
+    fetchZips()
+      .then((response) => setZips(response.data))
       .catch(() => {});
 
   useEffect(() => {
-    loadFiles();
+    loadZips();
   }, []);
 
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
-    const zips = picked.filter((file) =>
+    const archives = picked.filter((file) =>
       file.name.toLowerCase().endsWith(".zip"),
     );
-    if (zips.length < picked.length) {
+    if (archives.length < picked.length) {
       toast.error("Можно загружать только zip-архивы");
     }
-    if (zips.length > 0) {
-      setSelected((prev) => [...prev, ...zips]);
+    if (archives.length > 0) {
+      setSelected((prev) => [...prev, ...archives]);
     }
     e.target.value = "";
   };
@@ -75,20 +71,20 @@ export function Files() {
       );
       setSelected([]);
       setUploadProgress({});
-      await loadFiles();
+      await loadZips();
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleDelete = async (file: FileResponse) => {
+  const handleDeleteZip = async (zip: ZipResponse) => {
     try {
-      setFiles((prev) => prev.filter((f) => f.id !== file.id));
-      await deleteFile(file.id);
-      toast.success(`Файл "${file.name}" удалён`);
+      setZips((prev) => prev.filter((z) => z.id !== zip.id));
+      await deleteZip(zip.id);
+      toast.success(`Архив "${zip.name}" удалён`);
     } catch {
-      setFiles((prev) => [...prev, file]);
-      toast.error("Не удалось удалить файл");
+      setZips((prev) => [...prev, zip]);
+      toast.error("Не удалось удалить архив");
     }
   };
 
@@ -177,27 +173,23 @@ export function Files() {
         )}
       </div>
 
-      {/* Список файлов */}
       <div className="mt-8">
         <TextUI variant="header" className="mb-4">
-          Загруженные файлы ({files.length})
+          Загруженные архивы ({zips.length})
         </TextUI>
 
-        {files.length === 0 ? (
+        {zips.length === 0 ? (
           <div className="bg-white border border-gray-300 text-center h-full">
-            <TextUI variant="desc">Файлов пока нет</TextUI>
+            <TextUI variant="desc">Архивов пока нет</TextUI>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {files.map((file) => (
-              <FileCard
-                key={file.id}
-                file={file}
-                onClick={() => window.open(fileViewUrl(file.id), "_blank")}
-                onDownloadClick={() =>
-                  window.open(fileDownloadUrl(file.id), "_blank")
-                }
-                onDeleteClick={() => handleDelete(file)}
+            {zips.map((zip) => (
+              <ZipCard
+                key={zip.id}
+                zip={zip}
+                onClick={() => navigate(`/files/zips/${zip.id}`)}
+                onDeleteClick={() => handleDeleteZip(zip)}
               />
             ))}
           </div>

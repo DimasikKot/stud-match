@@ -1,9 +1,15 @@
 import toast from "react-hot-toast";
 
-import type { FileResponse } from "@/shared/api/file";
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { ButtonUI } from "./UI/ButtonUI";
 import { IconUI } from "./UI/IconUI";
+
+export interface FileCardFile {
+  id: number;
+  name: string;
+  status: string;
+  student_fullname: string | null;
+}
 
 export const FileCard = ({
   file,
@@ -14,7 +20,7 @@ export const FileCard = ({
   className: customClassName,
   variant = "normal",
 }: {
-  file: FileResponse;
+  file: FileCardFile;
   onClick?: () => void;
   onEditClick?: React.MouseEventHandler<HTMLButtonElement>;
   onDownloadClick?: React.MouseEventHandler<HTMLButtonElement>;
@@ -22,7 +28,6 @@ export const FileCard = ({
   className?: string;
   variant?: "normal" | "compact";
 }) => {
-  const date = file.work_date;
   const className = `
         flex flex-col justify-between pb-2 px-1 gap-1 overflow-clip
         transition-all duration-200 cursor-pointer 
@@ -81,14 +86,10 @@ export const FileCard = ({
 
             <TextUI
               variant="desc"
-              className="flex flex-1 text-center justify-center items-center"
+              title={file.student_fullname ?? undefined}
+              className="flex flex-1 text-center justify-center items-center line-clamp-1"
             >
-              {new Date(date).toLocaleDateString("ru-RU", {
-                month: "long",
-                day: "numeric",
-                hour: "numeric",
-                minute: "numeric",
-              })}
+              {file.student_fullname ?? "Студент не привязан"}
             </TextUI>
 
             <div className="ml-9">

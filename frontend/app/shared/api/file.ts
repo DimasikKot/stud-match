@@ -18,7 +18,7 @@ export interface FileResponse {
   status: (typeof FileStatus)[keyof typeof FileStatus];
   skills_vector: Record<string, unknown>;
   zip_id: number;
-  work_date: string;
+  student_fullname: string | null;
 }
 
 export interface MessageResponse {

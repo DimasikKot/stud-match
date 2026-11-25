@@ -186,6 +186,15 @@ class FileDB(Base):
         nullable=False,
         index=True,
     )
+    zip: Mapped["ZipDB"] = relationship(back_populates="files")
+    students: Mapped[list["StudentDB"]] = relationship(
+        secondary="student_files", back_populates="files"
+    )
+
+    @property
+    def student_fullname(self) -> str | None:
+        names = [student.fullname for student in self.students]
+        return ", ".join(names) if names else None
 
 
 class StudentDB(Base):
@@ -210,6 +219,9 @@ class StudentDB(Base):
         nullable=False,
         default="-",
         server_default="-",
+    )
+    files: Mapped[list["FileDB"]] = relationship(
+        secondary="student_files", back_populates="students"
     )
 
 

@@ -31,6 +31,7 @@ class FileResponse(BaseModel):
     feature_set: dict
     model_version: str
     zip_id: int
+    student_fullname: str | None = None
 
 
 class FileListResponse(BaseModel):

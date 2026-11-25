@@ -39,7 +39,7 @@ class ZipFileResponse(BaseModel):
     name: str
     size: int
     status: str
-    work_date: datetime
+    student_fullname: str | None = None
 
 
 class ZipDetailResponse(ZipResponse):

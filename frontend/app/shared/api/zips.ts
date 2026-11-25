@@ -21,7 +21,7 @@ export interface ZipFileResponse {
   name: string;
   size: number;
   status: string;
-  work_date: string;
+  student_fullname: string | null;
 }
 
 export interface ZipDetailResponse extends ZipResponse {

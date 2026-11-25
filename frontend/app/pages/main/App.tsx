@@ -22,6 +22,7 @@ import Distributions from "@/pages/teacher/Distributions";
 import Profile from "@/pages/teacher/Profile";
 
 import { Files } from "@/pages/teacher/Files";
+import { ZipFiles } from "@/pages/teacher/ZipFiles";
 import { Components } from "@/shared/components/UI/Components";
 
 export function App() {
@@ -45,6 +46,7 @@ export function App() {
               <Route path="/profile" element={<Profile />} />
               <Route element={<AdminRoute />}>
                 <Route path="/files" element={<Files />} />
+                <Route path="/files/zips/:zipId" element={<ZipFiles />} />
                 <Route path="/components" element={<Components />} />
               </Route>
             </Route>
