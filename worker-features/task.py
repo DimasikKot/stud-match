@@ -6,7 +6,7 @@ from config import settings
 from kafka import KafkaProducer
 
 FIRST_LINE_LIMIT = 1024 * 1024
-MODEL_VERSION = "2026-11-25: first line and failed status"
+MODEL_VERSION = "0.0.1 2026-11-25: first line and failed status"
 
 
 class TaskResponse:

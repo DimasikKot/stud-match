@@ -39,6 +39,8 @@ def apply_feature_result(payload: dict) -> None:
             rustfs_object.feature_set = payload["feature_set"]
         if payload.get("status"):
             rustfs_object.status = FileStatus(payload["status"])
+        if payload.get("model_version"):
+            rustfs_object.model_version = payload["model_version"]
         db.commit()
     finally:
         db.close()
