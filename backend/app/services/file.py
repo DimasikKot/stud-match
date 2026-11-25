@@ -325,18 +325,33 @@ def fetch_files_by_hash(db: Session) -> list[FileDB]:
     return list(result)
 
 
-def get_file_object(file_db: FileDB) -> dict:
-    """Возвращает ответ S3 get_object (содержит Body - StreamingBody)."""
+def fetch_rustfs_object_by_id(db: Session, rustfs_object_id: int) -> RustfsObjectDB:
+    rustfs_object = db.get(RustfsObjectDB, rustfs_object_id)
+    if rustfs_object is None:
+        raise HTTPException(
+            status_code=404, detail=f"Объект {rustfs_object_id} не найден"
+        )
+    return rustfs_object
+
+
+def get_rustfs_object_file(rustfs_object: RustfsObjectDB) -> dict:
+    """Возвращает ответ S3 get_object для записи rustfs_objects
+    (содержит Body - StreamingBody)."""
     try:
         return s3_client.get_object(
-            Bucket=file_db.rustfs_object.bucket,
-            Key=file_db.rustfs_object.object_key,
+            Bucket=rustfs_object.bucket,
+            Key=rustfs_object.object_key,
         )
     except ClientError as exc:
         code = str(exc.response.get("Error", {}).get("Code", ""))
         if code in ("NoSuchKey", "NoSuchBucket", "404", "NotFound"):
             raise HTTPException(status_code=404, detail="Файл не найден в хранилище")
         raise HTTPException(status_code=502, detail=f"RustFS error: {exc}")
+
+
+def get_file_object(file_db: FileDB) -> dict:
+    """Возвращает ответ S3 get_object (содержит Body - StreamingBody)."""
+    return get_rustfs_object_file(file_db.rustfs_object)
 
 
 def guess_content_type(file_db: FileDB) -> str:

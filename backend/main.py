@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 import urllib3
 from app.api.v1.endpoints import api_router
-from app.services import predict as predict_service
+from app.services import features as features_service
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -17,15 +17,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     consumer_threads = [
-        # threading.Thread(
-        #     target=tags_service.results_consumer_loop,
-        #     daemon=True,
-        #     name="kafka-tags-results",
-        # ),
         threading.Thread(
-            target=predict_service.results_consumer_loop,
+            target=features_service.results_consumer_loop,
             daemon=True,
-            name="kafka-predict-results",
+            name="kafka-features-results",
         ),
     ]
     for thread in consumer_threads:
