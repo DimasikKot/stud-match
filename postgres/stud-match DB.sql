@@ -120,6 +120,8 @@ CREATE INDEX "files_status_idx" ON "files" ("status");
   
 CREATE INDEX "files_zip_id_idx" ON "files" ("zip_id");
 
+CREATE INDEX "files_rustfs_object_key_idx" ON "files" ("rustfs_object_key");
+
 CREATE INDEX "student_files_student_id_idx" ON "student_files" ("student_id");
 
 CREATE INDEX "projects_user_id_idx" ON "projects" ("user_id");

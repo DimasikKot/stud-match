@@ -59,7 +59,7 @@ Table files {
   id SERIAL [pk, increment]
   name VARCHAR(255) [not null]
   size INT [not null]
-  rustfs_object_key VARCHAR(255) [not null]
+  rustfs_object_key VARCHAR(255) [not null] // sha256 хеш содержимого файла
   rustfs_bucket VARCHAR(255) [not null]
   status file_status [not null, default: 'not_extracted']
   feature_set JSONB [not null, default: '{}'] // Набор признаков
@@ -70,6 +70,7 @@ Table files {
   Indexes {
     zip_id [name: "files_zip_id_idx"]
     status [name: "files_status_idx"]
+    rustfs_object_key [name: "files_rustfs_object_key_idx"]
   }
 }
 

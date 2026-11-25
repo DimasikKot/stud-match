@@ -1,9 +1,8 @@
+import hashlib
 import io
 import logging
 import mimetypes
-import os
 import threading
-import uuid
 import zipfile
 from typing import BinaryIO
 
@@ -45,11 +44,28 @@ def create_s3_client():
 s3_client = create_s3_client()
 
 
-def _delete_s3_object(object_key: str) -> None:
+def _delete_s3_object(object_key: str, bucket: str | None = None) -> None:
     try:
-        s3_client.delete_object(Bucket=settings.RUSTFS_BUCKET, Key=object_key)
+        s3_client.delete_object(Bucket=bucket or settings.RUSTFS_BUCKET, Key=object_key)
     except Exception:
         logger.exception("Не удалось удалить объект %s из RustFS", object_key)
+
+
+def _is_object_referenced(db: Session, object_key: str, bucket: str) -> bool:
+    return (
+        db.query(FileDB.id)
+        .filter(
+            FileDB.rustfs_object_key == object_key,
+            FileDB.rustfs_bucket == bucket,
+        )
+        .first()
+        is not None
+    )
+
+
+def _delete_object_if_unreferenced(db: Session, object_key: str, bucket: str) -> None:
+    if not _is_object_referenced(db, object_key, bucket):
+        _delete_s3_object(object_key, bucket)
 
 
 def _get_or_create_student(db: Session, fullname: str) -> StudentDB:
@@ -136,18 +152,21 @@ def _process_zip(zip_id: int, data: bytes) -> None:
                     student = _get_or_create_student(db, fullname)
 
                     file_data = archive.read(info)
-                    ext = os.path.splitext(base_name)[1]
-                    object_key = f"{uuid.uuid4()}{ext}"
-                    content_type, _ = mimetypes.guess_type(base_name)
-                    s3_client.upload_fileobj(
-                        io.BytesIO(file_data),
-                        settings.RUSTFS_BUCKET,
-                        object_key,
-                        ExtraArgs={
-                            "ContentType": content_type or "application/octet-stream"
-                        },
-                    )
-                    uploaded_keys.append(object_key)
+                    object_key = hashlib.sha256(file_data).hexdigest()
+                    if not _is_object_referenced(
+                        db, object_key, settings.RUSTFS_BUCKET
+                    ):
+                        content_type, _ = mimetypes.guess_type(base_name)
+                        s3_client.upload_fileobj(
+                            io.BytesIO(file_data),
+                            settings.RUSTFS_BUCKET,
+                            object_key,
+                            ExtraArgs={
+                                "ContentType": content_type
+                                or "application/octet-stream"
+                            },
+                        )
+                        uploaded_keys.append(object_key)
 
                     file_record = FileDB(
                         name=base_name,
@@ -167,7 +186,7 @@ def _process_zip(zip_id: int, data: bytes) -> None:
         except Exception:
             db.rollback()
             for key in uploaded_keys:
-                _delete_s3_object(key)
+                _delete_object_if_unreferenced(db, key, settings.RUSTFS_BUCKET)
             zip_record = db.get(ZipDB, zip_id)
             if zip_record is not None:
                 zip_record.status = ZipStatus.FAILED
@@ -201,24 +220,24 @@ def fetch_zip_by_id(db: Session, zip_id: int) -> ZipDB:
 
 
 def delete_zip_by_id(db: Session, zip_id: int) -> None:
-    """Удаляет зип вместе с файлами из RustFS и БД.
+    """Удаляет зип и его файлы из БД.
 
+    Объекты в RustFS удаляются только если на их ключ
+    не осталось ссылок в таблице files.
     Студенты не удаляются, они остаются даже без файлов.
     """
     zip_record = fetch_zip_by_id(db, zip_id)
 
     files = db.query(FileDB).filter(FileDB.zip_id == zip_id).all()
-    for file_db in files:
-        try:
-            s3_client.delete_object(
-                Bucket=file_db.rustfs_bucket,
-                Key=file_db.rustfs_object_key,
-            )
-        except ClientError as exc:
-            raise HTTPException(status_code=502, detail=f"RustFS error: {exc}")
+    object_refs = {
+        (file_db.rustfs_bucket, file_db.rustfs_object_key) for file_db in files
+    }
 
     db.delete(zip_record)
     db.commit()
+
+    for bucket, object_key in object_refs:
+        _delete_object_if_unreferenced(db, object_key, bucket)
 
 
 def fetch_file_by_id(db: Session, file_id: int) -> FileDB:
@@ -259,13 +278,10 @@ def guess_content_type(file_db: FileDB) -> str:
 
 def delete_file_by_id(db: Session, file_id: int) -> None:
     file_db = fetch_file_by_id(db, file_id)
-
-    try:
-        s3_client.delete_object(
-            Bucket=file_db.rustfs_bucket, Key=file_db.rustfs_object_key
-        )
-    except ClientError as exc:
-        raise HTTPException(status_code=502, detail=f"RustFS error: {exc}")
+    object_key = file_db.rustfs_object_key
+    bucket = file_db.rustfs_bucket
 
     db.delete(file_db)
     db.commit()
+
+    _delete_object_if_unreferenced(db, object_key, bucket)

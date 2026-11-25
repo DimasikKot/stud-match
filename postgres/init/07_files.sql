@@ -25,5 +25,6 @@ CREATE TABLE
 
 CREATE INDEX files_zip_id_idx ON files (zip_id);
 CREATE INDEX files_status_idx ON files (status);
+CREATE INDEX files_rustfs_object_key_idx ON files (rustfs_object_key);
 
 ALTER TABLE files ADD FOREIGN KEY (zip_id) REFERENCES zips (id) ON DELETE CASCADE DEFERRABLE INITIALLY IMMEDIATE;

@@ -158,6 +158,7 @@ class FileDB(Base):
     rustfs_object_key: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
+        index=True,
     )
     rustfs_bucket: Mapped[str] = mapped_column(
         String(255),
