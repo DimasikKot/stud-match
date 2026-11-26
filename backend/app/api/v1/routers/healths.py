@@ -1,3 +1,4 @@
+import enum
 import time
 from typing import Any
 
@@ -16,7 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from kafka import KafkaAdminClient
+from kafka import KafkaAdminClient, KafkaConsumer, TopicPartition
 
 router: APIRouter = APIRouter(prefix="/healths", tags=["Healths"])
 
@@ -293,6 +294,115 @@ def _kafka_health() -> HealthResponse:
             client.close()
 
 
+class KafkaTopic(str, enum.Enum):
+    FEATURES_TASKS = "features.tasks"
+    FEATURES_RESULTS = "features.results"
+    DISTRIBUTION_TASKS = "distribution.tasks"
+    DISTRIBUTION_RESULTS = "distribution.results"
+
+
+class KafkaGroup(str, enum.Enum):
+    FEATURES = "sm-backend-features"
+    DISTRIBUTION = "sm-backend-distribution"
+    W_FEATURES = "sm-worker-features"
+    W_DISTRIBUTION = "sm-worker-distribution"
+
+
+def _kafka_topic_messages(
+    topic_name: KafkaTopic, group: KafkaGroup | None = None
+) -> HealthResponse:
+    """Подсчитывает количество сообщений в топике
+    как разность end - beginning offset по всем партициям.
+    Если передан group, дополнительно возвращает закоммиченные
+    офсеты consumer group и lag (end - committed)."""
+    consumer: KafkaConsumer | None = None
+    admin: KafkaAdminClient | None = None
+    try:
+        consumer = KafkaConsumer(
+            **kafka_service.connection_kwargs(
+                api_version_auto_timeout_ms=15000,
+                request_timeout_ms=15000,
+            )
+        )
+        partition_ids = consumer.partitions_for_topic(topic_name.value)
+        if not partition_ids:
+            return HealthResponse(
+                success=False,
+                detail=f"Топик {topic_name.value} не найден",
+                metrics={"topic": topic_name.value},
+            )
+        partitions = [TopicPartition(topic_name.value, p) for p in partition_ids]
+        beginning = consumer.beginning_offsets(partitions)
+        end = consumer.end_offsets(partitions)
+
+        committed: dict[TopicPartition, int] = {}
+        if group:
+            admin = KafkaAdminClient(
+                **kafka_service.connection_kwargs(
+                    api_version_auto_timeout_ms=15000,
+                    request_timeout_ms=15000,
+                )
+            )
+            committed = {
+                tp: offset.offset
+                for tp, offset in admin.list_consumer_group_offsets(group).items()
+            }
+
+        partition_stats = {}
+        total = 0
+        total_lag = 0
+        for tp in partitions:
+            lag = end[tp] - beginning[tp]
+            total += lag
+            stats = {
+                "beginning_offset": beginning[tp],
+                "end_offset": end[tp],
+                "messages": lag,
+            }
+            if group:
+                committed_offset = committed.get(tp, -1)
+                if committed_offset < 0:
+                    committed_offset = beginning[tp]
+                group_lag = end[tp] - committed_offset
+                total_lag += group_lag
+                stats["committed_offset"] = committed.get(tp, -1)
+                stats["lag"] = group_lag
+            partition_stats[str(tp.partition)] = stats
+
+        metrics: dict[str, Any] = {
+            "topic": topic_name.value,
+            "message_count": total,
+            "partitions": partition_stats,
+        }
+        if group:
+            metrics["consumer_group"] = group
+            metrics["group_lag"] = total_lag
+            detail = (
+                f"В топике {topic_name.value}: {total} сообщений, "
+                f"необработанных для группы {group}: {total_lag}"
+            )
+        else:
+            detail = f"В топике {topic_name.value}: {total} сообщений"
+
+        return HealthResponse(
+            success=True,
+            detail=detail,
+            metrics=metrics,
+        )
+
+    except Exception as e:
+        return HealthResponse(
+            success=False,
+            detail="Не удалось получить статистику топика",
+            metrics={"topic": topic_name.value, "error": str(e)},
+        )
+    finally:
+        if consumer is not None:
+            consumer.close()
+        if admin is not None:
+            admin.close()
+
+
 @router.get("/backend", response_model=HealthResponse)
 async def get_backend_health():
     return await _backend_health()
@@ -324,3 +434,12 @@ async def get_rustfs_health():
 )
 def get_kafka_health():
     return _kafka_health()
+
+
+@router.get(
+    "/kafka/topics/{topic_name}",
+    response_model=HealthResponse,
+    dependencies=[Depends(require_admin)],
+)
+def get_kafka_topic_messages(topic_name: KafkaTopic, group: KafkaGroup | None = None):
+    return _kafka_topic_messages(topic_name, group)
