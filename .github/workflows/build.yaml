@@ -421,11 +421,26 @@ jobs:
 
       - name: Check frontend availability (via nginx)
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk \
-            https://stud-match.mooo.com/ || echo "000")
-          echo "Frontend status: $response"
-          if [ "$response" -ne 200 ]; then
-            echo "::error::Frontend health check failed with status $response"
+          MAX_ATTEMPTS=15
+          DELAY=10
+          code="000"
+
+          for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+            resp=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 -fk \
+              https://stud-match.mooo.com/ || printf '000')
+            code=$(printf '%s' "$resp" | tail -c 3)
+
+            echo "frontend attempt $attempt/$MAX_ATTEMPTS: status=$code"
+
+            if [ "$code" = "200" ]; then
+              break
+            fi
+
+            sleep "$DELAY"
+          done
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Frontend health check failed with status $code"
             exit 1
           fi
 
