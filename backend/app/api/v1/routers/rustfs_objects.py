@@ -7,6 +7,7 @@ from app.services import rustfs_object
 from app.services.get_user import require_admin
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from pydantic.config import ConfigDict
 from sqlalchemy.orm import Session
 
 router = APIRouter(
@@ -17,6 +18,8 @@ router = APIRouter(
 
 
 class RustfsObjectListResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
     id: int
     object_key: str
     status: FileStatus
@@ -42,13 +45,7 @@ async def get_rustfs_objects(
     return RustfsObjectListResponseData(
         count=len(rustfs_objects_list),
         data=[
-            RustfsObjectListResponse(
-                id=rustfs_object.id,
-                object_key=rustfs_object.object_key,
-                status=rustfs_object.status,
-                feature_set=rustfs_object.feature_set,
-                model_version=rustfs_object.model_version,
-            )
+            RustfsObjectListResponse.model_validate(rustfs_object)
             for rustfs_object in rustfs_objects_list
         ],
     )
