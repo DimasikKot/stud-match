@@ -148,6 +148,7 @@ def results_consumer_loop() -> None:
                     f"[kafka] features result: {message.value['rustfs_object_id']}",
                     flush=True,
                 )
+                consumer.commit()
         except Exception as exc:
             print(f"[kafka] features consumer error: {exc}", flush=True)
             time.sleep(5)

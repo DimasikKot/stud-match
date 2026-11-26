@@ -12,7 +12,8 @@ def get_redis() -> Redis:
         "port": settings.REDIS_PORT,
         "password": settings.REDIS_PASSWORD,
         "decode_responses": True,
-        "socket_timeout": 60.0,
+        "socket_timeout": 15.0,
+        "retry_on_timeout": True,
     }
 
     if use_tls:
@@ -29,7 +30,7 @@ def get_async_redis() -> aioredis.Redis:
         "port": settings.REDIS_PORT,
         "password": settings.REDIS_PASSWORD,
         "decode_responses": True,
-        "socket_timeout": 60.0,
+        "socket_timeout": 15.0,
     }
 
     if use_tls:

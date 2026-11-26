@@ -36,7 +36,7 @@ def connection_kwargs(**extra) -> dict:
     protocol = security_protocol()
     kwargs = {
         "bootstrap_servers": f"{settings.KAFKA_HOST}:{settings.KAFKA_PORT}",
-        "api_version_auto_timeout_ms": 60000,
+        "api_version_auto_timeout_ms": 15000,
         "security_protocol": protocol,
     }
     if protocol in ("SSL", "SASL_SSL"):
@@ -77,7 +77,7 @@ def results_consumer(topic: str, group_id: str) -> KafkaConsumer:
         topic,
         group_id=group_id,
         auto_offset_reset="earliest",
-        enable_auto_commit=True,
+        enable_auto_commit=False,
         value_deserializer=lambda raw: json.loads(raw.decode()),  # type: ignore
         **connection_kwargs(),
     )
