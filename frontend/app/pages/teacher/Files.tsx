@@ -239,10 +239,12 @@ export function Files() {
                 placement="bottom"
               >
                 <div className="bg-white border border-gray-300 p-4">
-                  <TextUI variant="label">{topic.label}</TextUI>
-                  <TextUI variant="desc">{topic.name}</TextUI>
+                  <TextUI variant="label">
+                    {topic.label} ({topic.name})
+                  </TextUI>
+                  <TextUI variant="desc">В очереди:</TextUI>
                   <TextUI variant="header">
-                    В очереди: {metrics?.group_lag ?? "..."}
+                    {metrics?.group_lag ?? "..."}
                   </TextUI>
                   <TextUI variant="desc">
                     Всего задач было: {metrics?.message_count ?? "..."}
