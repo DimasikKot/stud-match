@@ -164,7 +164,7 @@ class CollectStreamer(TextStreamer):
         super().on_finalized_text(text, stream_end)
 
 
-def process_task(producer: KafkaProducer, task: dict):
+def process_task(producer: KafkaProducer, task: dict) -> bool:
     task_id = task["task_id"]
     try:
         producer.send(
@@ -192,10 +192,12 @@ def process_task(producer: KafkaProducer, task: dict):
 
     try:
         producer.send(settings.KAFKA_RESULTS_TOPIC, payload).get(timeout=10)
+        return True
     except Exception as exc:
         print(
             f"[llm] task {task_id}: не удалось отправить результат: {exc}", flush=True
         )
+        return False
 
 
 def kafka_loop():
@@ -214,12 +216,22 @@ def kafka_loop():
                 settings.KAFKA_TASKS_TOPIC,
                 group_id=settings.KAFKA_CONSUMER_GROUP,
                 auto_offset_reset="earliest",
+                max_poll_interval_ms=900_000,
                 enable_auto_commit=False,
                 value_deserializer=lambda raw: json.loads(raw.decode()),
                 **_kafka_kwargs(),
             )
             for message in consumer:
-                process_task(producer, message.value)
+                value = message.value
+                if not isinstance(value, dict) or "task_id" not in value:
+                    print(f"[llm] skip malformed task: {value!r}", flush=True)
+                    consumer.commit()
+                    continue
+                if not process_task(producer, value):
+                    raise RuntimeError(
+                        f"[llm] task {value.get('task_id')}: "
+                        f"результат не отправлен, оффсет не коммитим"
+                    )
                 consumer.commit()
         except Exception as exc:
             print(f"[llm] kafka error: {exc}", flush=True)

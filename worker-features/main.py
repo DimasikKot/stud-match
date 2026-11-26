@@ -95,18 +95,27 @@ def kafka_loop():
                 settings.KAFKA_TASKS_TOPIC,
                 group_id=settings.KAFKA_CONSUMER_GROUP,
                 auto_offset_reset="earliest",
-                max_poll_interval_ms=60_000,
+                max_poll_interval_ms=300_000,
                 enable_auto_commit=False,
                 value_deserializer=lambda raw: json.loads(raw.decode()),
                 **_kafka_kwargs(),
             )
             for message in consumer:
-                success = task(producer, message.value)
-                if success:
-                    try:
-                        consumer.commit()
-                    except Exception as commit_exc:
-                        print(f"[features] commit failed: {commit_exc}", flush=True)
+                value = message.value
+                if (
+                    not isinstance(value, dict)
+                    or "rustfs_object_id" not in value
+                    or "extension" not in value
+                ):
+                    print(f"[features] skip malformed task: {value!r}", flush=True)
+                    consumer.commit()
+                    continue
+                if not task(producer, value):
+                    raise RuntimeError(
+                        f"[features] task {value.get('rustfs_object_id')}: "
+                        f"результат не отправлен, оффсет не коммитим"
+                    )
+                consumer.commit()
         except Exception as exc:
             print(f"[features] kafka error: {exc}", flush=True)
             time.sleep(5)

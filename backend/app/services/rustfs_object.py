@@ -75,17 +75,27 @@ def queue_not_extracted_objects(
     """Отправляет все rustfs_objects со статусом NOT_EXTRACTED
     в топик features.tasks и переводит их в QUEUED."""
     objects = db.query(RustfsObjectDB).filter(RustfsObjectDB.status == status).all()
+    queued = 0
     for rustfs_object in objects:
-        kafka_service.produce(
-            kafka_service.settings.KAFKA_FTRS_TASKS_TOPIC,
-            {
-                "rustfs_object_id": rustfs_object.id,
-                "extension": rustfs_object.extension,
-            },
-        )
+        try:
+            kafka_service.produce(
+                kafka_service.settings.KAFKA_FTRS_TASKS_TOPIC,
+                {
+                    "rustfs_object_id": rustfs_object.id,
+                    "extension": rustfs_object.extension,
+                },
+            )
+        except Exception as exc:
+            print(
+                f"[kafka] features tasks: не удалось отправить объект "
+                f"{rustfs_object.id}: {exc}",
+                flush=True,
+            )
+            continue
         rustfs_object.status = FileStatus.QUEUED
+        queued += 1
     db.commit()
-    return len(objects)
+    return queued
 
 
 def reset_features(db: Session, status: FileStatus = FileStatus.EXTRACTED) -> int:
@@ -150,18 +160,29 @@ def results_consumer_loop() -> None:
                 kafka_service.settings.KAFKA_FTRS_CONSUMER_GROUP,
             )
             for message in consumer:
-                success = apply_feature_result(message.value)
-                if not success:
+                payload = message.value
+                if apply_feature_result(payload):
                     print(
-                        f"[kafka] features result: не удалось обработать результат для объекта {message.value['rustfs_object_id']}",
+                        f"[kafka] features result: {payload.get('rustfs_object_id')}",
                         flush=True,
                     )
+                    consumer.commit()
                     continue
-                print(
-                    f"[kafka] features result: {message.value['rustfs_object_id']}",
-                    flush=True,
+                if (
+                    not isinstance(payload, dict)
+                    or payload.get("rustfs_object_id") is None
+                ):
+                    print(
+                        "[kafka] features result: пропускаю сообщение "
+                        "без rustfs_object_id",
+                        flush=True,
+                    )
+                    consumer.commit()
+                    continue
+                raise RuntimeError(
+                    f"[kafka] features result: не удалось обработать объект "
+                    f"{payload['rustfs_object_id']}, оффсет не коммитим"
                 )
-                consumer.commit()
         except Exception as exc:
             print(f"[kafka] features consumer error: {exc}", flush=True)
             time.sleep(5)

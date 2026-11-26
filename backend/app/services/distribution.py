@@ -14,22 +14,32 @@ def queue_not_extracted_objects(db: Session) -> int:
         .filter(DistributionDB.status == DistributionStatus.NOT_STARTED)
         .all()
     )
+    queued = 0
     for distribution in distributions:
-        kafka.produce(
-            kafka.settings.KAFKA_FTRS_TASKS_TOPIC,
-            {
-                "distribution_id": distribution.id,
-                "selected_student_ids": distribution.selected_student_ids,
-                "selected_teacher_ids": distribution.selected_teacher_ids,
-                "selected_project_ids": distribution.selected_project_ids,
-            },
-        )
+        try:
+            kafka.produce(
+                kafka.settings.KAFKA_DIST_TASKS_TOPIC,
+                {
+                    "distribution_id": distribution.id,
+                    "selected_student_ids": distribution.selected_student_ids,
+                    "selected_teacher_ids": distribution.selected_teacher_ids,
+                    "selected_project_ids": distribution.selected_project_ids,
+                },
+            )
+        except Exception as exc:
+            print(
+                f"[kafka] distribution tasks: не удалось отправить "
+                f"{distribution.id}: {exc}",
+                flush=True,
+            )
+            continue
         distribution.status = DistributionStatus.QUEUED
+        queued += 1
     db.commit()
-    return len(distributions)
+    return queued
 
 
-def apply_distribution_result(payload: dict) -> None:
+def apply_distribution_result(payload: dict) -> bool:
     """Применяет результат от воркера distribution к базе данных."""
     db = SessionLocal()
     try:
@@ -39,7 +49,7 @@ def apply_distribution_result(payload: dict) -> None:
                 "[kafka] distribution result: distribution_result не найден",
                 flush=True,
             )
-            return
+            return True
         if payload.get("result_set") is not None:
             distribution_db.result_set = payload["result_set"]
         if payload.get("status"):
@@ -47,6 +57,13 @@ def apply_distribution_result(payload: dict) -> None:
         if payload.get("model_version"):
             distribution_db.model_version = payload["model_version"]
         db.commit()
+        return True
+    except Exception as exc:
+        print(
+            f"[kafka] distribution result: ошибка при применении: {exc}",
+            flush=True,
+        )
+        return False
     finally:
         db.close()
 
@@ -62,7 +79,30 @@ def results_consumer_loop() -> None:
                 kafka.settings.KAFKA_DIST_CONSUMER_GROUP,
             )
             for message in consumer:
-                apply_distribution_result(message.value)
+                payload = message.value
+                if apply_distribution_result(payload):
+                    print(
+                        f"[kafka] distribution result: "
+                        f"{payload.get('distribution_id')}",
+                        flush=True,
+                    )
+                    consumer.commit()
+                    continue
+                if (
+                    not isinstance(payload, dict)
+                    or payload.get("distribution_id") is None
+                ):
+                    print(
+                        "[kafka] distribution result: пропускаю сообщение "
+                        "без distribution_id",
+                        flush=True,
+                    )
+                    consumer.commit()
+                    continue
+                raise RuntimeError(
+                    f"[kafka] distribution result: не удалось обработать "
+                    f"{payload['distribution_id']}, оффсет не коммитим"
+                )
         except Exception as exc:
             print(f"[kafka] distribution consumer error: {exc}", flush=True)
             time.sleep(5)

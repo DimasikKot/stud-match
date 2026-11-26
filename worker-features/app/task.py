@@ -1,3 +1,4 @@
+import json
 import ssl
 import urllib.request
 from datetime import datetime
@@ -7,7 +8,7 @@ from app.config import settings
 from kafka import KafkaProducer
 
 FIRST_LINE_LIMIT = 1024 * 1024
-MODEL_VERSION = "0.0.2 2026-11-26: extracted_at field"
+MODEL_VERSION = "0.1.0 2026-11-27: extracted"
 
 
 class TaskResponse:
@@ -20,47 +21,58 @@ class TaskResponse:
         self.model_version = model_version
 
 
+def _ssl_context(url: str) -> ssl.SSLContext | None:
+    if not url.startswith("https://"):
+        return None
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    return context
+
+
+def _result(rustfs_object_id: int, status: str, feature_set: dict) -> dict:
+    return TaskResponse(
+        rustfs_object_id=rustfs_object_id,
+        status=status,
+        feature_set=feature_set,
+        model_version=MODEL_VERSION,
+    ).__dict__
+
+
 def task(producer: KafkaProducer, task: dict) -> bool:
     rustfs_object_id = task["rustfs_object_id"]
     extension = task["extension"]
 
-    url = f"{settings.BACKEND_URL}" f"/internal/rustfs-objects/{rustfs_object_id}"
-    if url.startswith("https://"):
-        context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-    else:
-        context = None
-    response = urllib.request.urlopen(url, timeout=60, context=context)
-
-    if response.status != 200 and response["success"] != True:
-        print(f"[features] object {rustfs_object_id} response: {response}", flush=True)
-        return False
-
     try:
+        url = f"{settings.BACKEND_URL}/internal/rustfs-objects/{rustfs_object_id}"
+        with urllib.request.urlopen(
+            url, timeout=60, context=_ssl_context(url)
+        ) as response:
+            body = json.loads(response.read())
+        if not body.get("success"):
+            raise RuntimeError(f"backend ответил success=false: {body}")
+
         first_line = read_first_line(rustfs_object_id)
-        payload = TaskResponse(
-            rustfs_object_id=rustfs_object_id,
-            status="failed",
-            feature_set={
+        payload = _result(
+            rustfs_object_id,
+            "failed",
+            {
                 "extension": extension,
                 "extracted_at": datetime.now().isoformat(),
                 "first_line": first_line[:50],
             },
-            model_version=MODEL_VERSION,
-        ).__dict__
+        )
     except Exception as exc:
         print(f"[features] object {rustfs_object_id} failed: {exc}", flush=True)
-        payload = TaskResponse(
-            rustfs_object_id=rustfs_object_id,
-            status="failed",
-            feature_set={
+        payload = _result(
+            rustfs_object_id,
+            "failed",
+            {
                 "extension": extension,
                 "extracted_at": datetime.now().isoformat(),
                 "error": str(exc) or type(exc).__name__,
             },
-            model_version=MODEL_VERSION,
-        ).__dict__
+        )
 
     try:
         producer.send(settings.KAFKA_RESULTS_TOPIC, payload).get(timeout=10)
@@ -77,16 +89,10 @@ def task(producer: KafkaProducer, task: dict) -> bool:
 
 def read_first_line(rustfs_object_id: int) -> str:
     """Скачивает начало файла через backend и возвращает первую строку."""
-    url = (
-        f"{settings.BACKEND_URL}" f"/internal/rustfs-objects/{rustfs_object_id}/content"
-    )
-    if url.startswith("https://"):
-        context = ssl.create_default_context()
-        context.check_hostname = False
-        context.verify_mode = ssl.CERT_NONE
-    else:
-        context = None
-    with urllib.request.urlopen(url, timeout=120, context=context) as response:
+    url = f"{settings.BACKEND_URL}/internal/rustfs-objects/{rustfs_object_id}/content"
+    with urllib.request.urlopen(
+        url, timeout=120, context=_ssl_context(url)
+    ) as response:
         buffer = bytearray()
         while len(buffer) < FIRST_LINE_LIMIT:
             chunk = response.read1(64 * 1024)
