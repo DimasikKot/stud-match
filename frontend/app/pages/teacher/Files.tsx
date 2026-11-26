@@ -16,6 +16,10 @@ import {
   type RustfsObjectStatusValue,
   type RustfsObjectsResponse,
 } from "@/shared/api/rustfsObjects";
+import {
+  fetchKafkaTopicMessages,
+  type GetHealthResponse,
+} from "@/shared/api/healths";
 import { deleteZip, fetchZips, type ZipResponse } from "@/shared/api/zips";
 
 const STATUS_LABELS: Record<RustfsObjectStatusValue, string> = {
@@ -25,6 +29,13 @@ const STATUS_LABELS: Record<RustfsObjectStatusValue, string> = {
   [RustfsObjectStatus.Extracting]: "Извлечение",
   [RustfsObjectStatus.Extracted]: "Извлечено",
 };
+
+const KAFKA_TOPICS = [
+  { name: "features.tasks", label: "Задачи извлечения признаков" },
+  { name: "features.results", label: "Результаты извлечения признаков" },
+  { name: "distribution.tasks", label: "Задачи распределения" },
+  { name: "distribution.results", label: "Результаты распределения" },
+] as const;
 
 const formatSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} Б`;
@@ -39,6 +50,9 @@ export function Files() {
   const [zips, setZips] = useState<ZipResponse[]>([]);
   const [rustfsObjects, setRustfsObjects] = useState<
     Partial<Record<RustfsObjectStatusValue, RustfsObjectsResponse>>
+  >({});
+  const [kafkaTopics, setKafkaTopics] = useState<
+    Partial<Record<string, GetHealthResponse | undefined>>
   >({});
   const [selected, setSelected] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -67,9 +81,21 @@ export function Files() {
     });
   };
 
+  const loadKafkaTopics = () => {
+    Promise.all(
+      KAFKA_TOPICS.map(
+        async (topic) =>
+          [topic.name, await fetchKafkaTopicMessages(topic.name)] as const,
+      ),
+    ).then((entries) => {
+      setKafkaTopics(Object.fromEntries(entries));
+    });
+  };
+
   useEffect(() => {
     loadZips();
     loadRustfsObjects();
+    loadKafkaTopics();
   }, []);
 
   const handleExtractFeatures = async (
@@ -82,6 +108,7 @@ export function Files() {
         toast.success(response.detail);
       }
       loadRustfsObjects();
+      loadKafkaTopics();
     } finally {
       setIsExtracting(false);
     }
@@ -186,7 +213,48 @@ export function Files() {
         })}
       </div>
 
-      <div className="bg-white border border-gray-300 p-6">
+      <div className="mt-8">
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <TextUI variant="header">Очереди Kafka</TextUI>
+
+          <ButtonUI variant="secondary" onClick={loadKafkaTopics}>
+            Обновить
+          </ButtonUI>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {KAFKA_TOPICS.map((topic) => {
+            const response = kafkaTopics[topic.name];
+            const metrics = response?.metrics as
+              { message_count?: number; group_lag?: number } | undefined;
+            return (
+              <TooltipUI
+                key={topic.name}
+                content={
+                  response
+                    ? (response as unknown as Record<string, unknown>)
+                    : undefined
+                }
+                isJSON
+                placement="bottom"
+              >
+                <div className="bg-white border border-gray-300 p-4">
+                  <TextUI variant="label">{topic.label}</TextUI>
+                  <TextUI variant="desc">{topic.name}</TextUI>
+                  <TextUI variant="header">
+                    {metrics?.message_count ?? "..."}
+                  </TextUI>
+                  <TextUI variant="desc">
+                    сообщений, в очереди: {metrics?.group_lag ?? "..."}
+                  </TextUI>
+                </div>
+              </TooltipUI>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-300 p-6 mt-8">
         <TextUI variant="title" className="mb-4">
           Загрузка файлов
         </TextUI>

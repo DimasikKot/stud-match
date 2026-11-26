@@ -95,7 +95,7 @@ def kafka_loop():
                 settings.KAFKA_TASKS_TOPIC,
                 group_id=settings.KAFKA_CONSUMER_GROUP,
                 auto_offset_reset="earliest",
-                max_poll_interval_ms=3600000,
+                max_poll_interval_ms=60_000,
                 enable_auto_commit=False,
                 value_deserializer=lambda raw: json.loads(raw.decode()),
                 **_kafka_kwargs(),
@@ -103,7 +103,10 @@ def kafka_loop():
             for message in consumer:
                 success = task(producer, message.value)
                 if success:
-                    consumer.commit()
+                    try:
+                        consumer.commit()
+                    except Exception as commit_exc:
+                        print(f"[features] commit failed: {commit_exc}", flush=True)
         except Exception as exc:
             print(f"[features] kafka error: {exc}", flush=True)
             time.sleep(5)

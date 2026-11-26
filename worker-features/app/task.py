@@ -60,6 +60,7 @@ def task(producer: KafkaProducer, task: dict) -> bool:
 
     try:
         producer.send(settings.KAFKA_RESULTS_TOPIC, payload).get(timeout=10)
+        print(f"[features] object {rustfs_object_id}: результат отправлен", flush=True)
         return True
     except Exception as exc:
         print(

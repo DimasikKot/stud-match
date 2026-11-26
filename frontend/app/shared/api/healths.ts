@@ -60,3 +60,16 @@ export const fetchKafkaHealth = async (): Promise<
     errorValidate(error);
   }
 };
+
+export const fetchKafkaTopicMessages = async (
+  topicName: string,
+): Promise<GetHealthResponse | undefined> => {
+  try {
+    const response = await api.get<GetHealthResponse>(
+      `/healths/kafka/topics/${topicName}`,
+    );
+    return response.data;
+  } catch (error: unknown) {
+    errorValidate(error);
+  }
+};

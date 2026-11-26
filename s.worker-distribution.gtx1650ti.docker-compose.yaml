@@ -6,7 +6,7 @@ services:
     build:
       context: ./worker-distribution # Папка, содержащая файлы контейнера
       dockerfile: worker-distribution.gtx1650ti.Dockerfile
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test:
         [

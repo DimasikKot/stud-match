@@ -335,23 +335,7 @@ def _kafka_health() -> HealthResponse:
             client.close()
 
 
-class KafkaTopic(str, enum.Enum):
-    FEATURES_TASKS = "features.tasks"
-    FEATURES_RESULTS = "features.results"
-    DISTRIBUTION_TASKS = "distribution.tasks"
-    DISTRIBUTION_RESULTS = "distribution.results"
-
-
-class KafkaGroup(str, enum.Enum):
-    FEATURES = "sm-backend-features"
-    DISTRIBUTION = "sm-backend-distribution"
-    W_FEATURES = "sm-worker-features"
-    W_DISTRIBUTION = "sm-worker-distribution"
-
-
-def _kafka_topic_messages(
-    topic_name: KafkaTopic, group: KafkaGroup | None = None
-) -> HealthResponse:
+def _kafka_topic_messages(topic_name: str, group: str | None = None) -> HealthResponse:
     """Подсчитывает количество сообщений в топике
     как разность end - beginning offset по всем партициям.
     Если передан group, дополнительно возвращает закоммиченные
@@ -365,12 +349,12 @@ def _kafka_topic_messages(
                 request_timeout_ms=15000,
             )
         )
-        partition_ids = consumer.partitions_for_topic(topic_name.value)
+        partition_ids = consumer.partitions_for_topic(topic_name)
         if not partition_ids:
             return HealthResponse(
                 success=False,
-                detail=f"Топик {topic_name.value} не найден",
-                metrics={"topic": topic_name.value},
+                detail=f"Топик {topic_name} не найден",
+                metrics={"topic": topic_name},
             )
         partitions = [TopicPartition(topic_name.value, p) for p in partition_ids]
         beginning = consumer.beginning_offsets(partitions)
@@ -477,10 +461,35 @@ def get_kafka_health():
     return _kafka_health()
 
 
+class KafkaTopic(str, enum.Enum):
+    FEATURES_TASKS = "features.tasks"
+    FEATURES_RESULTS = "features.results"
+    DISTRIBUTION_TASKS = "distribution.tasks"
+    DISTRIBUTION_RESULTS = "distribution.results"
+
+
+class KafkaGroup(str, enum.Enum):
+    R_FEATURES = "sm-backend-features"
+    R_DISTRIBUTION = "sm-backend-distribution"
+    W_FEATURES = "sm-worker-features"
+    W_DISTRIBUTION = "sm-worker-distribution"
+
+
 @router.get(
     "/kafka/topics/{topic_name}",
     response_model=HealthResponse,
     dependencies=[Depends(require_admin)],
 )
-def get_kafka_topic_messages(topic_name: KafkaTopic, group: KafkaGroup | None = None):
+def get_kafka_topic_messages(topic_name: KafkaTopic):
+    if topic_name == KafkaTopic.FEATURES_TASKS:
+        group = KafkaGroup.W_FEATURES
+    elif topic_name == KafkaTopic.FEATURES_RESULTS:
+        group = KafkaGroup.R_FEATURES
+    elif topic_name == KafkaTopic.DISTRIBUTION_TASKS:
+        group = KafkaGroup.W_DISTRIBUTION
+    elif topic_name == KafkaTopic.DISTRIBUTION_RESULTS:
+        group = KafkaGroup.R_DISTRIBUTION
+    else:
+        group = None
+
     return _kafka_topic_messages(topic_name, group)
