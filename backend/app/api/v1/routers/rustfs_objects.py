@@ -110,3 +110,12 @@ async def get_rustfs_object_content(
         "attachment",
         content_type or "application/octet-stream",
     )
+
+
+@internal_router.get("/rustfs-objects/{rustfs_object_id}")
+async def update_rustfs_object_status(
+    rustfs_object_id: int,
+    db: Session = Depends(get_db),
+):
+    rustfs_object.update_rustfs_object(rustfs_object_id, db, FileStatus.EXTRACTING)
+    return MessageResponse(detail="Статус обновлен", success=True)

@@ -150,3 +150,22 @@ def results_consumer_loop() -> None:
         finally:
             if consumer is not None:
                 consumer.close()
+
+
+def update_rustfs_object(
+    rustfs_object_id: int, db: Session, status: FileStatus | None = None
+) -> None:
+    """Устанавливает статус для rustfs_object."""
+    try:
+        rustfs_object = db.get(RustfsObjectDB, rustfs_object_id)
+        if rustfs_object is None:
+            print(
+                f"[kafka] features result: объект {rustfs_object_id} не найден",
+                flush=True,
+            )
+            return
+        if status is not None:
+            rustfs_object.status = status
+        db.commit()
+    finally:
+        db.close()

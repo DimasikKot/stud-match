@@ -23,6 +23,16 @@ class TaskResponse:
 def task(producer: KafkaProducer, task: dict):
     rustfs_object_id = task["rustfs_object_id"]
     extension = task["extension"]
+
+    url = f"{settings.BACKEND_URL}" f"/internal/rustfs-objects/{rustfs_object_id}"
+    if url.startswith("https://"):
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+    else:
+        context = None
+    urllib.request.urlopen(url, timeout=120, context=context)
+
     try:
         first_line = read_first_line(rustfs_object_id)
         payload = TaskResponse(
