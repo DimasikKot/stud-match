@@ -100,8 +100,9 @@ def kafka_loop():
                 **_kafka_kwargs(),
             )
             for message in consumer:
-                task(producer, message.value)
-                consumer.commit()
+                success = task(producer, message.value)
+                if success:
+                    consumer.commit()
         except Exception as exc:
             print(f"[features] kafka error: {exc}", flush=True)
             time.sleep(5)

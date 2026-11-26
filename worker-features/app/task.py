@@ -20,7 +20,7 @@ class TaskResponse:
         self.model_version = model_version
 
 
-def task(producer: KafkaProducer, task: dict):
+def task(producer: KafkaProducer, task: dict) -> bool:
     rustfs_object_id = task["rustfs_object_id"]
     extension = task["extension"]
 
@@ -60,12 +60,14 @@ def task(producer: KafkaProducer, task: dict):
 
     try:
         producer.send(settings.KAFKA_RESULTS_TOPIC, payload).get(timeout=10)
+        return True
     except Exception as exc:
         print(
             f"[features] object {rustfs_object_id}: "
             f"не удалось отправить результат: {exc}",
             flush=True,
         )
+        return False
 
 
 def read_first_line(rustfs_object_id: int) -> str:
