@@ -187,7 +187,7 @@ async def _rustfs_health() -> HealthResponse:
 
     try:
         # --- 1. Проверка нативного health-эндпоинта RustFS ---
-        async with httpx.AsyncClient(timeout=15.0, verify=False) as client:
+        async with httpx.AsyncClient(timeout=60.0, verify=False) as client:
             resp = await client.get(f"{endpoint.rstrip('/')}/health")
             # /health возвращает 200, пока процесс жив[reference:1]
             metrics["health_endpoint"] = {
@@ -261,8 +261,8 @@ def _kafka_health() -> HealthResponse:
     try:
         client = KafkaAdminClient(
             **kafka_service.connection_kwargs(
-                api_version_auto_timeout_ms=15000,
-                request_timeout_ms=15000,
+                api_version_auto_timeout_ms=60000,
+                request_timeout_ms=60000,
             )
         )
         topics_raw = client.list_topics()
@@ -286,7 +286,7 @@ def _kafka_health() -> HealthResponse:
                 members = []
                 for member in description.members:
                     member_info = {
-                        "member_id": member.member_id,
+                        # "member_id": member.member_id,
                         "client_id": member.client_id,
                         "client_host": member.client_host,
                     }

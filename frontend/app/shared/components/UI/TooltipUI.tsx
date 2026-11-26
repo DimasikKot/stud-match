@@ -9,6 +9,9 @@ const formatPrimitive = (value: unknown): string => {
   return String(value);
 };
 
+const isPrimitiveList = (value: unknown[]): boolean =>
+  value.every((item) => item === null || typeof item !== "object");
+
 const formatMetrics = (
   spaces: number,
   metrics?: Record<string, unknown> | null,
@@ -17,12 +20,31 @@ const formatMetrics = (
 
   const lines: string[] = [];
 
-  const walk = (value: Record<string, unknown>, depth: number) => {
-    for (const [key, item] of Object.entries(value)) {
-      const pad = "  ".repeat(depth);
-      if (item && typeof item === "object" && !Array.isArray(item)) {
+  const walk = (value: unknown, depth: number) => {
+    const pad = "  ".repeat(depth);
+
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => {
+        if (item && typeof item === "object") {
+          lines.push(`${pad}[${index}]:`);
+          walk(item, depth + spaces - 1);
+        } else {
+          lines.push(`${pad}[${index}]: ${formatPrimitive(item)}`);
+        }
+      });
+      return;
+    }
+
+    for (const [key, item] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      const isComplexObject =
+        item &&
+        typeof item === "object" &&
+        !(Array.isArray(item) && isPrimitiveList(item));
+      if (isComplexObject) {
         lines.push(`${pad}${key}:`);
-        walk(item as Record<string, unknown>, depth + spaces - 1);
+        walk(item, depth + spaces - 1);
       } else {
         lines.push(`${pad}${key}: ${formatPrimitive(item)}`);
       }
@@ -67,7 +89,7 @@ export const TooltipUI = ({
       {visible && content && (
         <div>
           <div
-            className={`absolute z-50 max-h-140 w-max rounded-md overflow-y-auto bg-gray-900/80 px-3 py-2 border border-gray-300 ${placementClass}`}
+            className={`absolute z-50 max-h-140 max-w-200 w-max rounded-md overflow-y-auto bg-gray-900/80 px-3 py-2 border border-gray-300 ${placementClass}`}
           >
             <TextUI variant="label" className="text-white whitespace-pre-wrap">
               {isJSON && typeof content !== "string"
