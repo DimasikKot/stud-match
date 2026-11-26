@@ -268,11 +268,44 @@ def _kafka_health() -> HealthResponse:
         topics_raw = client.list_topics()
 
         topics = sorted(t for t in topics_raw if not t.startswith("_"))
+
+        groups_raw = client.list_consumer_groups()
+        group_ids = sorted(group for group, _ in groups_raw if group)
+        group_descriptions = client.describe_consumer_groups(group_ids)
+
+        consumers: list[dict[str, Any]] = []
+        consumer_groups: list[dict[str, Any]] = []
+        for description in group_descriptions:
+            group_id = description.group
+            members = []
+            for member in description.members:
+                member_info = {
+                    "member_id": member.member_id,
+                    "client_id": member.client_id,
+                    "client_host": member.client_host,
+                }
+                consumers.append({"group": group_id, **member_info})
+                members.append(member_info)
+            consumer_groups.append(
+                {
+                    "group": group_id,
+                    "state": str(description.state),
+                    "protocol": description.protocol,
+                    "protocol_type": description.protocol_type,
+                    "members_count": len(members),
+                    "members": members,
+                }
+            )
+
         latency_ms = (time.perf_counter() - start_time) * 1000
 
         metrics["latency_ms"] = round(latency_ms, 2)
         metrics["topic_count"] = len(topics)
         metrics["topics"] = topics
+        metrics["consumer_count"] = len(consumers)
+        metrics["consumers"] = consumers
+        metrics["group_count"] = len(consumer_groups)
+        metrics["consumer_groups"] = consumer_groups
 
         return HealthResponse(
             success=True,

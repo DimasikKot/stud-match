@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 
-import { getCurrentUser } from "@/shared/api/users";
-
 export function PrivateRoute() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
@@ -11,8 +9,8 @@ export function PrivateRoute() {
 
     const checkAuth = async () => {
       try {
-        await getCurrentUser();
-        if (active) setIsAuthenticated(true);
+        if (active)
+          setIsAuthenticated(localStorage.getItem("fullname") !== null);
       } catch {
         if (active) setIsAuthenticated(false);
       }
