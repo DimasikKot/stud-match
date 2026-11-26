@@ -13,6 +13,7 @@ from app.services.get_user import require_admin
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends
+from kafka.errors import KafkaError
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -241,7 +242,6 @@ async def _rustfs_health() -> HealthResponse:
 
 
 def _kafka_health() -> HealthResponse:
-
     start_time = time.perf_counter()
     bootstrap = f"{settings.KAFKA_HOST}:{settings.KAFKA_PORT}"
     protocol = kafka_service.security_protocol()
@@ -271,31 +271,37 @@ def _kafka_health() -> HealthResponse:
 
         groups_raw = client.list_consumer_groups()
         group_ids = sorted(group for group, _ in groups_raw if group)
-        group_descriptions = client.describe_consumer_groups(group_ids)
 
         consumers: list[dict[str, Any]] = []
         consumer_groups: list[dict[str, Any]] = []
-        for description in group_descriptions:
-            group_id = description.group
-            members = []
-            for member in description.members:
-                member_info = {
-                    "member_id": member.member_id,
-                    "client_id": member.client_id,
-                    "client_host": member.client_host,
-                }
-                consumers.append({"group": group_id, **member_info})
-                members.append(member_info)
-            consumer_groups.append(
-                {
-                    "group": group_id,
-                    "state": str(description.state),
-                    "protocol": description.protocol,
-                    "protocol_type": description.protocol_type,
-                    "members_count": len(members),
-                    "members": members,
-                }
-            )
+        groups_errors: list[dict[str, str]] = []
+        for group_id in group_ids:
+            try:
+                descriptions = client.describe_consumer_groups([group_id])
+            except KafkaError as e:
+                groups_errors.append({"group": group_id, "error": str(e)})
+                continue
+            for description in descriptions:
+                group_id = description.group
+                members = []
+                for member in description.members:
+                    member_info = {
+                        "member_id": member.member_id,
+                        "client_id": member.client_id,
+                        "client_host": member.client_host,
+                    }
+                    consumers.append({"group": group_id, **member_info})
+                    members.append(member_info)
+                consumer_groups.append(
+                    {
+                        "group": group_id,
+                        "state": str(description.state),
+                        "protocol": description.protocol,
+                        "protocol_type": description.protocol_type,
+                        "members_count": len(members),
+                        "members": members,
+                    }
+                )
 
         latency_ms = (time.perf_counter() - start_time) * 1000
 
@@ -306,6 +312,8 @@ def _kafka_health() -> HealthResponse:
         metrics["consumers"] = consumers
         metrics["group_count"] = len(consumer_groups)
         metrics["consumer_groups"] = consumer_groups
+        if groups_errors:
+            metrics["groups_errors"] = groups_errors
 
         return HealthResponse(
             success=True,
