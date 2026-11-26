@@ -4,11 +4,27 @@ import toast from "react-hot-toast";
 
 import { ButtonUI } from "@/shared/components/UI/ButtonUI";
 import { TextUI } from "@/shared/components/UI/TextUI";
+import { TooltipUI } from "@/shared/components/UI/TooltipUI";
 import { ZipCard } from "@/shared/components/ZipCard";
 import { IconUI } from "@/shared/components/UI/IconUI";
 import { PageLayout } from "@/shared/components/Layouts/PageLayout";
 import { uploadFiles } from "@/shared/api/file";
+import {
+  extractFeatures,
+  fetchRustfsObjects,
+  RustfsObjectStatus,
+  type RustfsObjectStatusValue,
+  type RustfsObjectsResponse,
+} from "@/shared/api/rustfsObjects";
 import { deleteZip, fetchZips, type ZipResponse } from "@/shared/api/zips";
+
+const STATUS_LABELS: Record<RustfsObjectStatusValue, string> = {
+  [RustfsObjectStatus.NotExtracted]: "Не извлечено",
+  [RustfsObjectStatus.Queued]: "В очереди",
+  [RustfsObjectStatus.Extracting]: "Извлечение",
+  [RustfsObjectStatus.Failed]: "Ошибки",
+  [RustfsObjectStatus.Extracted]: "Извлечено",
+};
 
 const formatSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} Б`;
@@ -21,8 +37,12 @@ export function Files() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [zips, setZips] = useState<ZipResponse[]>([]);
+  const [rustfsObjects, setRustfsObjects] = useState<
+    Partial<Record<RustfsObjectStatusValue, RustfsObjectsResponse>>
+  >({});
   const [selected, setSelected] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>(
     {},
   );
@@ -32,9 +52,38 @@ export function Files() {
       .then((response) => setZips(response.data))
       .catch(() => {});
 
+  const loadRustfsObjects = () => {
+    const statuses = Object.values(RustfsObjectStatus);
+    Promise.all(
+      statuses.map(
+        async (status) => [status, await fetchRustfsObjects(status)] as const,
+      ),
+    ).then((entries) => {
+      setRustfsObjects(
+        Object.fromEntries(
+          entries.filter(([, response]) => response !== undefined),
+        ) as Partial<Record<RustfsObjectStatusValue, RustfsObjectsResponse>>,
+      );
+    });
+  };
+
   useEffect(() => {
     loadZips();
+    loadRustfsObjects();
   }, []);
+
+  const handleExtractFeatures = async () => {
+    setIsExtracting(true);
+    try {
+      const response = await extractFeatures();
+      if (response) {
+        toast.success(response.detail);
+      }
+      loadRustfsObjects();
+    } finally {
+      setIsExtracting(false);
+    }
+  };
 
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? []);
@@ -90,6 +139,40 @@ export function Files() {
 
   return (
     <PageLayout title="Файлы студентов">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        {Object.values(RustfsObjectStatus).map((status) => {
+          const response = rustfsObjects[status];
+          return (
+            <TooltipUI
+              key={status}
+              content={
+                response
+                  ? (response as unknown as Record<string, unknown>)
+                  : undefined
+              }
+              isJSON
+              placement="bottom"
+            >
+              <div className="bg-white border border-gray-300 p-4">
+                <TextUI variant="label">{STATUS_LABELS[status]}</TextUI>
+                <TextUI variant="header">
+                  {response ? response.count : "..."}
+                </TextUI>
+                {status === RustfsObjectStatus.NotExtracted && (
+                  <ButtonUI
+                    className="mt-3 w-full"
+                    onClick={handleExtractFeatures}
+                    disabled={isExtracting}
+                  >
+                    {isExtracting ? "Отправка..." : "Начать извлечение"}
+                  </ButtonUI>
+                )}
+              </div>
+            </TooltipUI>
+          );
+        })}
+      </div>
+
       <div className="bg-white border border-gray-300 p-6">
         <TextUI variant="title" className="mb-4">
           Загрузка файлов

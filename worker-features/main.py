@@ -95,6 +95,7 @@ def kafka_loop():
                 settings.KAFKA_TASKS_TOPIC,
                 group_id=settings.KAFKA_CONSUMER_GROUP,
                 auto_offset_reset="earliest",
+                max_poll_interval_ms=3600000,
                 enable_auto_commit=False,
                 value_deserializer=lambda raw: json.loads(raw.decode()),
                 **_kafka_kwargs(),
