@@ -13,8 +13,6 @@ export interface FileResponse {
   id: number;
   name: string;
   size: number;
-  rustfs_object_key: string;
-  rustfs_bucket: string;
   status: (typeof FileStatus)[keyof typeof FileStatus];
   skills_vector: Record<string, unknown>;
   zip_id: number;

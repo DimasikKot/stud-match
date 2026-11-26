@@ -20,8 +20,6 @@ class FileResponse(BaseModel):
     id: int
     name: str
     size: int
-    rustfs_object_key: str
-    rustfs_bucket: str
     status: str
     feature_set: dict
     model_version: str
@@ -44,8 +42,6 @@ def _file_response(file_db: FileDB) -> FileResponse:
         id=file_db.id,
         name=file_db.name,
         size=rustfs_object.size,
-        rustfs_object_key=rustfs_object.object_key,
-        rustfs_bucket=rustfs_object.bucket,
         status=rustfs_object.status.value,
         feature_set=rustfs_object.feature_set,
         model_version=rustfs_object.model_version,

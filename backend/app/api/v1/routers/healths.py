@@ -369,7 +369,7 @@ def _kafka_topic_messages(topic_name: str, group: str | None = None) -> HealthRe
                 )
             )
             committed = {
-                tp: offset.offset
+                tp: offset
                 for tp, offset in admin.list_consumer_group_offsets(group).items()
             }
 
