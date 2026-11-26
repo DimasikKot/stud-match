@@ -31,7 +31,11 @@ def task(producer: KafkaProducer, task: dict) -> bool:
         context.verify_mode = ssl.CERT_NONE
     else:
         context = None
-    urllib.request.urlopen(url, timeout=60, context=context)
+    response = urllib.request.urlopen(url, timeout=60, context=context)
+
+    if response.status != 200 and response["success"] != True:
+        print(f"[features] object {rustfs_object_id} response: {response}", flush=True)
+        return False
 
     try:
         first_line = read_first_line(rustfs_object_id)
@@ -60,7 +64,7 @@ def task(producer: KafkaProducer, task: dict) -> bool:
 
     try:
         producer.send(settings.KAFKA_RESULTS_TOPIC, payload).get(timeout=10)
-        print(f"[features] object {rustfs_object_id}: результат отправлен", flush=True)
+        print(f" + {rustfs_object_id}", flush=True)
         return True
     except Exception as exc:
         print(

@@ -110,7 +110,7 @@ def _sanitize_json_value(value: Any) -> Any:
     return value
 
 
-def apply_feature_result(payload: dict) -> None:
+def apply_feature_result(payload: dict) -> bool:
     """Применяет результат от воркера features к rustfs_objects."""
     db = SessionLocal()
     try:
@@ -120,7 +120,7 @@ def apply_feature_result(payload: dict) -> None:
                 f"[kafka] features result: объект {payload['rustfs_object_id']} не найден",
                 flush=True,
             )
-            return
+            return True
         if payload.get("feature_set") is not None:
             rustfs_object.feature_set = _sanitize_json_value(payload["feature_set"])
         if payload.get("status"):
@@ -128,6 +128,13 @@ def apply_feature_result(payload: dict) -> None:
         if payload.get("model_version"):
             rustfs_object.model_version = payload["model_version"]
         db.commit()
+        return True
+    except Exception as e:
+        print(
+            f"[kafka] features result: ошибка при применении результата: {e}",
+            flush=True,
+        )
+        return False
     finally:
         db.close()
 
@@ -143,7 +150,13 @@ def results_consumer_loop() -> None:
                 kafka_service.settings.KAFKA_FTRS_CONSUMER_GROUP,
             )
             for message in consumer:
-                apply_feature_result(message.value)
+                success = apply_feature_result(message.value)
+                if not success:
+                    print(
+                        f"[kafka] features result: не удалось обработать результат для объекта {message.value['rustfs_object_id']}",
+                        flush=True,
+                    )
+                    continue
                 print(
                     f"[kafka] features result: {message.value['rustfs_object_id']}",
                     flush=True,
@@ -159,7 +172,7 @@ def results_consumer_loop() -> None:
 
 def update_rustfs_object(
     rustfs_object_id: int, db: Session, status: FileStatus | None = None
-) -> None:
+) -> bool:
     """Устанавливает статус для rustfs_object."""
     try:
         rustfs_object = db.get(RustfsObjectDB, rustfs_object_id)
@@ -168,9 +181,15 @@ def update_rustfs_object(
                 f"[kafka] features result: объект {rustfs_object_id} не найден",
                 flush=True,
             )
-            return
+            return True
         if status is not None:
             rustfs_object.status = status
         db.commit()
+        return True
+    except Exception as e:
+        print(
+            f"[kafka] features result: ошибка при обновлении статуса: {e}", flush=True
+        )
+        return False
     finally:
         db.close()

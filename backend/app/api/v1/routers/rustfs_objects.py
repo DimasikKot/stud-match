@@ -114,5 +114,7 @@ async def update_rustfs_object_status(
     rustfs_object_id: int,
     db: Session = Depends(get_db),
 ):
-    rustfs_object.update_rustfs_object(rustfs_object_id, db, FileStatus.EXTRACTING)
-    return MessageResponse(detail="Статус обновлен", success=True)
+    success = rustfs_object.update_rustfs_object(
+        rustfs_object_id, db, FileStatus.EXTRACTING
+    )
+    return MessageResponse(detail="Статус обновлен", success=success)
