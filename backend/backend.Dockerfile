@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r re
 COPY . .
 
 # hot-reload
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8060", "--reload"]
+CMD ["uvicorn", "main:app", "--log-level", "warning", "--host", "0.0.0.0", "--port", "8060", "--reload"]
