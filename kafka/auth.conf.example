@@ -106,36 +106,36 @@ acl User:backend_3 cluster - Describe
 
 
 
-# --- worker_features_1 / _2 / _3 (одинаковые права, общая группа sm-workers-features) ---
+# --- worker_features_1 / _2 / _3 (одинаковые права, общая группа sm-worker-features) ---
 acl User:worker_features_1 topic features.tasks Read,Describe
 acl User:worker_features_1 topic features.results Write,Describe
-acl User:worker_features_1 group sm-workers-features Read,Describe
+acl User:worker_features_1 group sm-worker-features Read,Describe
 acl User:worker_features_1 cluster - Describe
 
 acl User:worker_features_2 topic features.tasks Read,Describe
 acl User:worker_features_2 topic features.results Write,Describe
-acl User:worker_features_2 group sm-workers-features Read,Describe
+acl User:worker_features_2 group sm-worker-features Read,Describe
 acl User:worker_features_2 cluster - Describe
 
 acl User:worker_features_3 topic features.tasks Read,Describe
 acl User:worker_features_3 topic features.results Write,Describe
-acl User:worker_features_3 group sm-workers-features Read,Describe
+acl User:worker_features_3 group sm-worker-features Read,Describe
 acl User:worker_features_3 cluster - Describe
 
 
 
-# --- worker_distribution_1 / _2 / _3 (одинаковые права, общая группа sm-workers-distribution) ---
+# --- worker_distribution_1 / _2 / _3 (одинаковые права, общая группа sm-worker-distribution) ---
 acl User:worker_distribution_1 topic distribution.tasks Read,Describe
 acl User:worker_distribution_1 topic distribution.results Write,Describe
-acl User:worker_distribution_1 group sm-workers-distribution Read,Describe
+acl User:worker_distribution_1 group sm-worker-distribution Read,Describe
 acl User:worker_distribution_1 cluster - Describe
 
 acl User:worker_distribution_2 topic distribution.tasks Read,Describe
 acl User:worker_distribution_2 topic distribution.results Write,Describe
-acl User:worker_distribution_2 group sm-workers-distribution Read,Describe
+acl User:worker_distribution_2 group sm-worker-distribution Read,Describe
 acl User:worker_distribution_2 cluster - Describe
 
 acl User:worker_distribution_3 topic distribution.tasks Read,Describe
 acl User:worker_distribution_3 topic distribution.results Write,Describe
-acl User:worker_distribution_3 group sm-workers-distribution Read,Describe
+acl User:worker_distribution_3 group sm-worker-distribution Read,Describe
 acl User:worker_distribution_3 cluster - Describe
