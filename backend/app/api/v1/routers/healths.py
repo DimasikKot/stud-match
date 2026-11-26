@@ -340,6 +340,10 @@ def _kafka_topic_messages(topic_name: str, group: str | None = None) -> HealthRe
     как разность end - beginning offset по всем партициям.
     Если передан group, дополнительно возвращает закоммиченные
     офсеты consumer group и lag (end - committed)."""
+    if isinstance(topic_name, enum.Enum):
+        topic_name = topic_name.value
+    if isinstance(group, enum.Enum):
+        group = group.value
     consumer: KafkaConsumer | None = None
     admin: KafkaAdminClient | None = None
     try:
@@ -356,22 +360,37 @@ def _kafka_topic_messages(topic_name: str, group: str | None = None) -> HealthRe
                 detail=f"Топик {topic_name} не найден",
                 metrics={"topic": topic_name},
             )
-        partitions = [TopicPartition(topic_name.value, p) for p in partition_ids]
+        partitions = [TopicPartition(topic_name, p) for p in partition_ids]
         beginning = consumer.beginning_offsets(partitions)
         end = consumer.end_offsets(partitions)
 
         committed: dict[TopicPartition, int] = {}
+        group_error: str | None = None
         if group:
-            admin = KafkaAdminClient(
-                **kafka_service.connection_kwargs(
-                    api_version_auto_timeout_ms=15000,
-                    request_timeout_ms=15000,
+            try:
+                admin = KafkaAdminClient(
+                    **kafka_service.connection_kwargs(
+                        api_version_auto_timeout_ms=15000,
+                        request_timeout_ms=15000,
+                    )
                 )
-            )
-            committed = {
-                tp: offset
-                for tp, offset in admin.list_consumer_group_offsets(group).items()
-            }
+                committed = {
+                    tp: meta.offset
+                    for tp, meta in admin.list_consumer_group_offsets(group).items()
+                }
+            except KafkaError as e:
+                group_error = str(e)
+            # group_descriptions = admin.describe_consumer_groups([group])
+            # group_state = [
+            #     {
+            #         "group": description.group,
+            #         "state": str(description.state),
+            #         "protocol": description.protocol,
+            #         "protocol_type": description.protocol_type,
+            #         "members_count": len(description.members),
+            #     }
+            #     for description in group_descriptions
+            # ]
 
         partition_stats = {}
         total = 0
@@ -384,7 +403,7 @@ def _kafka_topic_messages(topic_name: str, group: str | None = None) -> HealthRe
                 "end_offset": end[tp],
                 "messages": lag,
             }
-            if group:
+            if group and group_error is None:
                 committed_offset = committed.get(tp, -1)
                 if committed_offset < 0:
                     committed_offset = beginning[tp]
@@ -394,20 +413,47 @@ def _kafka_topic_messages(topic_name: str, group: str | None = None) -> HealthRe
                 stats["lag"] = group_lag
             partition_stats[str(tp.partition)] = stats
 
+        # raw_response = {
+        #     "beginning_offsets": {
+        #         str(tp.partition): offset for tp, offset in beginning.items()
+        #     },
+        #     "end_offsets": {
+        #         str(tp.partition): offset for tp, offset in end.items()
+        #     },
+        # }
+        # if group:
+        #     raw_response["consumer_group_offsets"] = [
+        #         {
+        #             "topic": tp.topic,
+        #             "partition": tp.partition,
+        #             "offset": offset,
+        #         }
+        #         for tp, offset in committed.items()
+        #     ]
+        #     raw_response["consumer_group_state"] = group_state
+
         metrics: dict[str, Any] = {
-            "topic": topic_name.value,
+            "topic": topic_name,
             "message_count": total,
             "partitions": partition_stats,
+            # "raw": raw_response,
         }
         if group:
             metrics["consumer_group"] = group
-            metrics["group_lag"] = total_lag
-            detail = (
-                f"В топике {topic_name.value}: {total} сообщений, "
-                f"необработанных для группы {group}: {total_lag}"
-            )
+            if group_error is not None:
+                metrics["group_error"] = group_error
+                detail = (
+                    f"В топике {topic_name}: {total} сообщений "
+                    f"(офсеты группы {group} недоступны: {group_error})"
+                )
+            else:
+                metrics["group_lag"] = total_lag
+                detail = (
+                    f"В топике {topic_name}: {total} сообщений, "
+                    f"необработанных для группы {group}: {total_lag}"
+                )
         else:
-            detail = f"В топике {topic_name.value}: {total} сообщений"
+            detail = f"В топике {topic_name}: {total} сообщений"
 
         return HealthResponse(
             success=True,
@@ -419,7 +465,7 @@ def _kafka_topic_messages(topic_name: str, group: str | None = None) -> HealthRe
         return HealthResponse(
             success=False,
             detail="Не удалось получить статистику топика",
-            metrics={"topic": topic_name.value, "error": str(e)},
+            metrics={"topic": topic_name, "error": str(e)},
         )
     finally:
         if consumer is not None:

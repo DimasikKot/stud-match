@@ -86,6 +86,8 @@ acl User:backend_1 group sm-backend-features Read,Describe
 acl User:backend_1 topic distribution.tasks Write,Describe
 acl User:backend_1 topic distribution.results Read,Describe
 acl User:backend_1 group sm-backend-distribution Read,Describe
+acl User:backend_1 group sm-worker-features Describe
+acl User:backend_1 group sm-worker-distribution Describe
 acl User:backend_1 cluster - Describe
 
 acl User:backend_2 topic features.tasks Write,Describe
@@ -94,6 +96,8 @@ acl User:backend_2 group sm-backend-features Read,Describe
 acl User:backend_2 topic distribution.tasks Write,Describe
 acl User:backend_2 topic distribution.results Read,Describe
 acl User:backend_2 group sm-backend-distribution Read,Describe
+acl User:backend_2 group sm-worker-features Describe
+acl User:backend_2 group sm-worker-distribution Describe
 acl User:backend_2 cluster - Describe
 
 acl User:backend_3 topic features.tasks Write,Describe
@@ -102,6 +106,8 @@ acl User:backend_3 group sm-backend-features Read,Describe
 acl User:backend_3 topic distribution.tasks Write,Describe
 acl User:backend_3 topic distribution.results Read,Describe
 acl User:backend_3 group sm-backend-distribution Read,Describe
+acl User:backend_3 group sm-worker-features Describe
+acl User:backend_3 group sm-worker-distribution Describe
 acl User:backend_3 cluster - Describe
 
 

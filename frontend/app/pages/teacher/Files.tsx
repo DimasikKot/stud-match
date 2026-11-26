@@ -242,10 +242,10 @@ export function Files() {
                   <TextUI variant="label">{topic.label}</TextUI>
                   <TextUI variant="desc">{topic.name}</TextUI>
                   <TextUI variant="header">
-                    {metrics?.message_count ?? "..."}
+                    В очереди: {metrics?.group_lag ?? "..."}
                   </TextUI>
                   <TextUI variant="desc">
-                    сообщений, в очереди: {metrics?.group_lag ?? "..."}
+                    Всего задач было: {metrics?.message_count ?? "..."}
                   </TextUI>
                 </div>
               </TooltipUI>
