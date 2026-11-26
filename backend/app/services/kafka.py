@@ -36,7 +36,7 @@ def connection_kwargs(**extra) -> dict:
     protocol = security_protocol()
     kwargs = {
         "bootstrap_servers": f"{settings.KAFKA_HOST}:{settings.KAFKA_PORT}",
-        "api_version_auto_timeout_ms": 5000,
+        "api_version_auto_timeout_ms": 60000,
         "security_protocol": protocol,
     }
     if protocol in ("SSL", "SASL_SSL"):

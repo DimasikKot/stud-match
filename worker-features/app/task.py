@@ -31,7 +31,7 @@ def task(producer: KafkaProducer, task: dict):
         context.verify_mode = ssl.CERT_NONE
     else:
         context = None
-    urllib.request.urlopen(url, timeout=120, context=context)
+    urllib.request.urlopen(url, timeout=60, context=context)
 
     try:
         first_line = read_first_line(rustfs_object_id)
