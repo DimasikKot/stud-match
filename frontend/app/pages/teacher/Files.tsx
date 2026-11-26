@@ -20,9 +20,9 @@ import { deleteZip, fetchZips, type ZipResponse } from "@/shared/api/zips";
 
 const STATUS_LABELS: Record<RustfsObjectStatusValue, string> = {
   [RustfsObjectStatus.NotExtracted]: "Не извлечено",
+  [RustfsObjectStatus.Failed]: "Ошибки",
   [RustfsObjectStatus.Queued]: "В очереди",
   [RustfsObjectStatus.Extracting]: "Извлечение",
-  [RustfsObjectStatus.Failed]: "Ошибки",
   [RustfsObjectStatus.Extracted]: "Извлечено",
 };
 
@@ -72,10 +72,12 @@ export function Files() {
     loadRustfsObjects();
   }, []);
 
-  const handleExtractFeatures = async () => {
+  const handleExtractFeatures = async (
+    status: RustfsObjectStatusValue = RustfsObjectStatus.NotExtracted,
+  ) => {
     setIsExtracting(true);
     try {
-      const response = await extractFeatures();
+      const response = await extractFeatures(status);
       if (response) {
         toast.success(response.detail);
       }
@@ -161,10 +163,21 @@ export function Files() {
                 {status === RustfsObjectStatus.NotExtracted && (
                   <ButtonUI
                     className="mt-3 w-full"
-                    onClick={handleExtractFeatures}
+                    onClick={() => handleExtractFeatures()}
                     disabled={isExtracting}
                   >
                     {isExtracting ? "Отправка..." : "Начать извлечение"}
+                  </ButtonUI>
+                )}
+                {status === RustfsObjectStatus.Failed && (
+                  <ButtonUI
+                    className="mt-3 w-full"
+                    onClick={() =>
+                      handleExtractFeatures(RustfsObjectStatus.Failed)
+                    }
+                    disabled={isExtracting}
+                  >
+                    {isExtracting ? "Отправка..." : "Повторить извлечение"}
                   </ButtonUI>
                 )}
               </div>

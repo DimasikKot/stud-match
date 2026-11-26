@@ -3,9 +3,9 @@ import type { MessageResponse } from "@/shared/api/file";
 
 export const RustfsObjectStatus = {
   NotExtracted: "not_extracted",
+  Failed: "failed",
   Queued: "queued",
   Extracting: "extracting",
-  Failed: "failed",
   Extracted: "extracted",
 } as const;
 
