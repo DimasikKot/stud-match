@@ -3,7 +3,7 @@ from typing import Any
 from urllib.parse import quote
 
 from app.core.database import SessionLocal
-from app.core.db import FileStatus, RustfsObjectDB
+from app.core.db import FileStatus, RustfsObjectDB, SkillDB
 from app.services import file
 from app.services import kafka as kafka_service
 from fastapi import HTTPException
@@ -120,6 +120,23 @@ def _sanitize_json_value(value: Any) -> Any:
     return value
 
 
+def _register_new_skills(db: Session, feature_set: Any) -> None:
+    """Добавляет в таблицу skills навыки из feature_set["skills"], которых там ещё нет.
+    Сравнение имён без учёта регистра, длина имени ограничена 64 символами."""
+    skills = feature_set.get("skills") if isinstance(feature_set, dict) else None
+    if not isinstance(skills, dict):
+        return
+    existing = {name.lower() for (name,) in db.query(SkillDB.name).all()}
+    for raw_name in skills:
+        if not isinstance(raw_name, str):
+            continue
+        name = " ".join(raw_name.split())[:64]
+        if not name or name.lower() in existing:
+            continue
+        db.add(SkillDB(name=name))
+        existing.add(name.lower())
+
+
 def apply_feature_result(payload: dict) -> bool:
     """Применяет результат от воркера features к rustfs_objects."""
     db = SessionLocal()
@@ -133,6 +150,8 @@ def apply_feature_result(payload: dict) -> bool:
             return True
         if payload.get("feature_set") is not None:
             rustfs_object.feature_set = _sanitize_json_value(payload["feature_set"])
+            if payload.get("status") == FileStatus.EXTRACTED.value:
+                _register_new_skills(db, rustfs_object.feature_set)
         if payload.get("status"):
             rustfs_object.status = FileStatus(payload["status"])
         if payload.get("model_version"):

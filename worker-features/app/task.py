@@ -4,11 +4,10 @@ import urllib.request
 from datetime import datetime
 
 from app.config import settings
+from app.extract import SkippedFile, extract_text, limit_chunks, split_chunks
+from app.llm import MODEL_VERSION, extract_chunk_skills, merge_skills
 
 from kafka import KafkaProducer
-
-FIRST_LINE_LIMIT = 1024 * 1024
-MODEL_VERSION = "0.1.0 2026-11-27: extracted"
 
 
 class TaskResponse:
@@ -42,6 +41,7 @@ def _result(rustfs_object_id: int, status: str, feature_set: dict) -> dict:
 def task(producer: KafkaProducer, task: dict) -> bool:
     rustfs_object_id = task["rustfs_object_id"]
     extension = task["extension"]
+    meta = {"extension": extension, "extracted_at": datetime.now().isoformat()}
 
     try:
         url = f"{settings.BACKEND_URL}/internal/rustfs-objects/{rustfs_object_id}"
@@ -52,31 +52,38 @@ def task(producer: KafkaProducer, task: dict) -> bool:
         if not body.get("success"):
             raise RuntimeError(f"backend ответил success=false: {body}")
 
-        first_line = read_first_line(rustfs_object_id)
-        payload = _result(
-            rustfs_object_id,
-            "failed",
-            {
-                "extension": extension,
-                "extracted_at": datetime.now().isoformat(),
-                "first_line": first_line[:50],
-            },
-        )
+        try:
+            text = extract_text(extension, read_content(rustfs_object_id))
+        except SkippedFile as skipped:
+            # Пропущенный файл считается обработанным, чтобы его не гоняли повторно
+            payload = _result(
+                rustfs_object_id,
+                "extracted",
+                {**meta, "skills": {}, "skipped": str(skipped)},
+            )
+        else:
+            skills, chunks_total, chunks_failed = analyze_text(rustfs_object_id, text)
+            payload = _result(
+                rustfs_object_id,
+                "extracted",
+                {
+                    **meta,
+                    "skills": skills,
+                    "chunks": chunks_total,
+                    "chunks_failed": chunks_failed,
+                },
+            )
     except Exception as exc:
         print(f"[features] object {rustfs_object_id} failed: {exc}", flush=True)
         payload = _result(
             rustfs_object_id,
             "failed",
-            {
-                "extension": extension,
-                "extracted_at": datetime.now().isoformat(),
-                "error": str(exc) or type(exc).__name__,
-            },
+            {**meta, "error": str(exc) or type(exc).__name__},
         )
 
     try:
         producer.send(settings.KAFKA_RESULTS_TOPIC, payload).get(timeout=10)
-        print(f" + {rustfs_object_id}", flush=True)
+        print(f" + {rustfs_object_id} {payload['status']}", flush=True)
         return True
     except Exception as exc:
         print(
@@ -87,19 +94,41 @@ def task(producer: KafkaProducer, task: dict) -> bool:
         return False
 
 
-def read_first_line(rustfs_object_id: int) -> str:
-    """Скачивает начало файла через backend и возвращает первую строку."""
+def analyze_text(rustfs_object_id: int, text: str) -> tuple[dict, int, int]:
+    """Режет текст на чанки, прогоняет каждый через модель и объединяет навыки.
+
+    Возвращает навыки, число обработанных чанков и число чанков с невалидным ответом.
+    Если невалидны все чанки, бросает RuntimeError, и файл получит статус failed."""
+    chunks = limit_chunks(
+        split_chunks(text, settings.CHUNK_CHARS, settings.CHUNK_OVERLAP_CHARS),
+        settings.MAX_CHUNKS_PER_FILE,
+    )
+    per_chunk: list[dict] = []
+    failed = 0
+    for index, chunk in enumerate(chunks, start=1):
+        try:
+            per_chunk.append(extract_chunk_skills(chunk))
+        except ValueError as exc:
+            failed += 1
+            print(
+                f"[features] object {rustfs_object_id} chunk {index}/{len(chunks)}: "
+                f"невалидный ответ модели: {exc}",
+                flush=True,
+            )
+    if chunks and failed == len(chunks):
+        raise RuntimeError("модель не вернула валидный JSON ни для одного чанка")
+    return merge_skills(per_chunk), len(chunks), failed
+
+
+def read_content(rustfs_object_id: int) -> bytes:
+    """Скачивает файл целиком через backend, с ограничением по размеру."""
     url = f"{settings.BACKEND_URL}/internal/rustfs-objects/{rustfs_object_id}/content"
+    buffer = bytearray()
     with urllib.request.urlopen(
         url, timeout=120, context=_ssl_context(url)
     ) as response:
-        buffer = bytearray()
-        while len(buffer) < FIRST_LINE_LIMIT:
-            chunk = response.read1(64 * 1024)
-            if not chunk:
-                break
+        while chunk := response.read(64 * 1024):
             buffer += chunk
-            newline = buffer.find(b"\n")
-            if newline != -1:
-                return buffer[:newline].decode("utf-8", errors="replace")
-    return bytes(buffer).decode("utf-8", errors="replace")
+            if len(buffer) > settings.MAX_FILE_BYTES:
+                raise RuntimeError("размер файла превышает допустимый предел")
+    return bytes(buffer)

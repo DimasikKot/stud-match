@@ -5,6 +5,7 @@ import time
 from contextlib import asynccontextmanager
 
 from app.config import settings
+from app.llm import is_loaded, load_model, unload_model
 from app.task import task
 from fastapi import FastAPI
 
@@ -59,12 +60,14 @@ state: dict = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    load_model()
     state["queue_thread"] = threading.Thread(
         target=kafka_loop, daemon=True, name="features-kafka"
     )
     state["queue_thread"].start()
     yield
     state.clear()
+    unload_model()
 
 
 app = FastAPI(title="sm-features-worker", lifespan=lifespan)
@@ -75,6 +78,8 @@ def health():
     queue_thread = state.get("queue_thread")
     return {
         "status": "ok",
+        "model": settings.LLM_MODEL_NAME,
+        "loaded": is_loaded(),
         "consumer": bool(queue_thread and queue_thread.is_alive()),
     }
 
@@ -95,7 +100,7 @@ def kafka_loop():
                 settings.KAFKA_TASKS_TOPIC,
                 group_id=settings.KAFKA_CONSUMER_GROUP,
                 auto_offset_reset="earliest",
-                max_poll_interval_ms=300_000,
+                max_poll_interval_ms=900_000,
                 enable_auto_commit=False,
                 value_deserializer=lambda raw: json.loads(raw.decode()),
                 **_kafka_kwargs(),
