@@ -11,24 +11,22 @@ MODEL_VERSION = f"{settings.LLM_MODEL_NAME}|{PROMPT_VERSION}"
 llm: dict = {}
 gpu_lock = threading.Lock()
 
-SYSTEM_PROMPT = (
-    "Ты анализируешь фрагмент студенческой работы и определяешь профессиональные "
-    "навыки студента, которые проявились в тексте.\n"
-    "Верни только JSON без пояснений и без markdown в формате: "
-    '{"навык": {"value": число от 0 до 1, "confidence": число от 0 до 1}}.\n'
-    "value это оценка владения навыком по объёму его использования и сложности "
-    "применения в тексте: 0.1 простое упоминание, 0.5 уверенное применение в "
-    "типовых задачах, 0.9 сложное и глубокое применение.\n"
-    "confidence это твоя уверенность в этой оценке.\n"
-    "Названия навыков пиши строчными буквами, короткими общепринятыми названиями, "
-    "например: python, sql, машинное обучение, анализ данных.\n"
-    "Не включай личные качества и навыки, которые не подтверждены текстом. "
-    "Не более 15 навыков. Если навыков нет, верни {}."
-)
+SYSTEM_PROMPT = """
+    Ты анализируешь фрагмент студенческой работы и определяешь профессиональные навыки студента, которые проявились в тексте.
+    Верни только JSON без пояснений, без markdown, только в формате: `{"навык": {"value": float число от 0 до 1 (типо 0.34), "confidence": float число от 0 до 1 (типо 0.8)},"навык2": {"value": float число от 0 до 1, "confidence": float число от 0 до 1 (типо 0.6)} ...}`.
+    skill, например: python, sql, машинное обучение, анализ данных.
+    value это оценка владения навыком по объёму его использования и сложности применения в тексте.
+    confidence это твоя уверенность в этой оценке (чем больше значение, тем выше уверенность), оченивай очень строго.
+    Названия навыков пиши строчными буквами, короткими общепринятыми названиями.
+    Не включай личные качества и навыки, которые не подтверждены текстом.
+    Не более 15 навыков. Если навыков нет, верни `{}`.
+    Не добавляй никаких дополнительных полей в ответ.
+    Не добавляй никаких дополнительных символов в ответ, только один JSON, без повторов навыков.
+"""
 
 
 def load_model() -> None:
-    print("запуск модели", flush=True)
+    print("[features] Загрузка модели...", flush=True)
     # Четырёхбитное квантование NF4, вычисления в fp16 (видеокарта без bf16)
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -47,15 +45,17 @@ def load_model() -> None:
         quantization_config=quantization_config,
     )
     print(
-        f"[features] model {settings.LLM_MODEL_NAME} loaded, "
+        f"[features] Модель {settings.LLM_MODEL_NAME} загружена, "
         f"VRAM {torch.cuda.memory_allocated() / 1024**3:.2f} GB",
         flush=True,
     )
 
 
 def unload_model() -> None:
+    print("[features] Выгрузка модели...", flush=True)
     llm.clear()
     torch.cuda.empty_cache()
+    print("[features] Модель выгружена", flush=True)
 
 
 def is_loaded() -> bool:
@@ -125,7 +125,12 @@ def extract_chunk_skills(chunk: str) -> dict[str, dict[str, float]]:
     answer = tokenizer.decode(
         output[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True
     )
-    return parse_skills(answer)
+    print(f"LLM response for chunk: {answer}\n", flush=True)
+    parsed = parse_skills(answer)
+    print(f"Parsed skills: {json.dumps(parsed, ensure_ascii=False)}\n", flush=True)
+    print(f"Raw chunk: {chunk}\n", flush=True)
+    print("\n" + "-" * 80 + "\n", flush=True)
+    return parsed
 
 
 def merge_skills(

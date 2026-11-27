@@ -6,6 +6,7 @@ import { ButtonUI } from "@/shared/components/UI/ButtonUI";
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { TooltipUI } from "@/shared/components/UI/TooltipUI";
 import { ZipCard } from "@/shared/components/ZipCard";
+import { RustfsObjectsModal } from "@/shared/components/RustfsObjectsModal";
 import { IconUI } from "@/shared/components/UI/IconUI";
 import { PageLayout } from "@/shared/components/Layouts/PageLayout";
 import { uploadFiles } from "@/shared/api/file";
@@ -57,6 +58,8 @@ export function Files() {
   const [selected, setSelected] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [objectsModalStatus, setObjectsModalStatus] =
+    useState<RustfsObjectStatusValue | null>(null);
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>(
     {},
   );
@@ -179,43 +182,40 @@ export function Files() {
         {Object.values(RustfsObjectStatus).map((status) => {
           const response = rustfsObjects[status];
           return (
-            <TooltipUI
+            <div
               key={status}
-              content={
-                response
-                  ? (response as unknown as Record<string, unknown>)
-                  : undefined
-              }
-              isJSON
-              placement="bottom"
+              onClick={() => setObjectsModalStatus(status)}
+              className="bg-white border border-gray-300 p-4 cursor-pointer
+                hover:border-gray-400 hover:shadow-md transition-all"
             >
-              <div className="bg-white border border-gray-300 p-4">
-                <TextUI variant="label">{STATUS_LABELS[status]}</TextUI>
-                <TextUI variant="header">
-                  {response ? response.count : "..."}
-                </TextUI>
-                {status === RustfsObjectStatus.NotExtracted && (
-                  <ButtonUI
-                    className="mt-3 w-full"
-                    onClick={() => handleExtractFeatures()}
-                    disabled={isExtracting}
-                  >
-                    {isExtracting ? "Отправка..." : "Начать извлечение"}
-                  </ButtonUI>
-                )}
-                {status === RustfsObjectStatus.Failed && (
-                  <ButtonUI
-                    className="mt-3 w-full"
-                    onClick={() =>
-                      handleExtractFeatures(RustfsObjectStatus.Failed)
-                    }
-                    disabled={isExtracting}
-                  >
-                    {isExtracting ? "Отправка..." : "Повторить извлечение"}
-                  </ButtonUI>
-                )}
-              </div>
-            </TooltipUI>
+              <TextUI variant="label">{STATUS_LABELS[status]}</TextUI>
+
+              <TextUI variant="header">
+                {response ? response.count : "..."}
+              </TextUI>
+
+              {status === RustfsObjectStatus.NotExtracted && (
+                <ButtonUI
+                  className="mt-3 w-full"
+                  onClick={() => handleExtractFeatures()}
+                  disabled={isExtracting}
+                >
+                  {isExtracting ? "Отправка..." : "Начать извлечение"}
+                </ButtonUI>
+              )}
+
+              {status === RustfsObjectStatus.Failed && (
+                <ButtonUI
+                  className="mt-3 w-full"
+                  onClick={() =>
+                    handleExtractFeatures(RustfsObjectStatus.Failed)
+                  }
+                  disabled={isExtracting}
+                >
+                  {isExtracting ? "Отправка..." : "Повторить извлечение"}
+                </ButtonUI>
+              )}
+            </div>
           );
         })}
       </div>
@@ -249,10 +249,13 @@ export function Files() {
                   <TextUI variant="label">
                     {topic.label} ({topic.name})
                   </TextUI>
+
                   <TextUI variant="desc">В очереди:</TextUI>
+
                   <TextUI variant="header">
                     {metrics?.group_lag ?? "..."}
                   </TextUI>
+
                   <TextUI variant="desc">
                     Всего задач было: {metrics?.message_count ?? "..."}
                   </TextUI>
@@ -284,7 +287,9 @@ export function Files() {
               hover:text-blue-600 transition-colors cursor-pointer"
         >
           <IconUI size="32px" name="cloud_upload" />
+
           <TextUI variant="normal">Нажмите, чтобы выбрать файлы</TextUI>
+
           <TextUI variant="desc">Можно выбрать несколько файлов сразу</TextUI>
         </button>
 
@@ -323,9 +328,11 @@ export function Files() {
                     />
                     <div className="relative flex items-center gap-3 min-w-0">
                       <IconUI size="20px" name="description" color="gray-400" />
+
                       <TextUI variant="normal" className="line-clamp-1">
                         {file.name}
                       </TextUI>
+
                       <TextUI variant="desc" span>
                         {formatSize(file.size)}
                       </TextUI>
@@ -368,6 +375,14 @@ export function Files() {
           </div>
         )}
       </div>
+
+      {objectsModalStatus && (
+        <RustfsObjectsModal
+          status={objectsModalStatus}
+          response={rustfsObjects[objectsModalStatus]}
+          onClose={() => setObjectsModalStatus(null)}
+        />
+      )}
     </PageLayout>
   );
 }

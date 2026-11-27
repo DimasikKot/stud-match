@@ -22,6 +22,7 @@ class RustfsObjectListResponse(BaseModel):
 
     id: int
     object_key: str
+    extension: str
     status: FileStatus
     feature_set: dict[str, Any]
     model_version: str
@@ -48,6 +49,45 @@ async def get_rustfs_objects(
             RustfsObjectListResponse.model_validate(rustfs_object)
             for rustfs_object in rustfs_objects_list
         ],
+    )
+
+
+def _object_filename(rustfs_object_db) -> str:
+    extension = rustfs_object_db.extension or ""
+    if extension and not extension.startswith("."):
+        extension = f".{extension}"
+    return f"{rustfs_object_db.object_key}{extension}"
+
+
+@router.get("/{rustfs_object_id}/view")
+async def view_rustfs_object(
+    rustfs_object_id: int,
+    db: Session = Depends(get_db),
+):
+    """Просмотр объекта inline (браузер откроет его, не скачивая)."""
+    rustfs_object_db = rustfs_object.fetch_rustfs_object_by_id(db, rustfs_object_id)
+    content_type, _ = mimetypes.guess_type(_object_filename(rustfs_object_db))
+    return await rustfs_object.stream_rustfs_object(
+        rustfs_object_db,
+        _object_filename(rustfs_object_db),
+        "inline",
+        content_type or "application/octet-stream",
+    )
+
+
+@router.get("/{rustfs_object_id}/download")
+async def download_rustfs_object(
+    rustfs_object_id: int,
+    db: Session = Depends(get_db),
+):
+    """Скачивание объекта как вложения (attachment)."""
+    rustfs_object_db = rustfs_object.fetch_rustfs_object_by_id(db, rustfs_object_id)
+    content_type, _ = mimetypes.guess_type(_object_filename(rustfs_object_db))
+    return await rustfs_object.stream_rustfs_object(
+        rustfs_object_db,
+        _object_filename(rustfs_object_db),
+        "attachment",
+        content_type or "application/octet-stream",
     )
 
 
@@ -100,10 +140,10 @@ async def get_rustfs_object_content(
     Используется воркером features для скачивания файла на обработку,
     без cookie-авторизации."""
     rustfs_object_db = rustfs_object.fetch_rustfs_object_by_id(db, rustfs_object_id)
-    content_type, _ = mimetypes.guess_type(rustfs_object_db.object_key)
+    content_type, _ = mimetypes.guess_type(_object_filename(rustfs_object_db))
     return await rustfs_object.stream_rustfs_object(
         rustfs_object_db,
-        rustfs_object_db.object_key,
+        _object_filename(rustfs_object_db),
         "attachment",
         content_type or "application/octet-stream",
     )

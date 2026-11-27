@@ -15,6 +15,7 @@ export type RustfsObjectStatusValue =
 export interface RustfsObjectResponse {
   id: number;
   object_key: string;
+  extension: string;
   status: RustfsObjectStatusValue;
   feature_set: Record<string, unknown>;
   model_version: string;
@@ -24,6 +25,15 @@ export interface RustfsObjectsResponse {
   count: number;
   data: RustfsObjectResponse[];
 }
+
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL ?? "https://localhost/backend/api/v1";
+
+export const rustfsObjectViewUrl = (rustfsObjectId: number) =>
+  `${BACKEND_URL}/rustfs-objects/${rustfsObjectId}/view`;
+
+export const rustfsObjectDownloadUrl = (rustfsObjectId: number) =>
+  `${BACKEND_URL}/rustfs-objects/${rustfsObjectId}/download`;
 
 export const fetchRustfsObjects = async (
   status: RustfsObjectStatusValue,

@@ -11,4 +11,4 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8070
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8070", "--reload"]
+CMD ["uvicorn", "main:app", "--log-level", "warning", "--host", "0.0.0.0", "--port", "8070", "--reload"]

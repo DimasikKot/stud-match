@@ -48,3 +48,5 @@ kafka/secrets/
 kafka/data/
 kafka/auth.conf
 postgres/stud-match DB.dbdiagram
+worker-features-mbart/model_rar/
+worker-features-mbart/model_unarchived/
