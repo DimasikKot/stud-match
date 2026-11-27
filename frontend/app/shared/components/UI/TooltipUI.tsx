@@ -89,7 +89,7 @@ export const TooltipUI = ({
       {visible && content && (
         <div>
           <div
-            className={`absolute z-50 max-h-140 max-w-200 w-max rounded-md overflow-y-auto bg-gray-900/80 px-3 py-2 border border-gray-300 ${placementClass}`}
+            className={`absolute z-50 max-h-80 max-w-120 w-max rounded-md overflow-y-auto bg-gray-900/80 px-3 py-2 border border-gray-300 ${placementClass}`}
           >
             <TextUI variant="label" className="text-white whitespace-pre-wrap">
               {isJSON && typeof content !== "string"

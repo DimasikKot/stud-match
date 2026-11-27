@@ -15,6 +15,7 @@ export interface StudentFileResponse {
   size: number;
   status: string;
   zip_id: number;
+  feature_set: Record<string, unknown>;
 }
 
 export interface StudentDetailResponse {

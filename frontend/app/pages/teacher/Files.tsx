@@ -96,6 +96,13 @@ export function Files() {
     loadZips();
     loadRustfsObjects();
     loadKafkaTopics();
+
+    const interval = setInterval(() => {
+      loadRustfsObjects();
+      loadKafkaTopics();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleExtractFeatures = async (

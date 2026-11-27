@@ -41,6 +41,10 @@ def _result(rustfs_object_id: int, status: str, feature_set: dict) -> dict:
 def task(producer: KafkaProducer, task: dict) -> bool:
     rustfs_object_id = task["rustfs_object_id"]
     extension = task["extension"]
+    print(
+        f"[features] Processing object {rustfs_object_id} with extension {extension}, model version: {MODEL_VERSION}",
+        flush=True,
+    )
     meta = {"extension": extension, "extracted_at": datetime.now().isoformat()}
 
     try:

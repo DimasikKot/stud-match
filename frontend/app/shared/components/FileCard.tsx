@@ -3,12 +3,14 @@ import toast from "react-hot-toast";
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { ButtonUI } from "./UI/ButtonUI";
 import { IconUI } from "./UI/IconUI";
+import { TooltipUI } from "./UI/TooltipUI";
 
 export interface FileCardFile {
   id: number;
   name: string;
   status: string;
   student_fullname: string | null;
+  feature_set?: Record<string, unknown>;
 }
 
 export const FileCard = ({
@@ -28,8 +30,10 @@ export const FileCard = ({
   className?: string;
   variant?: "normal" | "compact";
 }) => {
+  const featuresText = file.feature_set ? JSON.stringify(file.feature_set) : "";
+
   const className = `
-        flex flex-col justify-between pb-2 px-1 gap-1 overflow-clip
+        flex flex-col justify-between pb-2 px-1 gap-1
         transition-all duration-200 cursor-pointer 
         bg-white border border-gray-300
         ${variant === "normal" && "hover:border-gray-400 hover:shadow-md"}
@@ -55,13 +59,30 @@ export const FileCard = ({
           </div>
 
           <IconUI
-            name={file.status === "extracted" ? "sell" : "help_outline"}
+            name={file.status === "not_extracted" ? "help_outline" : "sell"}
+            title={file.status}
             className={
-              file.status === "extracted" ? "text-green-500" : "text-gray-500"
+              file.status === "extracted"
+                ? "text-green-500"
+                : file.status === "failed"
+                  ? "text-red-500"
+                  : file.status === "queued"
+                    ? "text-yellow-500"
+                    : file.status === "extracting"
+                      ? "text-blue-500"
+                      : "text-gray-500"
             }
           />
         </div>
       </div>
+
+      {featuresText && featuresText !== "{}" && (
+        <TooltipUI content={featuresText} placement="bottom" isJSON>
+          <TextUI variant="desc" className="line-clamp-2 break-all">
+            {featuresText}
+          </TextUI>
+        </TooltipUI>
+      )}
 
       {variant === "normal" && (
         <>

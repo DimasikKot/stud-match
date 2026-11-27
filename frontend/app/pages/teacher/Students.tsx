@@ -31,8 +31,7 @@ export default function Students() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const openStudent = (studentId: number) => {
-    setSelectedStudentId(studentId);
+  const loadStudentDetails = (studentId: number) => {
     setStudentDetails(null);
     setHasDetailsError(false);
     setIsDetailsLoading(true);
@@ -40,6 +39,11 @@ export default function Students() {
       .then(setStudentDetails)
       .catch(() => setHasDetailsError(true))
       .finally(() => setIsDetailsLoading(false));
+  };
+
+  const openStudent = (studentId: number) => {
+    setSelectedStudentId(studentId);
+    loadStudentDetails(studentId);
   };
 
   return (
@@ -78,6 +82,11 @@ export default function Students() {
           isLoading={isDetailsLoading}
           hasError={hasDetailsError}
           onClose={() => setSelectedStudentId(null)}
+          onChanged={() => {
+            if (selectedStudentId !== null) {
+              loadStudentDetails(selectedStudentId);
+            }
+          }}
         />
       )}
     </PageLayout>

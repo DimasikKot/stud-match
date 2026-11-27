@@ -90,6 +90,7 @@ class StudentFileResponse(BaseModel):
     size: int
     status: str
     zip_id: int
+    feature_set: dict[str, Any]
 
 
 class GetStudentResponse(BaseModel):
@@ -117,6 +118,7 @@ async def get_student(
             size=file_db.rustfs_object.size,
             status=file_db.rustfs_object.status.value,
             zip_id=file_db.zip_id,
+            feature_set=file_db.rustfs_object.feature_set,
         )
         for file_db in student_db.files
     ]
