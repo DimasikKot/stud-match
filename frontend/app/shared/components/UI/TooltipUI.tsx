@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { TextUI } from "@/shared/components/UI/TextUI";
 
@@ -71,6 +71,25 @@ export const TooltipUI = ({
   placement?: "right" | "top" | "bottom";
 }) => {
   const [visible, setVisible] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    timerRef.current = setTimeout(() => setVisible(true), 1000);
+  };
+
+  const handleMouseLeave = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    setVisible(false);
+  };
 
   const placementClass = {
     right: "left-full top-[100%] -translate-y-[100%]",
@@ -81,8 +100,8 @@ export const TooltipUI = ({
   return (
     <div
       className={`relative ${customClassName ?? ""}`}
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {children}
 
@@ -91,7 +110,11 @@ export const TooltipUI = ({
           <div
             className={`absolute z-50 max-h-80 max-w-120 w-max rounded-md overflow-y-auto bg-gray-900/80 px-3 py-2 border border-gray-300 ${placementClass}`}
           >
-            <TextUI variant="label" className="text-white whitespace-pre-wrap">
+            <TextUI
+              variant="label"
+              isSelectable
+              className="text-white whitespace-pre-wrap"
+            >
               {isJSON && typeof content !== "string"
                 ? formatMetrics(JSONSpaces, content)
                 : String(content)}

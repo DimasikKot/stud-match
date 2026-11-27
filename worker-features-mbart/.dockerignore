@@ -1,0 +1,5 @@
+model_rar/
+model_unarchived/
+__pycache__/
+*.pyc
+.env

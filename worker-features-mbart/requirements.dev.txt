@@ -1,0 +1,3 @@
+fastapi==0.141.1
+kafka-python-ng==2.2.3
+pytest==9.1.1

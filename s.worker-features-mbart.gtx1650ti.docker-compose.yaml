@@ -1,0 +1,67 @@
+# gtx1650ti
+
+services:
+  sm-worker-features-mbart:
+    container_name: sm-worker-features-mbart
+    build:
+      context: ./worker-features-mbart
+      dockerfile: worker-features-mbart.gtx1650ti.Dockerfile
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request; urllib.request.urlopen(''http://localhost:8071/health'', timeout=5)" || exit 1',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+
+    ports:
+      - "127.0.0.1:8071:8071"
+
+    environment:
+      - HF_TOKEN=${W_FTRS_HF_TOKEN}
+      - BACKEND_URL=${W_FTRS_BACKEND_URL}
+      - KAFKA_HOST=${KF_W_FTRS_HOST}
+      - KAFKA_PORT=${KF_W_FTRS_PORT}
+      - KAFKA_USERNAME=${KF_W_FTRS_USERNAME}
+      - KAFKA_PASSWORD=${KF_W_FTRS_PASSWORD}
+      - KAFKA_TASKS_TOPIC=${KF_W_FTRS_TASKS_TOPIC}
+      - KAFKA_RESULTS_TOPIC=${KF_W_FTRS_RESULTS_TOPIC}
+      - KAFKA_CONSUMER_GROUP=${KF_W_FTRS_CONSUMER_GROUP}
+      # MBART settings
+      - MBART_MODEL_PATH=${W_MBART_MODEL_PATH:-model_unarchived/mbart_pos}
+      - MBART_SRC_LANG=${W_MBART_SRC_LANG:-ru_RU}
+      - MBART_MAX_INPUT_LENGTH=${W_MBART_MAX_INPUT_LENGTH:-256}
+      - MBART_MAX_NEW_TOKENS=${W_MBART_MAX_NEW_TOKENS:-256}
+      - MBART_NUM_BEAMS=${W_MBART_NUM_BEAMS:-5}
+      - CHUNK_CHARS=${W_MBART_CHUNK_CHARS:-800}
+      - CHUNK_OVERLAP_CHARS=${W_MBART_CHUNK_OVERLAP_CHARS:-100}
+      - MAX_CHUNKS_PER_FILE=${W_MBART_MAX_CHUNKS_PER_FILE:-100}
+      - MAX_FILE_BYTES=${W_MBART_MAX_FILE_BYTES:-52428800}
+
+    volumes:
+      - ./worker-features-mbart:/app
+      - sm_mbart_hf_cache:/root/.cache/huggingface
+
+    networks:
+      - nginx-network
+
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  nginx-network:
+    external: true
+
+volumes:
+  sm_mbart_hf_cache:

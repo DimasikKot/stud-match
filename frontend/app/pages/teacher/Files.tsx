@@ -103,7 +103,7 @@ export function Files() {
     const interval = setInterval(() => {
       loadRustfsObjects();
       loadKafkaTopics();
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, []);
