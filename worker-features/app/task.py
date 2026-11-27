@@ -117,6 +117,7 @@ def analyze_text(rustfs_object_id: int, text: str) -> tuple[dict, int, int]:
             print(
                 f"[features] object {rustfs_object_id} chunk {index}/{len(chunks)}: "
                 f"невалидный ответ модели: {exc}",
+                f"raw: {chunk}",
                 flush=True,
             )
     if chunks and failed == len(chunks):
