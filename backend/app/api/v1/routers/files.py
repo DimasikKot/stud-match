@@ -73,7 +73,7 @@ async def view_file(
 ):
     """Просмотр файла inline (браузер откроет его, не скачивая)."""
     file_db = file.fetch_file_by_id(db, file_id)
-    return await rustfs_object.stream_file(file_db, "inline")
+    return await file.stream_file(file_db, "inline")
 
 
 @router.get("/{file_id}/download")
@@ -83,7 +83,7 @@ async def download_file(
 ):
     """Скачивание файла как вложения (attachment)."""
     file_db = file.fetch_file_by_id(db, file_id)
-    return await rustfs_object.stream_file(file_db, "attachment")
+    return await file.stream_file(file_db, "attachment")
 
 
 @router.delete(

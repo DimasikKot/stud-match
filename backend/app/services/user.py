@@ -2,7 +2,7 @@ import uuid
 from datetime import timedelta
 
 from app.core.config import settings
-from app.core.db import UserDB
+from app.core.db import UserDB, UserRole
 from app.services.auth import (
     create_access_token,
     create_refresh_token,
@@ -37,6 +37,55 @@ def register_user(db: Session, fullname: str, email: str, password: str) -> User
 
 def fetch_users(db: Session) -> list[UserDB]:
     return db.query(UserDB).order_by(UserDB.id).all()
+
+
+def fetch_user_by_id(db: Session, user_id: int) -> UserDB:
+    user = db.query(UserDB).filter(UserDB.id == user_id).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден",
+        )
+    return user
+
+
+def update_user_by_id(
+    db: Session,
+    user_id: int,
+    fullname: str | None = None,
+    email: str | None = None,
+    role: str | None = None,
+    skills_set: dict | None = None,
+) -> UserDB:
+    user = fetch_user_by_id(db, user_id)
+
+    if email is not None and email != user.email:
+        existing = db.query(UserDB).filter(UserDB.email == email).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered",
+            )
+        user.email = email
+
+    if fullname is not None:
+        user.fullname = fullname
+
+    if role is not None:
+        try:
+            user.role = UserRole(role)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Неизвестная роль: {role}",
+            )
+
+    if skills_set is not None:
+        user.skills_set = skills_set
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def change_password(

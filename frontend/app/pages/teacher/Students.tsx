@@ -2,12 +2,27 @@ import { useEffect, useState } from "react";
 
 import { TextUI } from "@/shared/components/UI/TextUI";
 import { PageLayout } from "@/shared/components/Layouts/PageLayout";
-import { fetchStudents, type StudentResponse } from "@/shared/api/students";
+import { StudentCard } from "@/shared/components/StudentCard";
+import { StudentDetailsModal } from "@/shared/components/StudentDetailsModal";
+import {
+  fetchStudent,
+  fetchStudents,
+  type StudentDetailResponse,
+  type StudentResponse,
+} from "@/shared/api/students";
 
 export default function Students() {
   const [students, setStudents] = useState<StudentResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
+    null,
+  );
+  const [studentDetails, setStudentDetails] =
+    useState<StudentDetailResponse | null>(null);
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  const [hasDetailsError, setHasDetailsError] = useState(false);
 
   useEffect(() => {
     fetchStudents()
@@ -15,6 +30,17 @@ export default function Students() {
       .catch(() => setHasError(true))
       .finally(() => setIsLoading(false));
   }, []);
+
+  const openStudent = (studentId: number) => {
+    setSelectedStudentId(studentId);
+    setStudentDetails(null);
+    setHasDetailsError(false);
+    setIsDetailsLoading(true);
+    fetchStudent(studentId)
+      .then(setStudentDetails)
+      .catch(() => setHasDetailsError(true))
+      .finally(() => setIsDetailsLoading(false));
+  };
 
   return (
     <PageLayout title="Студенты">
@@ -37,19 +63,22 @@ export default function Students() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {students.map((student) => (
-            <div
+            <StudentCard
               key={student.id}
-              className="bg-white border border-gray-300 p-4"
-            >
-              <TextUI variant="normal" title={student.fullname}>
-                <span className="line-clamp-1">{student.fullname}</span>
-              </TextUI>
-              <TextUI variant="desc" className="mt-1">
-                ID: {student.id}
-              </TextUI>
-            </div>
+              student={student}
+              onClick={() => openStudent(student.id)}
+            />
           ))}
         </div>
+      )}
+
+      {selectedStudentId !== null && (
+        <StudentDetailsModal
+          student={studentDetails}
+          isLoading={isDetailsLoading}
+          hasError={hasDetailsError}
+          onClose={() => setSelectedStudentId(null)}
+        />
       )}
     </PageLayout>
   );

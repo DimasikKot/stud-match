@@ -21,7 +21,15 @@ export interface UserResponse {
   fullname: string;
   email: string;
   role: string;
-  skills_vector: Record<string, unknown>;
+  skills_set: Record<string, unknown>;
+  model_version: string;
+}
+
+export interface UpdateUserRequest {
+  fullname?: string;
+  email?: string;
+  role?: string;
+  skills_set?: Record<string, unknown>;
 }
 
 export interface UserListResponse {
@@ -44,6 +52,19 @@ export const registerUser = async (
   }
 };
 
+export const updateUser = async (
+  userId: number,
+  payload: UpdateUserRequest,
+): Promise<UserResponse> => {
+  try {
+    const { data } = await api.patch<UserResponse>(`/users/${userId}`, payload);
+    return data;
+  } catch (error) {
+    errorValidate(error);
+    throw error;
+  }
+};
+
 export const fetchUsers = async (): Promise<UserListResponse> => {
   try {
     const { data } = await api.get<UserListResponse>("/users/");
@@ -59,6 +80,9 @@ export const loginUser = async (
 ): Promise<UserResponse> => {
   try {
     const { data } = await api.post<UserResponse>("/users/login", payload);
+    localStorage.setItem("fullname", data.fullname);
+    localStorage.setItem("email", data.email);
+    localStorage.setItem("role", data.role);
     return data;
   } catch (error) {
     errorValidate(error);

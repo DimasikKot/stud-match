@@ -84,6 +84,14 @@ async def get_all_students(
     )
 
 
+class StudentFileResponse(BaseModel):
+    id: int
+    name: str
+    size: int
+    status: str
+    zip_id: int
+
+
 class GetStudentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
@@ -91,6 +99,7 @@ class GetStudentResponse(BaseModel):
     fullname: str
     skills_set: dict[str, Any]
     model_version: str
+    files: list[StudentFileResponse] = []
 
 
 @router.get("/{student_id}", response_model=GetStudentResponse)
@@ -101,7 +110,23 @@ async def get_student(
     student_db = fetch_student_db_by_id(db=db, student_id=student_id)
     if student_db is None:
         raise HTTPException(status_code=404, detail="студент не найден")
-    return GetStudentResponse.model_validate(student_db)
+    files = [
+        StudentFileResponse(
+            id=file_db.id,
+            name=file_db.name,
+            size=file_db.rustfs_object.size,
+            status=file_db.rustfs_object.status.value,
+            zip_id=file_db.zip_id,
+        )
+        for file_db in student_db.files
+    ]
+    return GetStudentResponse(
+        id=student_db.id,
+        fullname=student_db.fullname,
+        skills_set=student_db.skills_set,
+        model_version=student_db.model_version,
+        files=files,
+    )
 
 
 class UpdateStudentRequest(CreateStudentRequest):

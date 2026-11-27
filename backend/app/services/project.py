@@ -32,9 +32,15 @@ def create_project(
     db: Session,
     name: str,
     description: str,
+    constraints_set: dict[str, Any] | None = None,
+    skills_set: dict[str, Any] | None = None,
 ) -> ProjectDB:
     project_db: ProjectDB = ProjectDB(
-        name=name, user_id=user_id, description=description
+        name=name,
+        user_id=user_id,
+        description=description,
+        constraints_set=constraints_set if constraints_set is not None else {},
+        skills_set=skills_set if skills_set is not None else {},
     )
 
     user = db.query(UserDB).filter(UserDB.id == user_id).first()

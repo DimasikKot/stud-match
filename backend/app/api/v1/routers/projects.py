@@ -28,6 +28,8 @@ router = APIRouter(prefix="/projects", tags=["Projects"])
 class CreateProjectRequest(BaseModel):
     name: str
     description: str
+    constraints_set: dict[str, Any] | None = None
+    skills_set: dict[str, Any] | None = None
 
     @field_validator("name")
     def validate_name(cls, value):
@@ -68,7 +70,12 @@ async def post_create_project(
     user: UserDB = Depends(get_current_user),
 ):
     project_db = create_project(
-        user_id=user.id, db=db, name=project.name, description=project.description
+        user_id=user.id,
+        db=db,
+        name=project.name,
+        description=project.description,
+        constraints_set=project.constraints_set,
+        skills_set=project.skills_set,
     )
     return CreateProjectResponse.model_validate(project_db)
 

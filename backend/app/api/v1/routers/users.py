@@ -41,6 +41,13 @@ class UserResponse(BaseModel):
     model_version: str
 
 
+class UpdateUserRequest(BaseModel):
+    fullname: str | None = None
+    email: EmailStr | None = None
+    role: str | None = None
+    skills_set: dict | None = None
+
+
 class UserListResponse(BaseModel):
     data: list[UserResponse]
 
@@ -152,6 +159,25 @@ def logout(
     # Удаляем куки
     _clear_auth_cookies(response)
     return {"message": "Logged out"}
+
+
+@router.patch("/{user_id}", response_model=UserResponse)
+def patch_user(
+    user_id: int,
+    request: UpdateUserRequest,
+    db: Session = Depends(get_db),
+    _: UserDB = Depends(require_admin),
+):
+    """Обновляет профиль пользователя. Доступно только администратору."""
+    user = user_service.update_user_by_id(
+        db=db,
+        user_id=user_id,
+        fullname=request.fullname,
+        email=request.email,
+        role=request.role,
+        skills_set=request.skills_set,
+    )
+    return UserResponse.model_validate(user)
 
 
 @router.get("/me", response_model=UserResponse)
